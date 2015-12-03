@@ -47,13 +47,13 @@ class BobRoss::Server < Sinatra::Base
           when :background
             params << "-background :background"
           when :optimize
-            params << "-filter Triangle"
-            params << "-define filter:support=2"
-            params << "-unsharp 0.25x0.25+8+0.065"
-            params << "-dither None"
-            params << "-posterize 136"
-            params << "-quality 82"
-            params << "-define jpeg:fancy-upsampling=off"
+            # params << "-filter Triangle"
+            # params << "-define filter:support=2"
+            # params << "-unsharp 0.25x0.25+8+0.065"
+            # params << "-dither None"
+            # params << "-posterize 136"
+            params << "-quality 85"
+            # params << "-define jpeg:fancy-upsampling=off"
             params << "-define png:compression-filter=5"
             params << "-define png:compression-level=9"
             params << "-define png:compression-strategy=1"
@@ -70,6 +70,7 @@ class BobRoss::Server < Sinatra::Base
         params << ":output"
         
         command = Cocaine::CommandLine.new("convert", params.join(' '))
+      STDOUT.puts  command.run(transformations.merge(input: file.path, output: output.path))
         command.run(transformations.merge(input: file.path, output: output.path))
         
         yield output, to_format

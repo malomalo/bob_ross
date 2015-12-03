@@ -5,9 +5,9 @@ Gem::Specification.new do |s|
   s.version     = 1
   s.authors     = ["Jon Bracy"]
   s.email       = ["jonbracy@gmail.com"]
-  # s.homepage    = ""
-  # s.summary     = %q{}
-  # s.description = %q{}
+  s.homepage    = ""
+  s.summary     = %q{}
+  s.description = %q{}
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
