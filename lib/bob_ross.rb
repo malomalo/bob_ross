@@ -1,5 +1,5 @@
 require 'singleton'
-require 'digest/hmac'
+require 'openssl'
 
 require File.expand_path('../bob_ross/storage', __FILE__)
 
@@ -9,11 +9,11 @@ class BobRoss
   attr_accessor :store, :defaults, :secret_key
   
   def hmac(data)
-    Digest::HMAC.hexdigest(data, secret_key, Digest::SHA1)
+    OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), secret_key, data)
   end
   
   def url(hash, options = {})
-    options = options.merge(defaults)
+    options = options.merge(defaults) if defaults
     transforms = encode_transformations(options)
     
     url = options[:format] ? ".#{options[:format]}" : ""

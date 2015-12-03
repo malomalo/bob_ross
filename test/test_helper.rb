@@ -2,7 +2,7 @@
 # installed gem
 $LOAD_PATH << File.expand_path('../lib', __FILE__)
 
-require 'steve_ross'
+require 'bob_ross'
 require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
