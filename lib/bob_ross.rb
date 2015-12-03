@@ -13,6 +13,10 @@ class BobRoss
   end
   
   def url(hash, options = {})
+    "#{store.host}#{path(hash, options)}"
+  end
+
+  def path(hash, options = {})
     options = options.merge(defaults) if defaults
     transforms = encode_transformations(options)
     
