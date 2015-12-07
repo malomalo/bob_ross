@@ -12,7 +12,7 @@ class BobRoss
     end
 
     def url(path)
-      "#{host}/#{partition(path)}"
+      "#{host}#{partition(path)}"
     end
 
     def host
@@ -30,12 +30,11 @@ class BobRoss
     def write(path, file, options={})
       path = destination(path)
       FileUtils.mkdir_p(File.dirname(path))
-      File.binwrite(path, file.read)
+      FileUtils.cp(file.path, path)
     end
 
     def cp(source, destination)
       source = destination(source)
-
       FileUtils.cp(source, destination)
     end
 

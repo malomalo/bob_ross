@@ -6,10 +6,10 @@ require File.expand_path('../bob_ross/storage', __FILE__)
 class BobRoss
   include Singleton
   
-  attr_accessor :store, :defaults, :secret_key, :host
+  attr_accessor :store, :host, :hmac, :defaults
   
-  def hmac(data)
-    OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), secret_key, data)
+  def calculate_hmac(data)
+    OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), hmac[:key], data)
   end
   
   def url(hash, options = {})
@@ -17,24 +17,34 @@ class BobRoss
   end
 
   def path(hash, options = {})
-    options = options.merge(defaults) if defaults
+    options = defaults.merge(options) if defaults
     transforms = encode_transformations(options)
     
     url = options[:format] ? ".#{options[:format]}" : ""
     url = hash + (options[:filename] ? "/#{CGI::escape("#{options[:filename]}")}" : "") + url
 
-    if options[:hmac] && transforms.empty?
-      url = "/H#{hmac("/#{url}")}/#{url}"
-    elsif options[:hmac]
-      url = "#{transforms}/#{url}"
-      url = "/H#{hmac(url)}#{url}"
-    elsif !transforms.empty?
-      url = "/#{transforms}/#{url}"
-    else
-      url = "/#{url}"
+    if options[:hmac]
+      hmac_data = ''
+      options[:hmac] = [:transformations, :hash] if options[:hmac] == true
+      options[:hmac].each do |mtd|
+        case mtd
+        when :hash
+          hmac_data << hash
+        when :transformations
+          hmac_data << transforms
+        when :format
+          hmac_data << options[:format].to_s
+        end
+      end
+      
+      transforms = "H#{calculate_hmac(hmac_data)}#{transforms}"
     end
     
-    url
+    if !transforms.empty?
+      "/#{transforms}/#{url}"
+    else
+      "/#{url}"
+    end
   end
   
   def encode_transformations(options)
@@ -61,3 +71,8 @@ class BobRoss
     instance.__send__(method, *args, &block)
   end
 end
+
+# hmac = {
+#  key: secret key used for hmac
+#  methods [[], [:hash], [:transforms], [:hash, :transforms]]
+#}

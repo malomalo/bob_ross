@@ -77,15 +77,21 @@ class BobRoss::Server < Sinatra::Base
       end
     end
     
+    def valid_hmac?(hmac, using, data)
+      using.find do |mtds|
+        valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), BobRoss.hmac[:key], mtds.map{ |k| data[k] }.join(''))
+        valid_hmac == hmac
+      end
+    end
   end
   
   get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformations, hash, format|
-    # HMAC CHECK
-    if BobRoss.defaults[:hmac] || (transformations && transformations.start_with?('H'))
-      if match = request.path_info.match(/^\/H([^A-Z]+)(.*)$/)
+    if BobRoss.hmac[:required] || (transformations && transformations.start_with?('H'))
+      if match = transformations.match(/^H([^A-Z]+)(.*)$/)
         provided_hmac = match[1]
-        hmac_data = match[2]
-        if provided_hmac != BobRoss.hmac(hmac_data)
+        transformation_data = match[2]
+        
+        if !valid_hmac?(provided_hmac, BobRoss.hmac[:methods], {transformations: transformation_data, hash: hash, format: format})
           not_found
         end
       else
@@ -95,7 +101,11 @@ class BobRoss::Server < Sinatra::Base
 
     transformations = extract_options(transformations)
     format = (format ? MIME::Types.of(format).first : nil)
-    original_file = File.open(BobRoss.store.destination(hash))
+    original_file = if BobRoss.store.local?
+      File.open(BobRoss.store.destination(hash))
+    else
+      copy_to_tempfile(hash)
+    end
     
     transform(original_file, transformations, format) do |output, mime|
       headers['Cache-Control'] = 'public, max-age=31536000'
