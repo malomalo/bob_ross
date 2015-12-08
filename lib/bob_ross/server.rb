@@ -1,6 +1,11 @@
 require 'cocaine'
 require 'mime/types'
 require 'sinatra/base'
+require 'browser'
+
+jxr = MIME::Type.new('image/jxr')
+jxr.extensions.push('jxr')
+MIME::Types.add(jxr)
 
 class BobRoss::Server < Sinatra::Base
   
@@ -86,6 +91,22 @@ class BobRoss::Server < Sinatra::Base
   end
   
   get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformations, hash, format|
+    transformations ||= ''
+    headers['Cache-Control'] = 'public, max-age=31536000'
+    if !format
+      headers['Vary'] = 'Accept, User-Agent'
+      browser = Browser.new(:ua => request.user_agent, :accept_language => headers["HTTP_ACCEPT_LANGUAGE"])
+      format = if request.accept.include?('image/webp')
+        MIME::Types['image/webp']
+      elsif (browser.ie? && browser.version.to_f > 9) || browser.edge? || (browser.ie? && browser.mobile?)
+        MIME::Types['image/jxr']
+      else
+        MIME::Types['image/jpeg']
+      end
+    else
+      format = MIME::Types.of(format).first
+    end
+    
     if BobRoss.hmac[:required] || (transformations && transformations.start_with?('H'))
       if match = transformations.match(/^H([^A-Z]+)(.*)$/)
         provided_hmac = match[1]
@@ -100,15 +121,14 @@ class BobRoss::Server < Sinatra::Base
     end
 
     transformations = extract_options(transformations)
-    format = (format ? MIME::Types.of(format).first : nil)
     original_file = if BobRoss.store.local?
       File.open(BobRoss.store.destination(hash))
     else
-      copy_to_tempfile(hash)
+      BobRoss.store.copy_to_tempfile(hash)
     end
     
     transform(original_file, transformations, format) do |output, mime|
-      headers['Cache-Control'] = 'public, max-age=31536000'
+      
       # set cache, expires...
       # Cache-Control:public
       # Expires: Mon, 25 Jun 2012 21:31:12 GMT

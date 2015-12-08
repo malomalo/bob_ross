@@ -27,4 +27,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'cocaine'
   s.add_runtime_dependency 'mime-types'
   s.add_runtime_dependency 'sinatra'
+  s.add_runtime_dependency 'browser'
 end
