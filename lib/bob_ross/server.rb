@@ -1,7 +1,6 @@
 require 'cocaine'
 require 'mime/types'
 require 'sinatra/base'
-require 'browser'
 
 jxr = MIME::Type.new('image/jxr')
 jxr.extensions.push('jxr')
@@ -27,6 +26,10 @@ class BobRoss::Server < Sinatra::Base
           transformations[:background] = "##{value}"
         when 'E'
           transformations[:expires] = value.to_i(16)
+        when 'W'
+          transformations[:watermark] = CGI.unescape(value)
+        when 'L'
+          transformations[:lossless] = true
         end
       end
       transformations
@@ -34,31 +37,75 @@ class BobRoss::Server < Sinatra::Base
     
     def identify(file)
       command = Cocaine::CommandLine.new("identify", "-verbose :file")
-      mime = command.run(file: file.path).match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]
-      MIME::Types[mime].first
+      output = command.run(file: file.path)
+      {
+        mime: MIME::Types[output.match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]].first,
+        geo: parse_geometry(output.match(/^\s+Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
+      }
+    end
+    
+    def parse_geometry(string)
+      string =~ /^(\d+)?(x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
+      
+      {
+        width: $1.to_i,
+        height: $3.to_i,
+        x_offset: $4.to_i,
+        y_offset: $5.to_i
+      }
     end
     
     def transform(file, transformations, to_format = nil)
-      from_format = identify(file)
+      info = identify(file)
+      from_format = info[:mime]
       to_format ||= from_format
       
       if transformations.empty? && from_format == to_format
         yield file, from_format
       else
         output = Tempfile.new(['blob', ".#{to_format.preferred_extension}"], :binmode => true)
-        params = [":input"]
+        params = []
+        
+        transformations[:background] ||= '#00000000'
+        params << "-background :background"
+
+        params << "\\(" << ":input"
+        params << "-resize :resize" if transformations[:resize]
+        params << "\\)"
+        
+        if transformations[:watermark] =~ /(\d+)(\w{2})(.*)/i
+          transformations[:watermark_file] = BobRoss.watermarks[$1.to_i]
+          transformations[:watermark_geometry] = $3
+          transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
+          
+          if !(transformations[:watermark_geometry] =~ /[\-\+]\d+$/)
+            transformations[:watermark_geometry] += "+0"
+          end
+          
+          geo = parse_geometry(transformations[:watermark_geometry])
+          output_size = if transformations[:resize]
+            parse_geometry(transformations[:resize])
+          else
+            info[:geo]
+          end
+          
+          if output_size[:width] > geo[:width] * 2 && output_size[:height] > geo[:height] * 2
+            params << ":watermark_file -gravity :watermark_postion -geometry :watermark_geometry -composite"
+          end
+        end
+        
+        if transformations[:resize].end_with?('#')
+          params << "-gravity center -extent :extent"
+          transformations[:extent] = transformations[:resize][0..-2]
+          transformations[:resize] = transformations[:resize][0..-2]
+        end
+          
         transformations.each do |key, value|
           case key
-          when :background
-            params << "-background :background"
+          when :lossless
+            params << "-define webp:lossless=true"
           when :optimize
-            # params << "-filter Triangle"
-            # params << "-define filter:support=2"
-            # params << "-unsharp 0.25x0.25+8+0.065"
-            # params << "-dither None"
-            # params << "-posterize 136"
-            params << "-quality 85"
-            # params << "-define jpeg:fancy-upsampling=off"
+            params << "-quality 85" unless to_format.to_s == 'image/webp'
             params << "-define png:compression-filter=5"
             params << "-define png:compression-level=9"
             params << "-define png:compression-strategy=1"
@@ -68,14 +115,13 @@ class BobRoss::Server < Sinatra::Base
             params << "-strip"
           when :progressive
             params << "-interlace Plane"
-          when :resize
-            params << "-resize :resize"
           end
         end
+        transformations.delete(:lossless)
+        
         params << ":output"
         
         command = Cocaine::CommandLine.new("convert", params.join(' '))
-      STDOUT.puts  command.run(transformations.merge(input: file.path, output: output.path))
         command.run(transformations.merge(input: file.path, output: output.path))
         
         yield output, to_format
@@ -94,11 +140,10 @@ class BobRoss::Server < Sinatra::Base
     transformations ||= ''
     headers['Cache-Control'] = 'public, max-age=31536000'
     if !format
-      headers['Vary'] = 'Accept, User-Agent'
-      browser = Browser.new(:ua => request.user_agent, :accept_language => headers["HTTP_ACCEPT_LANGUAGE"])
+      headers['Vary'] = 'Accept'
       format = if request.accept.include?('image/webp')
         MIME::Types['image/webp']
-      elsif (browser.ie? && browser.version.to_f > 9) || browser.edge? || (browser.ie? && browser.mobile?)
+      elsif request.accept.include?('image/jxr')
         MIME::Types['image/jxr']
       else
         MIME::Types['image/jpeg']

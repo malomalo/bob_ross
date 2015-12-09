@@ -6,7 +6,7 @@ require File.expand_path('../bob_ross/storage', __FILE__)
 class BobRoss
   include Singleton
   
-  attr_accessor :store, :host, :hmac, :defaults
+  attr_accessor :store, :host, :hmac, :defaults, :watermarks
   
   def calculate_hmac(data)
     OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), hmac[:key], data)
@@ -61,6 +61,12 @@ class BobRoss
         string << 'B' << value.downcase
       when :expires
         string << 'E' << value.to_i.to_s(16)
+      when :watermark
+        string << 'W' + (value[:id] || 0) + (value[:position] || 'se') + (value[:offset] || '+5+5')
+      when :lossless
+        string << 'L'
+      # when :quality
+      #   string << "Q#{value}"
       end
     end
     string
