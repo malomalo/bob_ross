@@ -134,15 +134,21 @@ class BobRoss::Server < Sinatra::Base
         valid_hmac == hmac
       end
     end
+    
+    def accept?(mime)
+      request.env['HTTP_ACCEPT'] && request.env['HTTP_ACCEPT'].include?(mime)
+    end
   end
   
   get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformations, hash, format|
     transformations ||= ''
+    
     if !format
       headers['Vary'] = 'Accept'
-      format = if request.accept.include?('image/webp')
+      
+      format = if accept?('image/webp')
         MIME::Types['image/webp'].first
-      elsif request.accept.include?('image/jxr')
+      elsif accept?('image/jxr')
         MIME::Types['image/vnd.ms-photo'].first
       else
         MIME::Types['image/jpeg'].first
