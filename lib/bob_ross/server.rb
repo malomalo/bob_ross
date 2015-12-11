@@ -94,7 +94,7 @@ class BobRoss::Server < Sinatra::Base
           end
         end
         
-        if transformations[:resize].end_with?('#')
+        if transformations[:resize] && transformations[:resize].end_with?('#')
           params << "-gravity center -extent :extent"
           transformations[:extent] = transformations[:resize][0..-2]
           transformations[:resize] = transformations[:resize][0..-2]
@@ -138,15 +138,14 @@ class BobRoss::Server < Sinatra::Base
   
   get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformations, hash, format|
     transformations ||= ''
-    headers['Cache-Control'] = 'public, max-age=31536000'
     if !format
       headers['Vary'] = 'Accept'
       format = if request.accept.include?('image/webp')
-        MIME::Types['image/webp']
+        MIME::Types['image/webp'].first
       elsif request.accept.include?('image/jxr')
-        MIME::Types['image/jxr']
+        MIME::Types['image/jxr'].first
       else
-        MIME::Types['image/jpeg']
+        MIME::Types['image/jpeg'].first
       end
     else
       format = MIME::Types.of(format).first
@@ -178,6 +177,8 @@ class BobRoss::Server < Sinatra::Base
       # Cache-Control:public
       # Expires: Mon, 25 Jun 2012 21:31:12 GMT
 
+      # Do this at the end to not cache errors
+      headers['Cache-Control'] = 'public, max-age=31536000'
       if output.is_a?(Tempfile)
         headers['Content-Type'] = mime.to_s
         output
