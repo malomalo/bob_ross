@@ -2,7 +2,7 @@ require 'cocaine'
 require 'mime/types'
 require 'sinatra/base'
 
-jxr = MIME::Type.new('image/jxr')
+jxr = MIME::Type.new('image/vnd.ms-photo')
 jxr.extensions.push('jxr')
 MIME::Types.add(jxr)
 
@@ -143,7 +143,7 @@ class BobRoss::Server < Sinatra::Base
       format = if request.accept.include?('image/webp')
         MIME::Types['image/webp'].first
       elsif request.accept.include?('image/jxr')
-        MIME::Types['image/jxr'].first
+        MIME::Types['image/vnd.ms-photo'].first
       else
         MIME::Types['image/jpeg'].first
       end
