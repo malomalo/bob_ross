@@ -65,6 +65,8 @@ class BobRoss
         string << 'W' + (value[:id] || 0) + (value[:position] || 'se') + (value[:offset] || '+5+5')
       when :lossless
         string << 'L'
+      when :transforms
+        string << 'T'
       # when :quality
       #   string << "Q#{value}"
       end

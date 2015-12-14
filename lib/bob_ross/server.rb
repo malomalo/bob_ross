@@ -27,9 +27,11 @@ class BobRoss::Server < Sinatra::Base
         when 'E'
           transformations[:expires] = value.to_i(16)
         when 'W'
-          transformations[:watermark] = CGI.unescape(value)
+          transformations[:watermark] = value
         when 'L'
           transformations[:lossless] = true
+        when 'T'
+          transformations[:transparent] = true
         end
       end
       transformations
@@ -73,11 +75,11 @@ class BobRoss::Server < Sinatra::Base
         params << "-resize :resize" if transformations[:resize]
         params << "\\)"
         
-        if transformations[:watermark] =~ /(\d+)(\w{2})(.*)/i
+        if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
           transformations[:watermark_file] = BobRoss.watermarks[$1.to_i]
           transformations[:watermark_geometry] = $3
           transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
-          
+
           if !(transformations[:watermark_geometry] =~ /[\-\+]\d+$/)
             transformations[:watermark_geometry] += "+0"
           end
@@ -122,6 +124,7 @@ class BobRoss::Server < Sinatra::Base
         params << ":output"
         
         command = Cocaine::CommandLine.new("convert", params.join(' '))
+        puts command.command(transformations.merge(input: file.path, output: output.path))
         command.run(transformations.merge(input: file.path, output: output.path))
         
         yield output, to_format
@@ -140,8 +143,9 @@ class BobRoss::Server < Sinatra::Base
     end
   end
   
-  get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformations, hash, format|
-    transformations ||= ''
+  get /^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/ do |transformation_string, hash, format|
+    transformation_string ||= ''
+    transformations = extract_options(transformation_string)
     
     if !format
       headers['Vary'] = 'Accept'
@@ -151,14 +155,14 @@ class BobRoss::Server < Sinatra::Base
       elsif accept?('image/jxr')
         MIME::Types['image/vnd.ms-photo'].first
       else
-        MIME::Types['image/jpeg'].first
+        transformations[:transparent] ? MIME::Types['image/png'].first : MIME::Types['image/jpeg'].first
       end
     else
       format = MIME::Types.of(format).first
     end
     
-    if BobRoss.hmac[:required] || (transformations && transformations.start_with?('H'))
-      if match = transformations.match(/^H([^A-Z]+)(.*)$/)
+    if BobRoss.hmac[:required] || (transformation_string && transformation_string.start_with?('H'))
+      if match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
         provided_hmac = match[1]
         transformation_data = match[2]
         
@@ -170,7 +174,7 @@ class BobRoss::Server < Sinatra::Base
       end
     end
 
-    transformations = extract_options(transformations)
+    
     original_file = if BobRoss.store.local?
       File.open(BobRoss.store.destination(hash))
     else
@@ -178,11 +182,6 @@ class BobRoss::Server < Sinatra::Base
     end
     
     transform(original_file, transformations, format) do |output, mime|
-      
-      # set cache, expires...
-      # Cache-Control:public
-      # Expires: Mon, 25 Jun 2012 21:31:12 GMT
-
       # Do this at the end to not cache errors
       headers['Cache-Control'] = 'public, max-age=31536000'
       if output.is_a?(Tempfile)
