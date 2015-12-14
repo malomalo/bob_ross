@@ -62,7 +62,7 @@ class BobRoss
       when :expires
         string << 'E' << value.to_i.to_s(16)
       when :watermark
-        string << 'W' + (value[:id] || 0) + (value[:position] || 'se') + (value[:offset] || '+5+5')
+        string << 'W' + CGI::escape((value[:id] || 0).to_s + (value[:position] || 'se') + (value[:offset] || '+5+5'))
       when :lossless
         string << 'L'
       when :transforms
