@@ -41,7 +41,7 @@ class BobRoss
     end
     
     if !transforms.empty?
-      "/#{transforms}/#{url}"
+      "/#{CGI::escape(transforms)}/#{url}"
     else
       "/#{url}"
     end
@@ -56,21 +56,24 @@ class BobRoss
       when :progressive
         string << 'P'
       when :resize
-        string << 'S' << CGI::escape(value).downcase
+        string << 'S' << value.downcase
       when :background
         string << 'B' << value.downcase
       when :expires
         string << 'E' << value.to_i.to_s(16)
       when :watermark
-        string << 'W' + CGI::escape((value[:id] || 0).to_s + (value[:position] || 'se') + (value[:offset] || '+5+5'))
+        string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
       when :lossless
         string << 'L'
       when :transforms
         string << 'T'
+      when :grayscale
+        string << 'G'
       # when :quality
       #   string << "Q#{value}"
       end
     end
+    
     string
   end
   

@@ -32,6 +32,8 @@ class BobRoss::Server < Sinatra::Base
           transformations[:lossless] = true
         when 'T'
           transformations[:transparent] = true
+        when 'G'
+          transformations[:grayscale] = true
         end
       end
       transformations
@@ -47,13 +49,13 @@ class BobRoss::Server < Sinatra::Base
     end
     
     def parse_geometry(string)
-      string =~ /^(\d+)?(x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
+      string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
       
       {
-        width: $1.to_i,
-        height: $3.to_i,
-        x_offset: $4.to_i,
-        y_offset: $5.to_i
+        width: $1 ? $1.to_i : nil,
+        height: $2 ? $2.to_i : nil,
+        x_offset: $3 ? $3.to_i : nil,
+        y_offset: $4 ? $4.to_i : nil
       }
     end
     
@@ -72,17 +74,20 @@ class BobRoss::Server < Sinatra::Base
         params << "-background :background"
 
         params << "\\(" << ":input"
-        params << "-resize :resize" if transformations[:resize]
+        if transformations[:resize]
+          params << "-resize :resize"
+          if transformations[:resize].end_with?('*')
+            params << "-gravity center -crop :crop"
+            transformations[:crop] = transformations[:resize][0..-2] + "+0+0"
+            transformations[:resize] = transformations[:resize][0..-2] + "^"
+          end
+        end
         params << "\\)"
         
         if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
           transformations[:watermark_file] = BobRoss.watermarks[$1.to_i]
           transformations[:watermark_geometry] = $3
           transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
-
-          if !(transformations[:watermark_geometry] =~ /[\-\+]\d+$/)
-            transformations[:watermark_geometry] += "+0"
-          end
           
           geo = parse_geometry(transformations[:watermark_geometry])
           output_size = if transformations[:resize]
@@ -90,6 +95,26 @@ class BobRoss::Server < Sinatra::Base
           else
             info[:geo]
           end
+          
+          if !geo[:width] && !geo[:height]
+            if output_size[:width] * output_size[:height] <= 60_000
+              geo[:width] = ([output_size[:width], output_size[:height]].max * 0.10).floor
+              geo[:height] = geo[:width]
+            elsif output_size[:width] * output_size[:height] <= 90_000
+              geo[:width] = ([output_size[:width], output_size[:height]].max * 0.08).floor
+              geo[:height] = geo[:width]
+            else
+              geo[:width] = ([output_size[:width], output_size[:height]].max * 0.05).floor
+              geo[:height] = geo[:width]
+            end
+          end
+          
+          if !geo[:x_offset] && !geo[:y_offset]
+            geo[:x_offset] = (geo[:width] / 2.0).ceil
+            geo[:y_offset] = geo[:x_offset]
+          end
+          
+          transformations[:watermark_geometry] = "#{geo[:width]}x#{geo[:height]}+#{geo[:x_offset]}+#{geo[:x_offset]}"
           
           if output_size[:width] > geo[:width] * 2 && output_size[:height] > geo[:height] * 2
             params << ":watermark_file -gravity :watermark_postion -geometry :watermark_geometry -composite"
@@ -117,6 +142,8 @@ class BobRoss::Server < Sinatra::Base
             params << "-strip"
           when :progressive
             params << "-interlace Plane"
+          when :grayscale
+            params << "-colorspace gray"
           end
         end
         transformations.delete(:lossless)
@@ -124,7 +151,6 @@ class BobRoss::Server < Sinatra::Base
         params << ":output"
         
         command = Cocaine::CommandLine.new("convert", params.join(' '))
-        puts command.command(transformations.merge(input: file.path, output: output.path))
         command.run(transformations.merge(input: file.path, output: output.path))
         
         yield output, to_format
