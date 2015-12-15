@@ -2,9 +2,11 @@ require 'cocaine'
 require 'mime/types'
 require 'sinatra/base'
 
-jxr = MIME::Type.new('image/vnd.ms-photo')
-jxr.extensions.push('jxr')
-MIME::Types.add(jxr)
+if MIME::Types['image/vnd.ms-photo'].empty?
+  jxr = MIME::Type.new('image/vnd.ms-photo')
+  jxr.extensions.push('jxr')
+  MIME::Types.add(jxr)
+end
 
 class BobRoss::Server < Sinatra::Base
   
@@ -82,6 +84,8 @@ class BobRoss::Server < Sinatra::Base
             transformations[:resize] = transformations[:resize][0..-2] + "^"
           end
         end
+        
+        params << "-alpha remove" if transformations[:background]
         params << "\\)"
         
         if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
