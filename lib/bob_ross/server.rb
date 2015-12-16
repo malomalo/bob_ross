@@ -70,29 +70,28 @@ class BobRoss::Server
         format = MIME::Types.of(format).first
       end
 
+      response_headers['ETag'] = BobRoss.store.md5(hash)
+      if response_headers['Vary']
+        response_headers['ETag'] = 'W/' + response_headers['ETag']
+      end
+      response_headers['Last-Modified'] = CGI.rfc1123_date(BobRoss.store.last_modified(hash))
+      
       original_file = if BobRoss.store.local?
         File.open(BobRoss.store.destination(hash))
       else
         BobRoss.store.copy_to_tempfile(hash)
       end
       transformed_file = transform(original_file, transformations, format)
-      STDOUT.puts original_file.path, transformed_file.path
+      
       # Do this at the end to not cache errors
       response_headers['Content-Type'] = format.to_s
       response_headers['Cache-Control'] = 'public, max-age=31536000'
       
-      if transformed_file.is_a?(Tempfile)
-        if original_file != transformed_file
-          original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
-        end
-        
-        [200, response_headers, StreamFile.new(transformed_file)]
-      else
-        send_file transformed_file.path, type: mime.to_s
-        original_file.close
-        transformed_file.close
+      if original_file != transformed_file
+        original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
       end
       
+      [200, response_headers, StreamFile.new(transformed_file)]
     end
   end
   
