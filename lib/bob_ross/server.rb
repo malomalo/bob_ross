@@ -70,10 +70,6 @@ class BobRoss::Server
         format = MIME::Types.of(format).first
       end
 
-      response_headers['ETag'] = BobRoss.store.md5(hash)
-      if response_headers['Vary']
-        response_headers['ETag'] = 'W/' + response_headers['ETag']
-      end
       response_headers['Last-Modified'] = CGI.rfc1123_date(BobRoss.store.last_modified(hash))
       
       original_file = if BobRoss.store.local?
