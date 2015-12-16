@@ -26,5 +26,4 @@ Gem::Specification.new do |s|
   # Runtime
   s.add_runtime_dependency 'cocaine'
   s.add_runtime_dependency 'mime-types'
-  s.add_runtime_dependency 'sinatra'
 end
