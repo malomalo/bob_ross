@@ -29,66 +29,71 @@ class BobRoss::Server
   end
   
   def call(env)
-    request = Rack::Request.new env
-    path = ::URI::DEFAULT_PARSER.unescape(request.path_info)
+    path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO'])
     match = path.match(/^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/)
     
-    if !match
-      not_found
-    else
-      response_headers = {}
-      
-      transformation_string = match[1] || ''
-      hash = match[2]
-      format = match[3]
-      transformations = extract_options(transformation_string)
+    return not_found if !match
+    
+    response_headers = {}
+    
+    transformation_string = match[1] || ''
+    hash = match[2]
+    format = match[3]
+    transformations = extract_options(transformation_string)
 
-      if BobRoss.hmac[:required] || (transformation_string && transformation_string.start_with?('H'))
-        if match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
-          provided_hmac = match[1]
-          transformation_data = match[2]
-        
-          if !valid_hmac?(provided_hmac, BobRoss.hmac[:methods], {transformations: transformation_data, hash: hash, format: format})
-            not_found
-          end
-        else
-          not_found
-        end
-      end
+    if BobRoss.hmac[:required] || (transformation_string && transformation_string.start_with?('H'))
+      if match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
+        provided_hmac = match[1]
+        transformation_data = match[2]
       
-      if !format
-        response_headers['Vary'] = 'Accept'
-        
-        format = if accept?(request, 'image/webp')
-          MIME::Types['image/webp'].first
-        elsif accept?(request, 'image/jxr')
-          MIME::Types['image/vnd.ms-photo'].first
-        else
-          transformations[:transparent] ? MIME::Types['image/png'].first : MIME::Types['image/jpeg'].first
+        if !valid_hmac?(provided_hmac, BobRoss.hmac[:methods], {transformations: transformation_data, hash: hash, format: format})
+          return not_found
         end
       else
-        format = MIME::Types.of(format).first
+        return not_found
       end
-
-      response_headers['Last-Modified'] = CGI.rfc1123_date(BobRoss.store.last_modified(hash))
-      
-      original_file = if BobRoss.store.local?
-        File.open(BobRoss.store.destination(hash))
-      else
-        BobRoss.store.copy_to_tempfile(hash)
-      end
-      transformed_file = transform(original_file, transformations, format)
-      
-      # Do this at the end to not cache errors
-      response_headers['Content-Type'] = format.to_s
-      response_headers['Cache-Control'] = 'public, max-age=31536000'
-      
-      if original_file != transformed_file
-        original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
-      end
-      
-      [200, response_headers, StreamFile.new(transformed_file)]
     end
+    
+    last_modified = BobRoss.store.last_modified(hash)
+    if env['HTTP_IF_MODIFIED_SINCE']
+      modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
+      return [304, response_headers, []] if last_modified < modified_since_time
+    end
+    response_headers['Last-Modified'] = last_modified.httpdate
+    
+    if !format
+      response_headers['Vary'] = 'Accept'
+      
+      format = if accept?(env, 'image/webp')
+        MIME::Types['image/webp'].first
+      elsif accept?(env, 'image/jxr')
+        MIME::Types['image/vnd.ms-photo'].first
+      else
+        transformations[:transparent] ? MIME::Types['image/png'].first : MIME::Types['image/jpeg'].first
+      end
+    else
+      format = MIME::Types.of(format).first
+    end
+    
+    
+    
+    original_file = if BobRoss.store.local?
+      File.open(BobRoss.store.destination(hash))
+    else
+      BobRoss.store.copy_to_tempfile(hash)
+    end
+    transformed_file = transform(original_file, transformations, format)
+    
+    # Do this at the end to not cache errors
+    response_headers['Content-Type'] = format.to_s
+    response_headers['Cache-Control'] = 'public, max-age=31536000'
+    
+    if original_file != transformed_file
+      original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
+    end
+    
+    [200, response_headers, StreamFile.new(transformed_file)]
+
   end
   
   def extract_options(string)
@@ -248,8 +253,8 @@ class BobRoss::Server
     end
   end
   
-  def accept?(request, mime)
-    request.env['HTTP_ACCEPT'] && request.env['HTTP_ACCEPT'].include?(mime)
+  def accept?(env, mime)
+    env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
   end
 
 end
