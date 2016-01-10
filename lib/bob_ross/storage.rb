@@ -45,13 +45,21 @@ class BobRoss
     def delete(path)
       FileUtils.rm(destination(path), force: true)
     end
+    
+    def md5(path)
+      OpenSSL::Digest.new('md5', File.read(destination(path))).hexdigest
+    end
+    
+    def last_modified(path)
+      File.mtime(destination(path))
+    end
 
     private
 
     def partition(value)
       return value unless @configs[:partition]
-      split = value.scan(/.{4}/)
-      split.shift(3).join("/") + split.join("")
+      split = value.scan(/.{1,4}/)
+      split.shift(@configs[:partition_depth] || 3).join("/") + split.join("")
     end
   
   end
