@@ -48,7 +48,7 @@ class BobRoss
   end
   
   def encode_transformations(options)
-    string = ""
+    string = []
     options.each do |key, value|
       case key
       when :optimize
@@ -74,7 +74,7 @@ class BobRoss
       end
     end
     
-    string
+    string.sort.join('')
   end
   
   # Delegates all uncauge class method calls to the singleton
