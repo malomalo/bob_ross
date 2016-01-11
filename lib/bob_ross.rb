@@ -56,11 +56,11 @@ class BobRoss
       when :progressive
         string << 'P'
       when :resize
-        string << 'S' << value.downcase
+        string << 'S' + value.downcase
       when :background
-        string << 'B' << value.downcase
+        string << 'B' + value.downcase
       when :expires
-        string << 'E' << value.to_i.to_s(16)
+        string << 'E' + value.to_i.to_s(16)
       when :watermark
         string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s if value
       when :lossless
