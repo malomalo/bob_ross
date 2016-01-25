@@ -124,13 +124,19 @@ class BobRoss::Server
   end
   
   def identify(file)
-    command = Cocaine::CommandLine.new("identify", "-limit memory :memory_limit -limit map :disk_limit -define registry:temporary-path=:tmpdir -verbose :file")
+    params = []
+    params << "-limit memory :memory_limit" if BobRoss.memory_limit
+    params << "-limit map :disk_limit" if BobRoss.disk_limit
+    params << "-define registry:temporary-path=:tmpdir"
+    params << "-verbose :file"
+    command = Cocaine::CommandLine.new("identify", params.join(' '))
+
     output = Dir.mktmpdir do |tmpdir|
       command.run({
         file: file.path,
         tmpdir: tmpdir,
-        memory_limit: '2GB',
-        disk_limit: '8GB'
+        memory_limit: BobRoss.memory_limit,
+        disk_limit: BobRoss.disk_limit
       })
     end
     
@@ -159,7 +165,10 @@ class BobRoss::Server
     if transformations.empty? && from_format == to_format
       file
     else
-      params = ["-limit memory :memory_limit", "-limit map :disk_limit", "-define registry:temporary-path=:tmpdir"]
+      params = []
+      params << "-limit memory :memory_limit" if BobRoss.memory_limit
+      params << "-limit map :disk_limit" if BobRoss.disk_limit
+      params << "-define registry:temporary-path=:tmpdir"
       
       transformations[:background] ||= '#00000000'
       params << "-background :background"
@@ -251,8 +260,8 @@ class BobRoss::Server
             input: file.path,
             output: output.path,
             tmpdir: tmpdir,
-            memory_limit: '2GB',
-            disk_limit: '8GB'
+            memory_limit: BobRoss.memory_limit,
+            disk_limit: BobRoss.disk_limit
           }))
         end
       rescue => e

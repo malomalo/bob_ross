@@ -6,7 +6,7 @@ require File.expand_path('../bob_ross/storage', __FILE__)
 class BobRoss
   include Singleton
   
-  attr_accessor :store, :host, :hmac, :defaults, :watermarks
+  attr_accessor :store, :host, :hmac, :defaults, :watermarks, :memory_limit, :disk_limit
   
   def calculate_hmac(data)
     OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), hmac[:key], data)
