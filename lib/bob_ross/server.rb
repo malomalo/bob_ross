@@ -75,8 +75,6 @@ class BobRoss::Server
       format = MIME::Types.of(format).first
     end
     
-    
-    
     original_file = if BobRoss.store.local?
       File.open(BobRoss.store.destination(hash))
     else
@@ -88,12 +86,11 @@ class BobRoss::Server
     response_headers['Content-Type'] = format.to_s
     response_headers['Cache-Control'] = 'public, max-age=31536000'
     
-    if original_file != transformed_file
+    [200, response_headers, StreamFile.new(transformed_file)]
+  ensure
+    if original_file
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
     end
-    
-    [200, response_headers, StreamFile.new(transformed_file)]
-
   end
   
   def extract_options(string)
@@ -154,7 +151,6 @@ class BobRoss::Server
     if transformations.empty? && from_format == to_format
       file
     else
-      output = Tempfile.new(['blob', ".#{to_format.preferred_extension}"], :binmode => true)
       params = []
       
       transformations[:background] ||= '#00000000'
@@ -238,9 +234,15 @@ class BobRoss::Server
       transformations.delete(:lossless)
       
       params << ":output"
+      output = Tempfile.new(['blob', ".#{to_format.preferred_extension}"], :binmode => true)
       
-      command = Cocaine::CommandLine.new("convert", params.join(' '))
-      command.run(transformations.merge(input: file.path, output: output.path))
+      begin
+        command = Cocaine::CommandLine.new("convert", params.join(' '))
+        command.run(transformations.merge(input: file.path, output: output.path))
+      rescue => e
+        output.close!
+        raise
+      end
       
       output
     end
