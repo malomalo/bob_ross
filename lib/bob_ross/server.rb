@@ -151,7 +151,7 @@ class BobRoss::Server
     if transformations.empty? && from_format == to_format
       file
     else
-      params = []
+      params = ["-limit memory :memory_limit", "-limit map :disk_limit", "-define registry:temporary-path=:tmpdir"]
       
       transformations[:background] ||= '#00000000'
       params << "-background :background"
@@ -238,7 +238,15 @@ class BobRoss::Server
       
       begin
         command = Cocaine::CommandLine.new("convert", params.join(' '))
-        command.run(transformations.merge(input: file.path, output: output.path))
+        Dir.mktmpdir do |tmpdir|
+          command.run(transformations.merge({
+            input: file.path,
+            output: output.path,
+            tmpdir: tmpdir,
+            memory_limit: '2GB',
+            disk_limit: '8GB'
+          }))
+        end
       rescue => e
         output.close!
         raise
