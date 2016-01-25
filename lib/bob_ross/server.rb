@@ -124,8 +124,16 @@ class BobRoss::Server
   end
   
   def identify(file)
-    command = Cocaine::CommandLine.new("identify", "-verbose :file")
-    output = command.run(file: file.path)
+    command = Cocaine::CommandLine.new("identify", "-limit memory :memory_limit -limit map :disk_limit -define registry:temporary-path=:tmpdir -verbose :file")
+    output = Dir.mktmpdir do |tmpdir|
+      command.run({
+        file: file.path,
+        tmpdir: tmpdir,
+        memory_limit: '2GB',
+        disk_limit: '8GB'
+      })
+    end
+    
     {
       mime: MIME::Types[output.match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]].first,
       geo: parse_geometry(output.match(/^\s+Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
