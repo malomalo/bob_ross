@@ -140,8 +140,10 @@ class BobRoss::Server
       })
     end
     
+    mime_command = Cocaine::CommandLine.new("file", '--mime -b :file')
+    
     {
-      mime: MIME::Types[output.match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]].first,
+      mime: MIME::Types[mime_command.run({ file: file.path }).split(';')[0]].first, # MIME::Types[output.match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]].first,
       geo: parse_geometry(output.match(/^\s+Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
     }
   end
