@@ -184,7 +184,6 @@ class BobRoss::Server
           transformations[:resize] = transformations[:resize][0..-2] + "^"
         end
       end
-      params << "-auto-orient"
       
       params << "-alpha remove" if transformations[:background]
       params << "\\)"
