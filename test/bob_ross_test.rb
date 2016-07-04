@@ -14,7 +14,7 @@ class BobRossTest < Minitest::Test
   test "encode_transformations" do
     time = 1449100194
     
-    assert_equal "OPS500x500%5eBeeddccaaE#{time.to_s(16)}", BobRoss.encode_transformations({
+    assert_equal "BeeddccaaE#{time.to_s(16)}OPS500x500^", BobRoss.encode_transformations({
       optimize: true,
       progressive: true,
       resize: '500x500^',

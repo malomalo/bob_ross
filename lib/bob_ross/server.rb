@@ -40,6 +40,11 @@ class BobRoss::Server
     hash = match[2]
     format = match[3]
     transformations = extract_options(transformation_string)
+    if env['HTTP_DPR'] && transformations[:resize]
+      transformations[:dpr] = env['HTTP_DPR'].to_f
+      transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+      response_headers['Content-DPR'] = transformations[:dpr].to_s
+    end
 
     if BobRoss.hmac[:required] || (transformation_string && transformation_string.start_with?('H'))
       if match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
@@ -62,7 +67,7 @@ class BobRoss::Server
     response_headers['Last-Modified'] = last_modified.httpdate
     
     if !format
-      response_headers['Vary'] = 'Accept'
+      response_headers['Vary'] = 'Accept, DPR'
       
       format = if accept?(env, 'image/webp')
         MIME::Types['image/webp'].first
@@ -72,6 +77,7 @@ class BobRoss::Server
         transformations[:transparent] ? MIME::Types['image/png'].first : MIME::Types['image/jpeg'].first
       end
     else
+      response_headers['Vary'] = 'DPR'
       format = MIME::Types.of(format).first
     end
     
@@ -145,8 +151,9 @@ class BobRoss::Server
     mime_command = Cocaine::CommandLine.new("file", '--mime -b :file')
     
     {
-      mime: MIME::Types[mime_command.run({ file: file.path }).split(';')[0]].first, # MIME::Types[output.match(/^\s+Mime\stype:\s(\S+)\s*$/i)[1]].first,
-      geo: parse_geometry(output.match(/^\s+Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
+      mime: MIME::Types[mime_command.run({ file: file.path }).split(';')[0]].first,
+      geo: parse_geometry(output.match(/^\s+Geometry:\s([0-9x\-\+]+)\s*$/i)[1]),
+      transparent: output.match(/^\s+Alpha:\n\s+min:\s+(\d+)/)[1].to_i != (2 ^ output.match(/^\s+Depth:\s+(\d+)-bit/)[1].to_i - 1)
     }
   end
   
@@ -198,6 +205,11 @@ class BobRoss::Server
         geo = parse_geometry(transformations[:watermark_geometry])
         output_size = if transformations[:resize]
           parse_geometry(transformations[:resize])
+        elsif transformations[:dpr]
+          {
+            width: info[:geo][:width] * transformations[:dpr],
+            height: info[:geo][:height] * transformations[:dpr]
+          }
         else
           info[:geo]
         end
@@ -244,12 +256,12 @@ class BobRoss::Server
           params << "-define png:compression-strategy=1"
           params << "-define png:exclude-chunk=all"
           params << "-interlace none" unless transformations[:progressive]
-          params << "-colorspace sRGB"
+          params << "-colorspace sRGB" unless transformations[:grayscale]
           params << "-strip"
         when :progressive
           params << "-interlace Plane"
         when :grayscale
-          params << "-colorspace gray"
+          params << "-colorspace Gray"
         end
       end
       transformations.delete(:lossless)
