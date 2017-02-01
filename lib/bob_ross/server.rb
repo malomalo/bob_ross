@@ -88,7 +88,7 @@ class BobRoss::Server
     
     [200, response_headers, StreamFile.new(transformed_file)]
   rescue Aws::S3::Errors::NotFound
-    [404, {}, "not found"]
+    not_found
   ensure
     if original_file
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
