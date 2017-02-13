@@ -171,7 +171,7 @@ class BobRoss::Server
   
   def valid_hmac?(hmac, using, data)
     using.find do |mtds|
-      valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), BobRoss.hmac[:key], mtds.map{ |k| data[k] }.join(''))
+      valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data[k] }.join(''))
       valid_hmac == hmac
     end
   end
