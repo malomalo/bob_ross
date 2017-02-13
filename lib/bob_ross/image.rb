@@ -45,7 +45,7 @@ class BobRoss::Image
     transformations[:background] ||= '#00000000'
     params << "-background :background"
 
-    params << "\\(" << ":input"
+    params << "\\(" << ":input -auto-orient"
     if transformations[:resize]
       params << "-resize :resize"
       if transformations[:resize].end_with?('*')
