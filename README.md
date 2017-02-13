@@ -1,46 +1,135 @@
 # Bob Ross
 
-A Rack Image Server.
+A Rack Image Server to mulipulate images.
 
-# Dependencies
 
- - `ruby` 2.3?
+## Installation
+
+BobRoss depends on the following:
+
+ - `ruby`
  - `imagemagick`
 
-# Optional Dependencies
+Optionally:
 
- - `webp`, libwebp
- - `jxrlib`
+ - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image format
+ - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR) image format
 
-# Ruby Client
 
-## configuration
+# Client (Generating URLs)
+
+The BobRoss client makes it easy to generate urls for requesting the server.
+
+For example to generate a path that resizes an image to 100x100:
+
+`BobRoss.path('hash', resize: '100x100') #=> '/S100x100/hash'` 
+
+In addition there is also a `url` helper if you have configured the host:
 
 ```ruby
-BobRoss.configure do
-  host:
-  hamc:
-  defaults:
-end
+BobRoss.host = 'https://example.com'
+BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 ```
 
-## Generating URLs
+### Available Options
+
+- `:background` Set the background color of an image; Given in RGB or RGBA in Hex format
+- `:expires` The time the URL will be expired and no longer valid. Should be used with 
+  an HMAC to prevent simply chaning the URL
+- `:grayscale` When set to true will make the image grayscale
+- `:hmac`
+  - When set to `true` performs an hmac using the `:transformations` and `:hash` parts
+    of the generated path
+  - Can be set to an array containing any of the following and will use those fields
+    to hmac the path:
+      - `:transformations`
+      - `:hash`
+      - `:format`
+- `:lossless` When set to true the server will choose a lossless encoding and
+  losslessly encode the image
+- `:optimize` Optimizes the image in the following ways:
+  - Strips the image of any profiles, comments, or vairous PNG chunks
+  - Converts the image to the sRGB Color profile
+  - Set's the quality/compression to 85%
+- `:progressive` Progressively encode the image
+- `:resize` See section under "Querying" for valid resize options
+- `:transparent`
+- `:watermark`
+
+### Client Configuration
+
+```ruby
+BobRoss.defaults = {
+
+	# Required if generating urls (not paths)
+	host: 'https://example.com',
+	
+	# Required if signing paths/urls
+	hmac: {
+	
+		# The secret to sign with
+		key: 'secret',
+		
+		# The attributes to use when creating the HMAC
+		attributes: [:transformations, :hash]
+	}
+	
+	hmac: 'secret',
+	
+	# Any other options you wish to apply by default
+}
+```
 
 # Server
 
-## Configuration
+BobRoss::Server is Rack Middleware that can be served on it's own or mounted on any
+Rack compatiable server.
+
+### Running the Server
+
+Rails example:
 
 ```ruby
-BobRoss.configure do
-  hmac: {required: , key: , data: }
-  watermarks: [...]
-  disk_limit:
-  memory_limit:
-  store
+Rails.application.routes.draw do
+  mount BobRoss::Server.new(bob_ross_configs), at: "/images"
 end
 ```
 
-## Running the Server
+### Configuration
+
+```ruby
+bob_ross_configs = {
+
+  # (Required) A Module or Class instance that must respond to `local?`, `last_modified`,
+  # `destination` (if local?), and `copy_to_tempfile` (if !local?)
+  store: my_store,
+  
+  # (Optional) Limit for max memory that image magick will use
+  memory_limit: '1G',
+  
+  # (Optional) Limit for max disk that image magick will use
+  disk_limit: '4G',
+  
+  # (Optional)
+  hmac: {
+    # Required if using signed paths/urls
+    key: 'secret',
+    
+    # If true the server will respond with a 404 not found to any urls that
+    # are not signed or incorrectly signed
+    required: true || false,
+    
+    # All the allowed ways to sign the url
+    attributes: [[:transformations], [:transformations, :hash, :format]]
+  },
+
+  # If using watermark(s), the path to the watermark(s)
+  watermarks: ["/app/assets/images/watermark.png"]
+
+  # Cache header to return with all valid responses
+  cache_control: 'public, max-age=172800, immutable'
+}
+```
 
 ### Automatic Content Negotiation
 
@@ -60,38 +149,65 @@ If the request contains the `DPR` header (see [Client Hints](http://caniuse.com/
 
 ### Querying
 
-* `Brrggbbaa` Sets the background color, defaults to `00000000`
+Below are valid BobRoss urls:
 
-* `E5772bd72` Sets the expiration of the link. The value is the current time in
-  seconds, hex encoded. Once the specified time has passed the server will
-  return a `410 Gone` HTTP status code.
+  - `/hash`
+  - `/hash.format`
+  - `/hash/filename`
+  - `/hash/filename.format`
+  - `/transformations/hash`
+  - `/transformations/hash.format`
+  - `/transformations/hash/filename`
+  - `/transformations/hash/filename.format`
+
+The __`hash`__ part of the URL is always lowercase and used to lookup the original image
+file.
+
+The __`format`__ is the image format, valid formats and extensions:
+
+  - [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR): `jxr`
+  - [JPEG](https://en.wikipedia.org/wiki/JPEG): `jpg` or `jpeg`
+  - [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics): `png`
+  - [WEBP](https://en.wikipedia.org/wiki/WebP): `webp`
+
+The __`filename`__ is the URL Encoded filename you want the image named as.
+
+The __`transformations`__ is composed of the following avaiable transformations that
+can be performed on the image. The options are alphabetically sorted with the exception
+of the `H` (HMAC option) which always comes first.
+
+  - `Brrggbbaa` Sets the background color, defaults to `00000000`
+
+  - `E5772bd72` Sets the expiration of the link. The value is the current time in
+    seconds, hex encoded. Once the specified time has passed the server will
+    return a `410 Gone` HTTP status code.
 
 !! Need to add to server
 
-* `G` Converts the image to Grayscale
+  - `G` Converts the image to Grayscale
 
-* `H62c9c35e70316e7e828bd70df283e3f1d9eb905aB505153` The SHA1 HMAC of any
-  of combination of the `format`, `hash`, and `transformations` sorted
-  alphabetically signed with a shared secret. The server can be configured
-  to only accept certain combinations.
+  - `H62c9c35e70316e7e828bd70df283e3f1d9eb905aB505153` The SHA1 HMAC of any
+    of combination of the `format`, `hash`, and `transformations` sorted
+    alphabetically signed with a shared secret. The server can be configured
+    to only accept certain combinations.
 
 !! need to sort on server/client also define tranformations
 
-* `L` Losslessly encode images.
+  - `L` Losslessly encode images.
 
-* `O` - Optimize the image for delivery
-  * Strips the image of any profiles, comments or any of the following PNG
-    chunks: bKGD, cHRM, EXIF, gAMA, iCCP, iTXt, sRGB, tEXt, zCCP, zTXt, date
-  * Converts the image to the sRGB Color profile
-  * Removes any progressive/interlaced encoding unless the `P` (progressive)
-    option is set.
-    !!! UNLESS jpg! need to do
-  * Set's the quality/compression to 85 for JPEG, and PNG
+  - `O` - Optimize the image for delivery
+    - Strips the image of any profiles, comments or any of the following PNG
+      chunks: bKGD, cHRM, EXIF, gAMA, iCCP, iTXt, sRGB, tEXt, zCCP, zTXt, date
+    - Converts the image to the sRGB Color profile
+    - Removes any progressive/interlaced encoding unless the `P` (progressive)
+      option is set.
+      !!! UNLESS jpg! need to do
+    - Set's the quality/compression to 85 for JPEG, and PNG
 
-* `P` Interlace or Progressively encodes the image
+  - `P` Interlace or Progressively encodes the image
   !!! Place interlace, should look at Line interlacing
 
-* `S{geometry}` Resize the image to the specified geometry where the geometry is:
+  - `S{geometry}` Resize the image to the specified geometry where the geometry is:
 
     - `width` - Width given, height automatically selected to preserve aspect
       ratio.
@@ -114,30 +230,28 @@ If the request contains the `DPR` header (see [Client Hints](http://caniuse.com/
       deminsions while perserving aspect ratio. Image is centered vertically
       and horizontally
 
-* `T`
+  - `T` Choose a format that supports transparency
 
-identify -format '%[opaque]' file => true is no tranparency
+  - `W{id}{gravity}{geometry}` Add a watermark to the image
 
-* `W{id}{gravity}{geometry}` W0se
-
-  - `id` A decimal encoding integer represting the id of the watermark
-    configured on the server
-  - `gravity` Where to place the watermark on the image. Valid options are:
-      * `c` for Center
-      * `n` for North
-      * `ne` for North East
-      * `e` for East
-      * `se` for South East
-      * `s` for South
-      * `sw` for South West
-      * `w` for West
-      * `nw` for North West
-  - `geometry` The geometry of the watermark on the image (see above),
-    including the following options:
-      * `scale%`
-      * `scale-x%xscale-y%`
-      * `area@`
-      * `{+-}x{+-}y` Can be appended to any geometry to set the horizontal
+    - `id` A decimal encoding integer represting the id of the watermark
+      configured on the server
+    - `gravity` Where to place the watermark on the image. Valid options are:
+      - `c` for Center
+      - `n` for North
+      - `ne` for North East
+      - `e` for East
+      - `se` for South East
+      - `s` for South
+      - `sw` for South West
+      - `w` for West
+      - `nw` for North West
+    - `geometry` The geometry of the watermark on the image (see above),
+      including the following options:
+      - `scale%`
+      - `scale-x%xscale-y%`
+      - `area@`
+      - `{+-}x{+-}y` Can be appended to any geometry to set the horizontal
         and vertical offsets `x` and `y`, specified in pixels. Signs are
         required for both. Offsets are not affected by % or other size
         operators. Default is `+0+0`
