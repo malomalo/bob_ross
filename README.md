@@ -7,14 +7,15 @@ A Rack Image Server to mulipulate images.
 
 BobRoss depends on the following:
 
- - `ruby`
- - `imagemagick`
+  - `ruby`
+  - `imagemagick`
 
 Optionally:
 
- - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image format
- - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR) image format
-
+  - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image
+    format
+  - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR)
+    image format
 
 # Client (Generating URLs)
 
@@ -33,15 +34,16 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 
 ### Available Options
 
-- `:background` Set the background color of an image; Given in RGB or RGBA in Hex format
-- `:expires` The time the URL will be expired and no longer valid. Should be used with 
-  an HMAC to prevent simply chaning the URL
+- `:background` Set the background color of an image; Given in RGB or RGBA in
+  Hex format
+- `:expires` The time the URL will be expired and no longer valid. Should be used
+  with an HMAC to prevent simply chaning the URL
 - `:grayscale` When set to true will make the image grayscale
 - `:hmac`
-  - When set to `true` performs an hmac using the `:transformations` and `:hash` parts
-    of the generated path
-  - Can be set to an array containing any of the following and will use those fields
-    to hmac the path:
+  - When set to `true` performs an hmac using the `:transformations` and `:hash`
+    parts of the generated path
+  - Can be set to an array containing any of the following and will use those
+    fields to hmac the path:
       - `:transformations`
       - `:hash`
       - `:format`
@@ -82,8 +84,8 @@ BobRoss.defaults = {
 
 # Server
 
-BobRoss::Server is Rack Middleware that can be served on it's own or mounted on any
-Rack compatiable server.
+BobRoss::Server is Rack Middleware that can be served on it's own or mounted on
+any Rack compatiable server.
 
 ### Running the Server
 
@@ -100,8 +102,9 @@ end
 ```ruby
 bob_ross_configs = {
 
-  # (Required) A Module or Class instance that must respond to `local?`, `last_modified`,
-  # `destination` (if local?), and `copy_to_tempfile` (if !local?)
+  # (Required) A Module or Class instance that must respond to `local?`,
+  # `last_modified` (if use_last_modified_header), `destination` (if local?),
+  # and `copy_to_tempfile` (if !local?)
   store: my_store,
   
   # (Optional) Limit for max memory that image magick will use
@@ -127,7 +130,9 @@ bob_ross_configs = {
   watermarks: ["/app/assets/images/watermark.png"]
 
   # Cache header to return with all valid responses
-  cache_control: 'public, max-age=172800, immutable'
+  cache_control: 'public, max-age=172800, immutable',
+  
+  use_last_modified_header: true || false
 }
 ```
 
@@ -135,7 +140,8 @@ bob_ross_configs = {
 
 #### Format
 
-If no format is specified BobRoss will choose the first format that matches the request from this list:
+If no format is specified BobRoss will choose the first format that matches the
+request from this list:
 
  - `webp` will be served if the `Accept` header includes `image/webp`
  - `jxr` if the `Accept` header includes `image/vnd.ms-photo`
@@ -145,7 +151,10 @@ If no format is specified BobRoss will choose the first format that matches the 
 
 #### DPR
 
-If the request contains the `DPR` header (see [Client Hints](http://caniuse.com/#feat=client-hints-dpr-width-viewport)) and a size is specified BobRoss will multiply the dimensions by the `DPR` value to produce an appropriately sized image for the display; retina or otherwise. BobRoss will return the image with the `Content-DRP` header.
+If the request contains the `DPR` header (see [Client Hints](http://caniuse.com/#feat=client-hints-dpr-width-viewport))
+and a size is specified BobRoss will multiply the dimensions by the `DPR` value
+to produce an appropriately sized image for the display; retina or otherwise.
+BobRoss will return the image with the `Content-DRP` header.
 
 ### Querying
 
@@ -160,8 +169,8 @@ Below are valid BobRoss urls:
   - `/transformations/hash/filename`
   - `/transformations/hash/filename.format`
 
-The __`hash`__ part of the URL is always lowercase and used to lookup the original image
-file.
+The __`hash`__ part of the URL is always lowercase and used to lookup the original
+image file.
 
 The __`format`__ is the image format, valid formats and extensions:
 
@@ -172,9 +181,9 @@ The __`format`__ is the image format, valid formats and extensions:
 
 The __`filename`__ is the URL Encoded filename you want the image named as.
 
-The __`transformations`__ is composed of the following avaiable transformations that
-can be performed on the image. The options are alphabetically sorted with the exception
-of the `H` (HMAC option) which always comes first.
+The __`transformations`__ is composed of the following avaiable transformations
+that can be performed on the image. The options are alphabetically sorted with
+the exception of the `H` (HMAC option) which always comes first.
 
   - `Brrggbbaa` Sets the background color, defaults to `00000000`
 
@@ -182,16 +191,12 @@ of the `H` (HMAC option) which always comes first.
     seconds, hex encoded. Once the specified time has passed the server will
     return a `410 Gone` HTTP status code.
 
-!! Need to add to server
-
   - `G` Converts the image to Grayscale
 
   - `H62c9c35e70316e7e828bd70df283e3f1d9eb905aB505153` The SHA1 HMAC of any
     of combination of the `format`, `hash`, and `transformations` sorted
     alphabetically signed with a shared secret. The server can be configured
     to only accept certain combinations.
-
-!! need to sort on server/client also define tranformations
 
   - `L` Losslessly encode images.
 

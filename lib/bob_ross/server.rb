@@ -33,6 +33,7 @@ class BobRoss::Server
   
   def initialize(settings={})
     @settings = settings
+    @settings[:last_modified_header] = true unless @settings.has_key?(:last_modified_header)
   end
   
   def call(env)
@@ -65,12 +66,18 @@ class BobRoss::Server
     
     transformations = extract_options(transformation_string)
     
-    last_modified = @settings[:store].last_modified(hash)
-    if env['HTTP_IF_MODIFIED_SINCE']
-      modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
-      return not_modified if last_modified < modified_since_time
+    if transformations[:expires]
+      return gone if transformations[:expires] <= Time.now
     end
-    response_headers['Last-Modified'] = last_modified.httpdate
+    
+    if @settings[:last_modified_header]
+      last_modified = @settings[:store].last_modified(hash)
+      if env['HTTP_IF_MODIFIED_SINCE']
+        modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
+        return not_modified if last_modified <= modified_since_time
+      end
+      response_headers['Last-Modified'] = last_modified.httpdate
+    end
 
     if env['HTTP_DPR'] && transformations[:resize]
       transformations[:dpr] = env['HTTP_DPR'].to_f
@@ -102,24 +109,30 @@ class BobRoss::Server
     
     image = BobRoss::Image.new(original_file, @settings)
     if !transformations[:format]
-      choices = ['image/webp', 'image/jpeg', 'image/png']
-      
-      if image.transparent || transformations[:transparent]
-        choices.delete('image/jpeg')
+      choice = nil
+      if env['HTTP_ACCEPT']
+        accepts = env['HTTP_ACCEPT'].split(',')
+        while choice.nil? && !accepts.empty?
+          accept = accepts.shift.sub(/;.+$/i, '')
+          if accept == "*/*" || accept == "image/*"
+            choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+          elsif ["image/webp", "image/jpeg", "image/png"].include?(accept)
+            choice = accept
+          end
+        end
+      else
+        choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
       end
+      return unsupported_media_type if choice.nil?
       
-      if !accept?(env, 'image/webp')
-        choices.delete('image/webp')
-      end
-      
-      transformations[:format] = MIME::Types[choices.first].first
+      transformations[:format] = MIME::Types[choice].first
     end
     
     transformed_file = image.transform(transformations)
     
     # Do this at the end to not cache errors
     response_headers['Content-Type'] = transformations[:format].to_s
-    response_headers['Cache-Control'] = @settings[:cache_control]
+    response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
     
     [200, response_headers, StreamFile.new(transformed_file)]
   ensure
@@ -138,6 +151,14 @@ class BobRoss::Server
     [404, {"Content-Type" => "text/plain"}, ["404 Not Found"]]
   end
   
+  def gone
+    [410, {"Content-Type" => "text/plain"}, ["410 Resource Gone Or No Longer Available"]]
+  end
+  
+  def unsupported_media_type
+    [415, {"Content-Type" => "text/plain"}, ["Accept is requesting an Unsupported Media Type"]]
+  end
+  
   def extract_options(string)
     transformations = {}
     return transformations unless string
@@ -147,7 +168,7 @@ class BobRoss::Server
       when 'B'.freeze
         transformations[:background] = "##{value}"
       when 'E'.freeze
-        transformations[:expires] = value.to_i(16)
+        transformations[:expires] = Time.at(value.to_i(16))
       when 'G'.freeze
         transformations[:grayscale] = true
       when 'H'.freeze

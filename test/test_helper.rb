@@ -8,6 +8,7 @@ require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
 require 'mocha'
+require 'mocha/test_unit'
 # require 'rack/test'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
@@ -17,15 +18,16 @@ class Minitest::Test
   
 #  include ActiveSupport::Testing::TimeHelpers
   
+  # File 'lib/active_support/testing/declarative.rb'
   def self.test(name, &block)
-    test_name = "test_#{name.gsub(/\s+/,'_')}".to_sym
-    defined = instance_method(test_name) rescue false
+    test_name = "test_#{name.gsub(/\s+/, '_')}".to_sym
+    defined = method_defined? test_name
     raise "#{test_name} is already defined in #{self}" if defined
     if block_given?
       define_method(test_name, &block)
     else
       define_method(test_name) do
-        flunk "No implementation provided for #{name}"
+        skip "No implementation provided for #{name}"
       end
     end
   end
