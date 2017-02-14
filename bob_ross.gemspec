@@ -15,13 +15,12 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   # Developoment 
+  s.add_development_dependency 'rack'
   s.add_development_dependency 'rake'
   s.add_development_dependency 'bundler'
   s.add_development_dependency 'minitest'
   s.add_development_dependency 'minitest-reporters'
   s.add_development_dependency 'mocha'
-  s.add_development_dependency 'webmock'
-  s.add_development_dependency 'sdoc-templates-42floors'
 
   # Runtime
   s.add_runtime_dependency 'cocaine'
