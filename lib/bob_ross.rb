@@ -10,8 +10,7 @@ class BobRoss
   attr_accessor :defaults
   
   def url(hash, options = {})
-    options = defaults.merge(options) if defaults
-    "#{options[:host]}#{path(hash, options)}"
+    "#{options[:host] || defaults[:host]}#{path(hash, options)}"
   end
 
   def path(hash, options = {})
@@ -75,10 +74,10 @@ class BobRoss
       when :resize
         string << 'S' + value.downcase
       when :watermark
-        string << if value.is_a?(Integer)
-          'W' + value.to_s + 'se'
-        else
-          'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s if value
+        if value.is_a?(Integer)
+          string << 'W' + value.to_s + 'se'
+        elsif value
+          string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
         end
       # when :quality
       #   string << "Q#{value}"
