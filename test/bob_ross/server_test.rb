@@ -124,5 +124,7 @@ class BobRossServerTest < Minitest::Test
     assert_equal 410, server.get("/E#{(time-10).to_s(16)}/opaque").status
   end
   
+  test 'if hmac present and hmac not configured'
   
+  test 'asking for a watermark when not configured'
 end
