@@ -67,7 +67,7 @@ class BobRoss::Image
       output_size = if transformations[:resize]
         parse_geometry(transformations[:resize])
       else
-        info[:geo]
+        @geometry
       end
       
       if !geo[:width] && !geo[:height]

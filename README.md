@@ -132,7 +132,7 @@ bob_ross_configs = {
   # Cache header to return with all valid responses
   cache_control: 'public, max-age=172800, immutable',
   
-  use_last_modified_header: true || false
+  last_modified_header: true || false
 }
 ```
 
