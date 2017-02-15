@@ -59,7 +59,7 @@ class BobRoss::Image
     params << "\\)"
 
     if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
-      transformations[:watermark_file] = BobRoss.watermarks[$1.to_i]
+      transformations[:watermark_file] = @settings[:watermarks][$1.to_i]
       transformations[:watermark_geometry] = $3
       transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
       
