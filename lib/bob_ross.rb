@@ -65,12 +65,14 @@ class BobRoss
         string << 'E' + value.to_i.to_s(16)
       when :grayscale
         string << 'G'
+      when :interlace
+        string << 'I'
       when :lossless
         string << 'L'
       when :optimize
         string << 'O'
-      when :progressive
-        string << 'P'
+      when :padding
+        string << 'P' + value.join(',')
       when :resize
         string << 'S' + value.downcase
       when :watermark

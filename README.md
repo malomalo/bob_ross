@@ -47,13 +47,13 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
       - `:transformations`
       - `:hash`
       - `:format`
+- `:interlace` Progressively encode / Interlace the image
 - `:lossless` When set to true the server will choose a lossless encoding and
   losslessly encode the image
 - `:optimize` Optimizes the image in the following ways:
   - Strips the image of any profiles, comments, or vairous PNG chunks
   - Converts the image to the sRGB Color profile
   - Set's the quality/compression to 85%
-- `:progressive` Progressively encode the image
 - `:resize` See section under "Querying" for valid resize options
 - `:transparent`
 - `:watermark`
@@ -198,20 +198,23 @@ the exception of the `H` (HMAC option) which always comes first.
     alphabetically signed with a shared secret. The server can be configured
     to only accept certain combinations.
 
+  - `I` Interlace or Progressively encodes the image
+  !!! Place interlace, should look at Line interlacing
+  
   - `L` Losslessly encode images.
 
   - `O` - Optimize the image for delivery
     - Strips the image of any profiles, comments or any of the following PNG
       chunks: bKGD, cHRM, EXIF, gAMA, iCCP, iTXt, sRGB, tEXt, zCCP, zTXt, date
     - Converts the image to the sRGB Color profile
-    - Removes any progressive/interlaced encoding unless the `P` (progressive)
+    - Removes any progressive/interlaced encoding unless the `I` (interlace)
       option is set.
       !!! UNLESS jpg! need to do
     - Set's the quality/compression to 85 for JPEG, and PNG
 
-  - `P` Interlace or Progressively encodes the image
-  !!! Place interlace, should look at Line interlacing
-
+  - `P{top},{left},{bottom},{right}` - Adds N pixels of padding to the image,
+    interperted like the CSS padding statement.
+  
   - `S{geometry}` Resize the image to the specified geometry where the geometry is:
 
     - `width` - Width given, height automatically selected to preserve aspect

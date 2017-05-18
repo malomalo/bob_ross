@@ -173,12 +173,14 @@ class BobRoss::Server
         transformations[:grayscale] = true
       when 'H'.freeze
         transformations[:hmac] = value
+      when 'I'.freeze
+        transformations[:interlace] = true
       when 'L'.freeze
         transformations[:lossless] = true
       when 'O'.freeze
         transformations[:optimize] = true
       when 'P'.freeze
-        transformations[:progressive] = true
+        transformations[:padding] = value
       when 'S'.freeze
         transformations[:resize] = CGI.unescape(value)
       when 'T'.freeze

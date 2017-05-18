@@ -40,6 +40,29 @@ class BobRoss::Image
   def transform(transformations)
     return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format]
     
+    if transformations[:padding]
+      padding = transformations[:padding].split(',').map(&:to_i)
+      padding[1] ||= padding[0]
+      padding[2] ||= padding[0]
+      padding[3] ||= padding[1]
+      transformations[:padding] = {
+        top: padding[0],
+        right: padding[1],
+        bottom: padding[2],
+        left: padding[3]
+      }
+      
+      if transformations[:resize]
+        g = parse_geometry(transformations[:resize])
+        g[:width] -= (transformations[:padding][:left] + transformations[:padding][:right])
+        g[:height] -= (transformations[:padding][:top] + transformations[:padding][:bottom])
+        transformations[:resize] = "#{g[:width]}x#{g[:height]}#{transformations[:resize].sub(/^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?/, '')}"
+      else
+        @geometry[:width] += transformations[:padding][:left] + transformations[:padding][:right]
+        @geometry[:height] += transformations[:padding][:top] + transformations[:padding][:bottom]
+      end
+    end
+    
     params = default_args
     
     transformations[:background] ||= '#00000000'
@@ -58,18 +81,18 @@ class BobRoss::Image
     params << "-alpha remove" if transformations[:background]
     params << "\\)"
 
+    output_size = if transformations[:resize]
+      parse_geometry(transformations[:resize])
+    else
+      @geometry
+    end
+
     if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
       transformations[:watermark_file] = @settings[:watermarks][$1.to_i]
       transformations[:watermark_geometry] = $3
       transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
       
       geo = parse_geometry(transformations[:watermark_geometry])
-      output_size = if transformations[:resize]
-        parse_geometry(transformations[:resize])
-      else
-        @geometry
-      end
-      
       if !geo[:width] && !geo[:height]
         if output_size[:width] * output_size[:height] <= 60_000
           geo[:width] = ([output_size[:width], output_size[:height]].max * 0.10).floor
@@ -100,6 +123,18 @@ class BobRoss::Image
       transformations[:extent] = transformations[:resize][0..-2]
       transformations[:resize] = transformations[:resize][0..-2]
     end
+    
+    if transformations[:padding]
+      params << "-gravity center -extent :extent -gravity center -extent :padding"
+      
+      transformations[:extent] = "#{output_size[:width]}x#{output_size[:height]}"
+      w = output_size[:width] + transformations[:padding][:left] + transformations[:padding][:right]
+      h = output_size[:height] + transformations[:padding][:top] + transformations[:padding][:bottom]
+      x = transformations[:padding][:right] - transformations[:padding][:left]
+      y = transformations[:padding][:bottom] - transformations[:padding][:top]
+      
+      transformations[:padding] = "#{w}x#{h}#{sprintf("%+d", x)}#{sprintf("%+d", y)}"
+    end
       
     transformations.each do |key, value|
       case key
@@ -111,10 +146,10 @@ class BobRoss::Image
         params << "-define png:compression-level=9"
         params << "-define png:compression-strategy=1"
         params << "-define png:exclude-chunk=all"
-        params << "-interlace none" unless transformations[:progressive]
+        params << "-interlace none" unless transformations[:interlace]
         params << "-colorspace sRGB"
         params << "-strip"
-      when :progressive
+      when :interlace
         params << "-interlace Plane"
       when :grayscale
         params << "-colorspace gray"

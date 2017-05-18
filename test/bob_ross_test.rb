@@ -9,14 +9,15 @@ class BobRossTest < Minitest::Test
   test "encode_transformations" do
     time = 1449100194
     
-    assert_equal "BeeddccaaE#{time.to_s(16)}GLOPS500x500^W0se", BobRoss.encode_transformations({
+    assert_equal "BeeddccaaE#{time.to_s(16)}GILOP1,2,3,4S500x500^W0se", BobRoss.encode_transformations({
       optimize: true,
-      progressive: true,
+      interlace: true,
       resize: '500x500^',
       background: 'eeddccaa',
       expires: time,
       grayscale: true,
       lossless: true,
+      padding: [1,2,3,4],
       transparent: true,
       watermark: 0
     })
@@ -26,7 +27,7 @@ class BobRossTest < Minitest::Test
     time = 1449100194
     BobRoss.defaults = {
       optimize: true,
-      progressive: true,
+      interlace: true,
       resize: '500x500^',
       background: 'eeddccaa',
       expires: time,
@@ -42,9 +43,8 @@ class BobRossTest < Minitest::Test
         attributes: [:hash]
       }
     }
-
     
-    assert_equal "https://example.com/H41482f0113cc9843f0aeaa10631936644a164059BeeddccaaE#{time.to_s(16)}GLOPS500x500%5EW0se/hash/image.png", BobRoss.url('hash')
+    assert_equal "https://example.com/H41482f0113cc9843f0aeaa10631936644a164059BeeddccaaE#{time.to_s(16)}GILOS500x500%5EW0se/hash/image.png", BobRoss.url('hash')
   end
   
   test "url" do
@@ -84,11 +84,11 @@ class BobRossTest < Minitest::Test
     assert_equal '/Hc109ec7293d935546fab58a51e7b925c1bda1b73O/hash', BobRoss.path('hash', optimize: true, hmac: {key: 'secret', attributes: [:transformations, :hash, :format]})
     
     # /hash.format
-    assert_equal '/P/hash.jpg', BobRoss.path('hash', progressive: true, format: :jpg)
-    assert_equal '/Hb5a0ae0308467d83ee26f66c5e4c2874974c398fP/hash.jpg', BobRoss.path('hash', progressive: true, format: :jpg, hmac: {key: 'secret'})
-    assert_equal '/H41482f0113cc9843f0aeaa10631936644a164059P/hash.jpg', BobRoss.path('hash', progressive: true, format: :jpg, hmac: {key: 'secret', attributes: [:hash]})
-    assert_equal '/Hb5a0ae0308467d83ee26f66c5e4c2874974c398fP/hash.jpg', BobRoss.path('hash', progressive: true, format: :jpg, hmac: {key: 'secret', attributes: [:transformations, :hash]})
-    assert_equal '/H9a8549ad413fac0c44bb8a2ef8a54aa8086734f5P/hash.jpg', BobRoss.path('hash', progressive: true, format: :jpg, hmac: {key: 'secret', attributes: [:transformations, :hash, :format]})
+    assert_equal '/I/hash.jpg', BobRoss.path('hash', interlace: true, format: :jpg)
+    assert_equal '/Hdd37bbe6fc1c96742293425071393723e3c54e3eI/hash.jpg', BobRoss.path('hash', interlace: true, format: :jpg, hmac: {key: 'secret'})
+    assert_equal '/H41482f0113cc9843f0aeaa10631936644a164059I/hash.jpg', BobRoss.path('hash', interlace: true, format: :jpg, hmac: {key: 'secret', attributes: [:hash]})
+    assert_equal '/Hdd37bbe6fc1c96742293425071393723e3c54e3eI/hash.jpg', BobRoss.path('hash', interlace: true, format: :jpg, hmac: {key: 'secret', attributes: [:transformations, :hash]})
+    assert_equal '/H6daa14c7133b00a5a5ef8f23671b97d0dd5ad149I/hash.jpg', BobRoss.path('hash', interlace: true, format: :jpg, hmac: {key: 'secret', attributes: [:transformations, :hash, :format]})
     
     # /hash/filename
     assert_equal '/S500x500/hash/my+Filename%26', BobRoss.path('hash', resize: '500x500', filename: 'my Filename&')
