@@ -82,6 +82,7 @@ class BobRoss::Server
     if env['HTTP_DPR'] && transformations[:resize]
       transformations[:dpr] = env['HTTP_DPR'].to_f
       transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+      transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] } if transformations[:padding]
       response_headers['Content-DPR'] = transformations[:dpr].to_s
     end
 
