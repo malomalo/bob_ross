@@ -36,6 +36,7 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 
 - `:background` Set the background color of an image; Given in RGB or RGBA in
   Hex format
+- `:crop` Crop the image after any other tranformations.
 - `:expires` The time the URL will be expired and no longer valid. Should be used
   with an HMAC to prevent simply chaning the URL
 - `:grayscale` When set to true will make the image grayscale
@@ -186,6 +187,20 @@ that can be performed on the image. The options are alphabetically sorted with
 the exception of the `H` (HMAC option) which always comes first.
 
   - `Brrggbbaa` Sets the background color, defaults to `00000000`
+
+  - `C{geometry}{offset}` Crops the image to the specified geometry where
+    geometry is:
+
+      - `width` - Width given, height automatically set to image height.
+      - `xheight` - Height given, width automatically set to image width.
+      - `widthxheight` - Width & Height explicitly given.
+
+      And offset is:
+
+      - `{+-}x{+-}y` Can be appended to any geometry to set the horizontal
+        and vertical offsets `x` and `y`, specified in pixels. Signs are
+        required for both. Offsets are not affected by % or other size
+        operators. Default is `+0+0`
 
   - `E5772bd72` Sets the expiration of the link. The value is the current time in
     seconds, hex encoded. Once the specified time has passed the server will

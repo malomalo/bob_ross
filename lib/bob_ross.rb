@@ -61,6 +61,8 @@ class BobRoss
       case key
       when :background
         string << 'B' + value.downcase
+      when :crop
+        string << 'C' + value.downcase
       when :expires
         string << 'E' + value.to_i.to_s(16)
       when :grayscale

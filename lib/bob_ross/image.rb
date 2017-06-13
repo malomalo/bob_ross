@@ -72,8 +72,8 @@ class BobRoss::Image
     if transformations[:resize]
       params << "-resize :resize"
       if transformations[:resize].end_with?('*')
-        params << "-gravity center -crop :crop"
-        transformations[:crop] = transformations[:resize][0..-2] + "+0+0"
+        params << "-gravity center -crop :resize_crop"
+        transformations[:resize_crop] = transformations[:resize][0..-2] + "+0+0"
         transformations[:resize] = transformations[:resize][0..-2] + "^"
       end
     end
@@ -134,6 +134,16 @@ class BobRoss::Image
       y = transformations[:padding][:bottom] - transformations[:padding][:top]
       
       transformations[:padding] = "#{w}x#{h}#{sprintf("%+d", x)}#{sprintf("%+d", y)}"
+    end
+
+    if transformations[:crop]
+      params << '+repage -crop :crop'
+      if transformations[:crop] =~ /[+-]\d+[+-]\d+\Z/
+      elsif transformations[:crop] =~ /[+-]\d+\Z/
+        transformations[:crop] += "+0"
+      else
+        transformations[:crop] += "+0+0"
+      end
     end
       
     transformations.each do |key, value|

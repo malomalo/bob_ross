@@ -83,6 +83,7 @@ class BobRoss::Server
       transformations[:dpr] = env['HTTP_DPR'].to_f
       transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
       transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] } if transformations[:padding]
+      transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] } if transformations[:crop]
       response_headers['Content-DPR'] = transformations[:dpr].to_s
     end
 
@@ -168,6 +169,8 @@ class BobRoss::Server
       case key
       when 'B'.freeze
         transformations[:background] = "##{value}"
+      when 'C'.freeze
+        transformations[:crop] = value
       when 'E'.freeze
         transformations[:expires] = Time.at(value.to_i(16))
       when 'G'.freeze
