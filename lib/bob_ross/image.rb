@@ -1,5 +1,13 @@
 class BobRoss::Image
 
+  GRAVITIES = {
+    'n' => 'North',
+    'e' => 'East',
+    's' => 'South',
+    'w' => 'West',
+    'c' => 'Center'
+  }
+  
   attr_accessor :mime_type, :opaque, :geometry
   
   def initialize(file, settings = {})
@@ -71,10 +79,17 @@ class BobRoss::Image
     params << "\\(" << ":input -auto-orient"
     if transformations[:resize]
       params << "-resize :resize"
-      if transformations[:resize].end_with?('*')
-        params << "-gravity center -crop :resize_crop"
-        transformations[:resize_crop] = transformations[:resize][0..-2] + "+0+0"
-        transformations[:resize] = transformations[:resize][0..-2] + "^"
+      if idx = transformations[:resize].index('*')
+        params << "-gravity :resize_gravity -crop :resize_crop"
+        if transformations[:resize] =~ /[\*\^](\w+)$/i
+          transformations[:resize_gravity] = $1.gsub(/\w/) { |s| GRAVITIES[s] }
+        else
+          transformations[:resize_gravity] = 'Center'
+        end
+
+        idx -= 1
+        transformations[:resize_crop] = transformations[:resize][0..idx] + "+0+0"
+        transformations[:resize] = transformations[:resize][0..idx] + "^"
       end
     end
 
@@ -90,7 +105,8 @@ class BobRoss::Image
     if transformations[:watermark] =~ /^(\d+)(\w{2})(.*)$/i
       transformations[:watermark_file] = @settings[:watermarks][$1.to_i]
       transformations[:watermark_geometry] = $3
-      transformations[:watermark_postion] = $2.sub('n', 'North').sub('e', 'East').sub('s', 'South').sub('w', 'West')
+      
+      transformations[:watermark_postion] = $2.gsub(/\w/) { |s| GRAVITIES[s] } 
       
       geo = parse_geometry(transformations[:watermark_geometry])
       if !geo[:width] && !geo[:height]
@@ -118,14 +134,22 @@ class BobRoss::Image
       end
     end
     
-    if transformations[:resize] && transformations[:resize].end_with?('#')
-      params << "-gravity center -extent :extent"
-      transformations[:extent] = transformations[:resize][0..-2]
-      transformations[:resize] = transformations[:resize][0..-2]
+    if idx = transformations[:resize]&.index('#')
+      params << "-gravity :resize_gravity"
+      if transformations[:resize] =~ /[\#\^](\w+)$/i
+        transformations[:resize_gravity] = $1.gsub(/\w/) { |s| GRAVITIES[s] }
+        
+      else
+        transformations[:resize_gravity] = 'Center'
+      end
+      
+      params << "-extent :extent"
+      transformations[:extent] = transformations[:resize][0..idx]
+      transformations[:resize] = transformations[:resize][0..idx]
     end
     
     if transformations[:padding]
-      params << "-gravity center -extent :extent -gravity center -extent :padding"
+      params << "-gravity Center -extent :extent -gravity center -extent :padding"
       
       transformations[:extent] = "#{output_size[:width]}x#{output_size[:height]}"
       w = output_size[:width] + transformations[:padding][:left] + transformations[:padding][:right]
@@ -168,7 +192,7 @@ class BobRoss::Image
     transformations.delete(:lossless)
     
     params << ":output"
-    output = Tempfile.new(['blob', ".#{transformations[:format].preferred_extension}"], :binmode => true)
+    output = Tempfile.new(['blob', ".#{transformations[:format].preferred_extension}"], binmode: true)
     
     begin
       command = Cocaine::CommandLine.new("convert", params.join(' '))

@@ -230,7 +230,7 @@ the exception of the `H` (HMAC option) which always comes first.
   - `P{top},{left},{bottom},{right}` - Adds N pixels of padding to the image,
     interperted like the CSS padding statement.
   
-  - `S{geometry}` Resize the image to the specified geometry where the geometry is:
+  - `S{geometry}{gravity}` Resize the image to the specified geometry where the geometry is:
 
     - `width` - Width given, height automatically selected to preserve aspect
       ratio.
@@ -247,11 +247,25 @@ the exception of the `H` (HMAC option) which always comes first.
     - `widthxheight<` - Enlarges an image with dimension(s) smaller than the
       corresponding width and/or height argument(s).
     - `widthxheight#` - Width and height given, image fit to be contained by
-      deminsions while perserving aspect ratio. Image is centered vertically
-      and horizontally and a background color is applied.
+      deminsions while perserving aspect ratio. Image is positioned according to
+      the gravity or centered vertically and horizontally if not given and a
+      background color is applied.
     - `widthxheight*` - Width and height given, image fit/croped to cover the
-      deminsions while perserving aspect ratio. Image is centered vertically
-      and horizontally
+      deminsions while perserving aspect ratio. Image is positioned according to
+      the gravity or centered centered vertically and horizontally if not given.
+      
+    And the gravity is on of the following:
+
+    - `gravity` Where to place the watermark on the image. Valid options are:
+      - `c` for Center
+      - `n` for North
+      - `ne` for North East
+      - `e` for East
+      - `se` for South East
+      - `s` for South
+      - `sw` for South West
+      - `w` for West
+      - `nw` for North West
 
   - `T` Choose a format that supports transparency
 
