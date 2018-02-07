@@ -87,9 +87,8 @@ class BobRoss::Image
           transformations[:resize_gravity] = 'Center'
         end
 
-        idx -= 1
-        transformations[:resize_crop] = transformations[:resize][0..idx] + "+0+0"
-        transformations[:resize] = transformations[:resize][0..idx] + "^"
+        transformations[:resize_crop] = transformations[:resize][0...idx] + "+0+0"
+        transformations[:resize] = transformations[:resize][0...idx] + "^"
       end
     end
 
@@ -144,8 +143,8 @@ class BobRoss::Image
       end
       
       params << "-extent :extent"
-      transformations[:extent] = transformations[:resize][0..idx]
-      transformations[:resize] = transformations[:resize][0..idx]
+      transformations[:extent] = transformations[:resize][0...idx]
+      transformations[:resize] = transformations[:resize][0...idx]
     end
     
     if transformations[:padding]
