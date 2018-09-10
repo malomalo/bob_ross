@@ -4,19 +4,23 @@ $LOAD_PATH << File.expand_path('../lib', __FILE__)
 
 require 'bob_ross'
 require 'bob_ross/server'
+require 'bob_ross/palette'
+require 'bob_ross/palette/server'
+require 'bob_ross/palette/client'
 require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
 require 'mocha'
 require 'mocha/test_unit'
 # require 'rack/test'
+require 'active_support/testing/time_helpers'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 
 # File 'lib/active_support/testing/declarative.rb', somewhere in rails....
 class Minitest::Test
   
-#  include ActiveSupport::Testing::TimeHelpers
+ include ActiveSupport::Testing::TimeHelpers
   
   # File 'lib/active_support/testing/declarative.rb'
   def self.test(name, &block)
@@ -30,6 +34,16 @@ class Minitest::Test
         skip "No implementation provided for #{name}"
       end
     end
+  end
+  
+  def wait_until
+    while !yield
+      sleep 0.1
+    end
+  end
+
+  def fixture(path)
+    File.expand_path(File.join('../fixtures', path), __FILE__)
   end
   
   # test/unit backwards compatibility methods

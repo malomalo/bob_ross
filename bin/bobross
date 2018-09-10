@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require 'optparse'
+require File.expand_path('../../lib/bob_ross/palette/server', __FILE__)
+
+
+case ARGV.shift.downcase.strip
+when "palette"
+  directory = ARGV.shift
+
+  if directory.nil? || !File.directory?(directory)
+    puts "Usage: bobross palette dir [options...]"
+    exit 1
+  end
+  
+  BobRoss::PaletteServer.new(directory).run
+end

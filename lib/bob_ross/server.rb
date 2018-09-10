@@ -14,6 +14,8 @@ require 'bob_ross/image'
 
 class BobRoss::Server
   
+  SUPPORTED_FORMATS = ["image/webp", "image/jpeg", "image/png"]
+
   class StreamFile
     def initialize(file)
       @file = File.open(file.path)
@@ -29,10 +31,11 @@ class BobRoss::Server
     end
   end
   
-  attr_accessor :settings
+  attr_accessor :settings, :palette
   
   def initialize(settings={})
     @settings = settings
+    @palette = settings[:palette]
     @settings[:last_modified_header] = true unless @settings.has_key?(:last_modified_header)
   end
   
@@ -47,14 +50,14 @@ class BobRoss::Server
     transformation_string = match[1] || ''
     hash = match[2]
     requested_format = match[3]
-
+    
     if transformation_string && transformation_string.start_with?('H')
       match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
       provided_hmac = match[1]
-      transformation_data = match[2]
+      transformation_string = match[2]
       
       if !valid_hmac?(provided_hmac, @settings[:hmac][:attributes], {
-        transformations: transformation_data,
+        transformations: transformation_string,
         hash: hash,
         format: requested_format
       })
@@ -102,6 +105,40 @@ class BobRoss::Server
         response_headers['Vary'] = 'Accept'
       end
     end
+
+    cache_key = [
+      hash,
+      Digest::SHA1.hexdigest(transformations.map {|k,v| "#{k}=#{v}"}.sort.join('&'))
+    ].join('/')
+    
+    if accepts = env['HTTP_ACCEPT']
+      accepts = accepts.split(',')
+      accepts.each do |a|
+        a.sub!(/;.+$/i, '');
+        a.strip!
+      end
+      accepts.select! do |a|
+        a == '*/*' || a == 'image/*' || SUPPORTED_FORMATS.include?(a)
+      end
+
+      return unsupported_media_type if accepts.empty?
+
+      cache_key << "/#{Digest::SHA1.hexdigest(accepts.join(','))}"
+    else
+      cache_key << "/#{Digest::SHA1.hexdigest('')}"
+    end
+
+    if cached_file = @palette&.get(cache_key)
+      begin
+        mime_command = Cocaine::CommandLine.new("file", '--mime -b :file')
+        mime_type = MIME::Types[mime_command.run({ file: cached_file }).split(';')[0]].first
+        response_headers['Content-Type'] = mime_type.to_s
+        response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+        response_headers['From-Palette'] = '1';
+        return [200, response_headers, StreamFile.new(File.open(cached_file))]
+      rescue Errno::ENOENT
+      end
+    end
     
     original_file = if @settings[:store].local?
       File.open(@settings[:store].destination(hash))
@@ -112,13 +149,12 @@ class BobRoss::Server
     image = BobRoss::Image.new(original_file, @settings)
     if !transformations[:format]
       choice = nil
-      if env['HTTP_ACCEPT']
-        accepts = env['HTTP_ACCEPT'].split(',')
+      if accepts
         while choice.nil? && !accepts.empty?
-          accept = accepts.shift.sub(/;.+$/i, '')
+          accept = accepts.shift
           if accept == "*/*" || accept == "image/*"
             choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
-          elsif ["image/webp", "image/jpeg", "image/png"].include?(accept)
+          elsif SUPPORTED_FORMATS.include?(accept)
             choice = accept
           end
         end
@@ -135,6 +171,9 @@ class BobRoss::Server
     # Do this at the end to not cache errors
     response_headers['Content-Type'] = transformations[:format].to_s
     response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+    response_headers['From-Palette'] = '0';
+    
+    @palette&.set(cache_key, transformed_file.path)
     
     [200, response_headers, StreamFile.new(transformed_file)]
   ensure
