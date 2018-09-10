@@ -1,10 +1,13 @@
+require 'uri'
+
 class BobRoss
   class PaletteClient
       
-    def initialize(host: '127.0.0.1', port: 8561)
-      @host = host
-      @port = port
-      @socket = TCPSocket.open(host, port)
+    def initialize(host = '127.0.0.1:8561')
+      uri = URI.parse(host)
+      @host = uri.host
+      @port = uri.port
+      @socket = TCPSocket.open(uri.host, uri.port)
     end
       
     def send(command)

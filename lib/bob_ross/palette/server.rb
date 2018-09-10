@@ -1,3 +1,4 @@
+require 'uri'
 require 'socket'
 require 'thread'
 require File.expand_path('../../palette', __FILE__)
@@ -8,13 +9,21 @@ class BobRoss
 
     STOP_COMMAND    = "?"
     HALT_COMMAND    = "!"
+    DEFAULT_SIZE    = 1_073_741_824 # 1GB
 
     attr_reader :palette
     
-    def initialize(path, size = 1_073_741_824, host: '127.0.0.1', port: 8561)
-      @host = host
-      @port = port
-      @palette = Palette.new(path, size)
+    def initialize(path, options = {})
+      options = ({
+        size: DEFAULT_SIZE,
+        url: 'palette://127.0.0.1:8561'
+      }).merge(options)
+      
+      uri = URI.parse(options[:url])
+      
+      @host = options[:host] || uri.host
+      @port = options[:port] || uri.port
+      @palette = Palette.new(path, options[:size])
       @check, @notify = IO.pipe
       @clients = []
       
