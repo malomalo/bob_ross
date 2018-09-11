@@ -23,7 +23,7 @@ class BobRoss::Server
     
     def each
       @file.seek(0)
-      while part = @file.read(8192)
+      while part = @file.read(16_384)
         yield part
       end
     ensure
@@ -71,6 +71,7 @@ class BobRoss::Server
     
     if transformations[:expires]
       return gone if transformations[:expires] <= Time.now
+      transformation_string.gsub!(/E([^A-Z]+)/, '') # Remove Expires for cache
     end
     
     if @settings[:last_modified_header]
@@ -106,11 +107,6 @@ class BobRoss::Server
       end
     end
 
-    cache_key = [
-      hash,
-      Digest::SHA1.hexdigest(transformations.map {|k,v| "#{k}=#{v}"}.sort.join('&'))
-    ].join('/')
-    
     if accepts = env['HTTP_ACCEPT']
       accepts = accepts.split(',')
       accepts.each do |a|
@@ -122,21 +118,43 @@ class BobRoss::Server
       end
 
       return unsupported_media_type if accepts.empty?
-
-      cache_key << "/#{Digest::SHA1.hexdigest(accepts.join(','))}"
-    else
-      cache_key << "/#{Digest::SHA1.hexdigest('')}"
     end
 
-    if cached_file = @palette&.get(cache_key)
-      begin
-        mime_command = Cocaine::CommandLine.new("file", '--mime -b :file')
-        mime_type = MIME::Types[mime_command.run({ file: cached_file }).split(';')[0]].first
-        response_headers['Content-Type'] = mime_type.to_s
+    cache_hits = @palette&.get(hash, transformation_string)
+    if cache_hits && !cache_hits.empty?
+      hit = if transformations[:format]
+        cache_hits.find { |h| h[4] == transformations[:format] }
+      else
+        choice = nil
+        image_transparent = cache_hits.first[1]
+
+        acs = accepts.dup
+        if acs
+          while choice.nil? && !acs.empty?
+            accept = acs.shift
+            if accept == "*/*" || accept == "image/*"
+              choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+            elsif SUPPORTED_FORMATS.include?(accept)
+              choice = accept
+            end
+          end
+        else
+          choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+        end
+        return unsupported_media_type if choice.nil?
+
+        cache_hits.find { |h| h[4] == choice }
+      end
+
+      if hit
+        response_headers['Content-Type'] = hit[4]
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         response_headers['From-Palette'] = '1';
-        return [200, response_headers, StreamFile.new(File.open(cached_file))]
-      rescue Errno::ENOENT
+        return [
+          200,
+          response_headers,
+          StreamFile.new(File.open(@palette.destination(hash, transformation_string, hit[4])))
+        ]
       end
     end
     
@@ -171,9 +189,9 @@ class BobRoss::Server
     # Do this at the end to not cache errors
     response_headers['Content-Type'] = transformations[:format].to_s
     response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-    response_headers['From-Palette'] = '0';
+    response_headers['From-Palette'] = '0' if @palette
     
-    @palette&.set(cache_key, transformed_file.path)
+    @palette&.set(hash, image.transparent, transformation_string, transformations[:format].to_s, transformed_file.path)
     
     [200, response_headers, StreamFile.new(transformed_file)]
   ensure

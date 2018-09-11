@@ -1,176 +1,94 @@
+require 'sqlite3'
 require 'fileutils'
 
 class BobRoss
   class Palette
   
-    attr_reader :path, :bytesize, :indexing, :purging, :maxbytesize, :purge_to
-  
-    def initialize(path, size = 1_073_741_824)
+    attr_reader :path, :size, :max_size, :purge_to
+    
+    def initialize(path, cachefile, size: 1_073_741_824)
       @path = path
-      @partition = true
-      @partition_depth = 3
-      @semaphore = Mutex.new
+      @max_size = size
+      @db = SQLite3::Database.new(cachefile)
+      migrate
 
-      @index = {}
-      @indexing = false
-      @bytesize = 0
-      @maxbytesize = size
-      @purging = false
-      @purge_to = (@maxbytesize * 0.9).round
-      
-      FileUtils.mkdir_p(path)
-      index
-    end
+      @purge_size = (@max_size * 0.05).round
 
-    def index
-      @semaphore.synchronize do
-        if !@indexing
-          @indexing = true
-          Thread.new { index! }
-        end
-      end
-    end
-    
-    def index!
-      scan(@path) do |file|
-        key = file.delete_prefix(@path).gsub('/', '')
-        if !@index.has_key?(key)
-          stat = File.stat(file)
-          add_entry(Palette::Entry.new(key, stat.atime, stat.size))
-        end
-      end
-      
-      @indexing = false
-    end
-    
-    def purge!
-      run_purge = @semaphore.synchronize do
-        if @purging
-          false
-        else
-          @purging = true
-        end
-      end
+      @insert = @db.prepare(<<-SQL)
+        INSERT INTO transformations (hash, transparent, transform, size, transformed_mime, transformed_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      SQL
 
-      if run_purge
-        Thread.new do
-          @index.values.sort_by(&:timestamp).take_while do |entry|
-            remove_entry(entry.key)
-            @bytesize > @purge_to
-          end
-          @semaphore.synchronize { @purging = false }
-        end
-      end
+      @select = @db.prepare(<<-SQL)
+        SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
+        WHERE hash = ? AND transform = ?
+      SQL
     end
     
-    def add_entry(entry)
-      @semaphore.synchronize do
-        if old_entry = @index[entry.key]
-          @index[entry.key] = entry
-          @bytesize += entry.bytesize
-          @bytesize -= old_entry.bytesize
-        else
-          @index[entry.key] = entry
-          @bytesize += entry.bytesize
-        end
-      end
-      
-      if @bytesize > @maxbytesize && !@purging
-        purge!
-      end
-    end
-    
-    def remove_entry(key)
-      @semaphore.synchronize do
-        if entry = @index.delete(key)
-          @bytesize -= entry.bytesize
-        end
-        entry
-      end
-    end
-    
-    def scan(dir, first_call: true, &block)
-      Dir.children(dir).each do |child|
-        child = File.join(dir, child)
-        if File.directory?(child)
-          scan(child, &block)
-        else
-          yield child
-        end
-      end
-    end
-    
-    def get(key)
-      dest = destination(key)
-      
-      if entry = @index[key]
-        if File.exist?(dest)
-          entry.timestamp = Time.now
-          dest
-        else
-          remove_entry(key)
-          nil
-        end
-      elsif @indexing
-        if File.exist?(dest)
-          stat = File.stat(dest)
-          add_entry(Palette::Entry.new(key, stat.atime, stat.size))
-          dest
-        else
-          nil
-        end
-      else
-        nil
-      end
-    end
+    def migrate
+      tables = @db.execute(<<-SQL).flatten
+        SELECT name FROM sqlite_master
+        WHERE type='table'
+        ORDER BY name;
+      SQL
 
-    def set(key, path)
-      dest = destination(key)
+      if !tables.include?('transformations')
+        @db.execute <<-SQL
+          create table transformations (
+            hash VARCHAR,
+            transparent BOOLEAN,
+            transform VARCHAR,
+            size INTEGER,
+            transformed_mime VARCHAR,
+            transformed_at INTEGER
+          );
+          
+          CREATE UNIQUE INDEX thttm ON transformations (hash, transform, transformed_mime);
+          CREATE INDEX tta ON transformations (transformed_at);
+        SQL
+      end
+    end
+    
+    def get(hash, transform)
+      @select.execute(hash, transform).to_a
+    end
+    
+    def set(hash, transparent, transform, mime, path)
+      dest = destination(hash, transform, mime)
       FileUtils.mkdir_p(File.dirname(dest))
       FileUtils.cp(path, dest)
     
       stat = File.stat(dest)
-      add_entry(Palette::Entry.new(key, stat.atime, stat.size))
+      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
+    end
+
+    def size
+      @db.execute("SELECT SUM(size) FROM transformations").first&.first || 0
     end
     
-    def del(key)
-      if entry = remove_entry(key)
-        FileUtils.rm(destination(key))
+    def purge!
+      total_size = size
+      if total_size > @max_size
+        purged = 0
+        need_to_purge = total_size - (@max_size - @purge_size)
+        while purged < need_to_purge
+          r = @db.execute("SELECT hash, transform, transformed_mime, size FROM transformations ORDER BY transformed_at ASC LIMIT 1").first
+          @select = @db.execute(<<-SQL, r[0], r[1], r[2])
+            DELETE FROM transformations
+            WHERE hash = ? AND transform = ? AND transformed_mime = ?
+          SQL
+          FileUtils.rm(destination(r[0], r[1], r[2]))
+          purged += r[3]
+        end
       end
     end
 
-    # def fetch(key)
-    #   file = get(key)
-    #   if file.nil?
-    #     file = yield
-    #     set(key, file)
-    #   end
-    #   file
-    # end
-  
-    def destination(key)
-      File.join(@path, partition(key))
-    end
-  
-    def partition(key)
-      if @partition
-        split = key.scan(/.{1,4}/)
-        split.shift(@partition_depth).join("/") + split.join("")
-      else
-        key
-      end
-    end
-  end
-end
+    def destination(hash, transform, mime)
+      split = hash.scan(/.{1,4}/)
+      split = split.shift(4).join("/") + split.join("")
 
-class BobRoss::Palette::Entry
-  
-  attr_accessor :key, :timestamp, :bytesize
-  
-  def initialize(key, timestamp, size)
-    @key = key
-    @timestamp = timestamp
-    @bytesize = size
+      File.join(@path, [split, transform, mime.split('/').last].join('/'))
+    end
+
   end
-  
 end
