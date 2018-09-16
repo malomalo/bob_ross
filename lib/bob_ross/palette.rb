@@ -10,6 +10,7 @@ class BobRoss
       @path = path
       @max_size = size
       @db = SQLite3::Database.new(cachefile)
+      @db.busy_timeout = 100
       migrate
 
       @purge_size = (@max_size * 0.05).round
@@ -42,11 +43,16 @@ class BobRoss
             transformed_mime VARCHAR,
             transformed_at INTEGER
           );
-          
-          CREATE UNIQUE INDEX thttm ON transformations (hash, transform, transformed_mime);
-          CREATE INDEX tta ON transformations (transformed_at);
         SQL
       end
+      
+      @db.execute <<-SQL
+        CREATE UNIQUE INDEX IF NOT EXISTS thttm ON transformations (hash, transform, transformed_mime);
+      SQL
+      
+      @db.execute <<-SQL
+        CREATE INDEX IF NOT EXISTS tta ON transformations (transformed_at);
+      SQL
     end
     
     def get(hash, transform)
