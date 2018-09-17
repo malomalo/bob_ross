@@ -60,12 +60,16 @@ class BobRoss
     end
     
     def set(hash, transparent, transform, mime, path)
+      stat = File.stat(path)
       dest = destination(hash, transform, mime)
+      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
+      
       FileUtils.mkdir_p(File.dirname(dest))
       FileUtils.cp(path, dest)
-    
-      stat = File.stat(dest)
-      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
+    rescue SQLite3::ConstraintException
+      # Not unique because of index thttm, another thread probably already
+      # generated the image, so we'll just continue and not bother copying over
+      # another file
     end
 
     def size
