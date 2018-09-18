@@ -62,10 +62,10 @@ class BobRoss
     def set(hash, transparent, transform, mime, path)
       stat = File.stat(path)
       dest = destination(hash, transform, mime)
-      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
       
       FileUtils.mkdir_p(File.dirname(dest))
       FileUtils.cp(path, dest)
+      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
     rescue SQLite3::ConstraintException
       # Not unique because of index thttm, another thread probably already
       # generated the image, so we'll just continue and not bother copying over
@@ -83,11 +83,14 @@ class BobRoss
         need_to_purge = total_size - (@max_size - @purge_size)
         while purged < need_to_purge
           r = @db.execute("SELECT hash, transform, transformed_mime, size FROM transformations ORDER BY transformed_at ASC LIMIT 1").first
-          @select = @db.execute(<<-SQL, r[0], r[1], r[2])
+          @db.execute(<<-SQL, r[0], r[1], r[2])
             DELETE FROM transformations
             WHERE hash = ? AND transform = ? AND transformed_mime = ?
           SQL
-          FileUtils.rm(destination(r[0], r[1], r[2]))
+          begin
+            FileUtils.rm(destination(r[0], r[1], r[2]))
+          rescue Errno::ENOENT
+          end
           purged += r[3]
         end
       end
