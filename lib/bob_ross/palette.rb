@@ -15,11 +15,6 @@ class BobRoss
 
       @purge_size = (@max_size * 0.05).round
 
-      @insert = @db.prepare(<<-SQL)
-        INSERT INTO transformations (hash, transparent, transform, size, transformed_mime, transformed_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      SQL
-
       @select = @db.prepare(<<-SQL)
         SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
         WHERE hash = ? AND transform = ?
@@ -65,7 +60,10 @@ class BobRoss
       
       FileUtils.mkdir_p(File.dirname(dest))
       FileUtils.cp(path, dest)
-      @insert.execute(hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
+      @db.execute(<<-SQL, hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i)
+        INSERT INTO transformations (hash, transparent, transform, size, transformed_mime, transformed_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      SQL
     rescue SQLite3::ConstraintException
       # Not unique because of index thttm, another thread probably already
       # generated the image, so we'll just continue and not bother copying over
