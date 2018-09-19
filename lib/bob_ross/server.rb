@@ -1,4 +1,4 @@
-require 'cocaine'
+require 'terrapin'
 require 'mime/types'
 require 'bob_ross/image'
 

@@ -22,8 +22,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'minitest-reporters'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'sqlite3'
+  s.add_development_dependency 'activesupport'
 
   # Runtime
-  s.add_runtime_dependency 'cocaine'
+  s.add_runtime_dependency 'terrapin'
   s.add_runtime_dependency 'mime-types'
 end

@@ -55,7 +55,7 @@ class BobRoss
     end
     
     def mime_type(path)
-      command = Cocaine::CommandLine.new("identify", '--mime -b :file')
+      command = Terrapin::CommandLine.new("identify", '--mime -b :file')
       command.run({ file: destination(path) }).split(';')[0]
     end
 

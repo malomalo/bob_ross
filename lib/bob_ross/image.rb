@@ -27,7 +27,7 @@ class BobRoss::Image
     params = default_args
     params << "-format 'Opaque: %[opaque]\nGeometry: %[w]x%[h]\n'"
     params << ":file"
-    command = Cocaine::CommandLine.new("identify", params.join(' '))
+    command = Terrapin::CommandLine.new("identify", params.join(' '))
 
     output = Dir.mktmpdir do |tmpdir|
       command.run({
@@ -38,7 +38,7 @@ class BobRoss::Image
       })
     end
     
-    mime_command = Cocaine::CommandLine.new("file", '--mime -b :file')
+    mime_command = Terrapin::CommandLine.new("file", '--mime -b :file')
     
     @mime_type = MIME::Types[mime_command.run({ file: @source.path }).split(';')[0]].first
     @opaque = output.match(/^Opaque:\s(true|false)\s*$/i)[1] == 'True'
@@ -194,7 +194,7 @@ class BobRoss::Image
     output = Tempfile.new(['blob', ".#{transformations[:format].preferred_extension}"], binmode: true)
     
     begin
-      command = Cocaine::CommandLine.new("convert", params.join(' '))
+      command = Terrapin::CommandLine.new("convert", params.join(' '))
       Dir.mktmpdir do |tmpdir|
         command.run(transformations.merge({
           input: @source.path,

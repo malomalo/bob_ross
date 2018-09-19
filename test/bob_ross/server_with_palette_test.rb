@@ -5,13 +5,9 @@ class BobRossServerWithPaletteTest < Minitest::Test
   
   def setup
     @cache_dir = Dir.mktmpdir
-    # @palette_server = BobRoss::PaletteServer.new(@cache_dir)
-    # @thread = Thread.new { @palette_server.run }
   end
 
   def teardown
-    # @palette_server.stop
-    # @thread.join
     FileUtils.remove_entry @cache_dir
   end
   

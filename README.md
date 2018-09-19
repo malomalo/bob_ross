@@ -5,17 +5,19 @@ A Rack Image Server to mulipulate images.
 
 ## Installation
 
-BobRoss depends on the following:
+The BobRoss client does not have any dependencies.
 
-  - `ruby`
+The BobRoss server depends on the following:
+
   - `imagemagick`
 
 Optionally:
 
   - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image
-    format
+    format.
   - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR)
-    image format
+    image format.
+  - The `sqlite3` gem to use the `Palette` cache, a local disk cache.
 
 # Client (Generating URLs)
 
@@ -98,44 +100,30 @@ Rails.application.routes.draw do
 end
 ```
 
-### Configuration
+### Configuration Options
 
-```ruby
-bob_ross_configs = {
+- `store:` (Required) A Module or Class instance that must respond to `local?`,
+           `last_modified` (if `last_modified_header` is set to true),
+           `destination` (if local?), and `copy_to_tempfile` (if !local?)
 
-  # (Required) A Module or Class instance that must respond to `local?`,
-  # `last_modified` (if use_last_modified_header), `destination` (if local?),
-  # and `copy_to_tempfile` (if !local?)
-  store: my_store,
-  
-  # (Optional) Limit for max memory that image magick will use
-  memory_limit: '1G',
-  
-  # (Optional) Limit for max disk that image magick will use
-  disk_limit: '4G',
-  
-  # (Optional)
-  hmac: {
-    # Required if using signed paths/urls
-    key: 'secret',
-    
-    # If true the server will respond with a 404 not found to any urls that
-    # are not signed or incorrectly signed
-    required: true || false,
-    
-    # All the allowed ways to sign the url
-    attributes: [[:transformations], [:transformations, :hash, :format]]
-  },
+- `memory_limit:` (Optional, ie. `"1GB"`) Limit for max memory that imagemagick will use.
+- `disk_limit:` (Optional, ie. `"4GB"`) Limit for max disk that image magick will use
+- `hmac:` (Optional)
+  - `key:` (ie. `"secret"`) The secret key used for signing paths/urls
+  - `required:` (true || false) If true the server will respond with a 404 not
+                found to any urls that are not signed or incorrectly signed
+  - `attributes:` (ie. `[[:transformations], [:transformations, :hash, :format]]`) 
+                  All the allowed ways to sign the url.
 
-  # If using watermark(s), the path to the watermark(s)
-  watermarks: ["/app/assets/images/watermark.png"]
+- `watermarks:` (Optional, ie. `["/app/assets/images/watermark.png"]`) If using 					watermark(s), the path to the watermark(s).
 
-  # Cache header to return with all valid responses
-  cache_control: 'public, max-age=172800, immutable',
-  
-  last_modified_header: true || false
-}
-```
+- `cache_control:` (Optional, ie. `'public, max-age=172800, immutable'`)
+                   Cache header to return with all valid responses
+
+- `last_modified_header:` (true || false) Weather to use the `Last-Modified`
+                          header or not
+                          
+- `palette:` (Optional) The Palette cache to use.
 
 ### Automatic Content Negotiation
 
@@ -292,3 +280,21 @@ the exception of the `H` (HMAC option) which always comes first.
         and vertical offsets `x` and `y`, specified in pixels. Signs are
         required for both. Offsets are not affected by % or other size
         operators. Default is `+0+0`
+
+### Palette Cache
+
+The Palette Cache is local disk cache that can be shared amongst processes. It uses a sqlite3 file to store and share which files are cached. This file should be stored on the local filesystem. The cache files themselves can be on a local FS or a NFS.
+
+Example:
+
+```ruby
+BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3')
+```
+
+By default the size of the cache is only 1GB, you can set that by setting the number of bytes you want the cache to be:
+
+```ruby
+BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 10_737_418_240)
+```
+
+BobRoss **does not** automatically clear the cache. Currently you will need to setup a cron job to purge the cache of the oldest files. To do that you just need to run the `purge!` method on the Palette.
