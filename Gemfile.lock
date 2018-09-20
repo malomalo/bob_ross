@@ -3,6 +3,7 @@ PATH
   specs:
     bob_ross (1)
       mime-types
+      sqlite3
       terrapin
 
 GEM
@@ -53,7 +54,6 @@ DEPENDENCIES
   mocha
   rack
   rake
-  sqlite3
 
 BUNDLED WITH
    1.16.0

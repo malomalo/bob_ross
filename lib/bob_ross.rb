@@ -7,7 +7,25 @@ require File.expand_path('../bob_ross/storage', __FILE__)
 class BobRoss
   include Singleton
   
-  attr_accessor :defaults
+  attr_reader :defaults
+  
+  def defaults=(d)
+    @defaults = normalize_options(d)
+  end
+  
+  def normalize_options(options)
+    if options.has_key?(:hmac)
+      options[:hmac] = { key: options[:hmac] } if options[:hmac].is_a?(String)
+
+      if !options[:hmac].has_key?(:attributes)
+        options[:hmac][:attributes] = [:transformations, :hash]
+      elsif options[:hmac][:attributes].first.is_a?(Array)
+        options[:hmac][:attributes] = options[:hmac][:attributes].first
+      end
+    end
+
+    options
+  end
   
   def url(hash, options = {})
     "#{options[:host] || defaults[:host]}#{path(hash, options)}"
@@ -15,6 +33,7 @@ class BobRoss
 
   def path(hash, options = {})
     options = defaults.merge(options) if defaults
+    options = normalize_options(options)
     
     transforms = encode_transformations(options)
     
@@ -23,15 +42,6 @@ class BobRoss
 
     if options[:hmac]
       hmac_data = ''
-      
-      if options[:hmac].is_a?(String)
-        options[:hmac] = { key: options[:hmac] }
-      end
-      options[:hmac] = defaults[:hmac].merge(options[:hmac]) if defaults && defaults[:hmac]
-      
-      if !options[:hmac].has_key?(:attributes)
-        options[:hmac][:attributes] = [:transformations, :hash]
-      end
 
       options[:hmac][:attributes].each do |attr|
         case attr
@@ -96,3 +106,5 @@ class BobRoss
     instance.__send__(method, *args, &block)
   end
 end
+
+require 'bob_ross/railtie' if defined?(Rails)

@@ -6,14 +6,12 @@ class BobRoss
   
     attr_reader :path, :size, :max_size, :purge_to
     
-    def initialize(path, cachefile, size: 1_073_741_824)
+    def initialize(path, cachefile, size: nil)
       @path = path
-      @max_size = size
+      @size = size || 1_073_741_824
       @db = SQLite3::Database.new(cachefile)
       @db.busy_timeout = 100
       migrate
-
-      @purge_size = (@max_size * 0.05).round
 
       @select = @db.prepare(<<-SQL)
         SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
@@ -76,9 +74,9 @@ class BobRoss
     
     def purge!
       total_size = size
-      if total_size > @max_size
+      if total_size > @size
         purged = 0
-        need_to_purge = total_size - (@max_size - @purge_size)
+        need_to_purge = total_size - @size
         while purged < need_to_purge
           r = @db.execute("SELECT hash, transform, transformed_mime, size FROM transformations ORDER BY transformed_at ASC LIMIT 1").first
           @db.execute(<<-SQL, r[0], r[1], r[2])

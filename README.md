@@ -19,7 +19,7 @@ Optionally:
     image format.
   - The `sqlite3` gem to use the `Palette` cache, a local disk cache.
 
-# Client (Generating URLs)
+## Client (Generating URLs)
 
 The BobRoss client makes it easy to generate urls for requesting the server.
 
@@ -85,7 +85,7 @@ BobRoss.defaults = {
 }
 ```
 
-# Server
+## Server
 
 BobRoss::Server is Rack Middleware that can be served on it's own or mounted on
 any Rack compatiable server.
@@ -298,3 +298,94 @@ BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size
 ```
 
 BobRoss **does not** automatically clear the cache. Currently you will need to setup a cron job to purge the cache of the oldest files. To do that you just need to run the `purge!` method on the Palette.
+
+## Rails
+
+If BobRoss is used with a Rails application it automatically sets up defatuls for
+the client and attaches a server at `/images` by default.
+
+### Initializer options
+
+**`config.bob_ross.host`**
+
+Host used for generating URL.
+
+**`config.bob_ross.hmac.key`**
+
+The secret key used by both the server and the client to generate and verify HMAC.
+
+**`config.bob_ross.hmac.required`**
+
+Weather or not an HMAC is requried when serving an image. By default this is true if
+there is a HMAC key present, false otherwise.
+
+**`config.bob_ross.hmac.attributes`**
+
+The attributes used to generate the HMAC. By default BobRoss only uses the `:transformations` and `:hash` of the URL (`[:transformations, :hash]`). You can set
+this to any combination of `:transformations`, `:hash`, and `:format`.
+
+If you want to accept multiple types of HMAC on the server set this to an array of
+HMAC you want to accept. For example:
+
+```ruby
+config.bob_ross.hmac.attributes = [
+  [:transformations, :hash, :format],
+  [:hash, :format]
+]
+```
+
+When this is option is set this way the client will use the first option as the 
+default when generating HMACS.
+
+**`config.bob_ross.server`**
+
+Set this to `false` to disable the server.
+
+**`config.bob_ross.server.store`**
+
+Where to original files are stored. This can be a Proc or the value itself.
+There is no default and this must be specified. See the `store:` option in the server section for more information.
+
+**`config.bob_ross.server.prefix`**
+
+The prefix to use when serving images. Default is `"/images"`
+  
+**`config.bob_ross.server.cache_control`**
+
+Set this to the value of the `Cache-Control` header if you want one.
+
+**`config.bob_ross.server.last_modified_header`**
+
+If you want BobRoss to send the `Last-Modified-Header` set this to false.
+
+**`config.bob_ross.server.disk_limit`**
+
+Limit the disk map used by imagemagick to transform an image. Default `"4GB"`
+
+**`config.bob_ross.server.memory_limit`**
+
+Limit the memory used by imagemagick to transform an image. Default `"1GB"`
+
+**`config.bob_ross.server.palette`**
+
+If set to false the palette cache will be disabled. Default in **`production`** is
+*`false`*. If this is set to true be sure to run the `bob_ross:palette:purge` task
+on a cron to avoid filling up the disk.
+
+**`config.bob_ross.server.palette.file`**
+
+The SQLite3 database used by BobRoss to keep stats about the Palette Cache.
+Default is `"tmp/cache/bobross.cache"`
+
+**`config.bob_ross.server.palette.path`**
+
+Where to cache the transformed images. Default is `"tmp/cache/bobross"`
+
+**`config.bob_ross.server.palette.size`**
+
+Amount of disk size in bytes to use for the Palette cache. Default is `1.gigabyte`
+
+### Rake Tasks
+
+BobRoss provides the `bob_ross:palette:purge` task which needs to run occasionally
+to clear the cache of old file and keep the cache dir below the size limit specified and to avoid filling up the disk.

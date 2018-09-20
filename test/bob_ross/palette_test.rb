@@ -50,7 +50,7 @@ class BobRoss::PaletteTest < Minitest::Test
     
     assert_equal size * 6, palette.size
     palette.purge!
-    assert_equal size * 4, palette.size
+    assert_equal size * 5, palette.size
   end
 
 end

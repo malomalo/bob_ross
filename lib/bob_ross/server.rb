@@ -34,14 +34,37 @@ class BobRoss::Server
   attr_accessor :settings, :palette
   
   def initialize(settings={})
-    @settings = settings
+    @settings = normalize_options(settings)
     @palette = settings[:palette]
-    @settings[:last_modified_header] = true unless @settings.has_key?(:last_modified_header)
+    @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
+  end
+  
+  def normalize_options(options)
+    if options[:hmac]
+      options[:hmac] = { key: options[:hmac] } if options[:hmac].is_a?(String)
+
+      if !options[:hmac].has_key?(:attributes)
+        options[:hmac][:attributes] = [:transformations, :hash]
+      end
+      
+      options[:required] = true if !options.has_key?(:required)
+    end
+    
+    if options[:palette] && options[:palette].is_a?(Hash) && !options[:palette].empty?
+      require 'bob_ross/palette'
+      options[:palette] = BobRoss::Palette.new(
+        options[:palette][:path],
+        options[:palette][:file],
+        size: options[:palette][:size]
+      )
+    end
+
+    options
   end
   
   def call(env)
     path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO'])
-    match = path.match(/^\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?$/)
+    match = path.match(/\A\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?\Z/)
     
     return not_found if !match
 
