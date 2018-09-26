@@ -43,8 +43,14 @@ class BobRoss::Server
     if options[:hmac]
       options[:hmac] = { key: options[:hmac] } if options[:hmac].is_a?(String)
 
-      if !options[:hmac].has_key?(:attributes)
-        options[:hmac][:attributes] = [:transformations, :hash]
+      if options[:hmac][:attributes]
+        if options[:hmac][:attributes].first.is_a?(Array)
+          options[:hmac][:attributes].each { |a| a.map!(&:to_sym) }
+        else
+          options[:hmac][:attributes] = [options[:hmac][:attributes].map(&:to_sym)]
+        end
+      else
+        options[:hmac][:attributes] = [[:transformations, :hash]]
       end
       
       options[:required] = true if !options.has_key?(:required)
