@@ -7,20 +7,25 @@ require File.expand_path('../bob_ross/storage', __FILE__)
 class BobRoss
   include Singleton
   
-  attr_reader :defaults
+  attr_reader :host
   
-  def defaults=(d)
-    @defaults = normalize_options(d)
+  def configure(options)
+    options = normalize_options(options)
+    @host = options.delete(:host)
+    @hmac = options.delete(:hmac)
+    @transformations = options
   end
   
   def normalize_options(options)
-    if options.has_key?(:hmac)
-      options[:hmac] = { key: options[:hmac] } if options[:hmac].is_a?(String)
-
-      if !options[:hmac].has_key?(:attributes)
+    if options[:hmac].is_a?(String)
+      options[:hmac] = { key: options[:hmac] }
+    elsif options[:hmac]
+      if options[:hmac][:attributes].is_a?(Array) && options[:hmac][:attributes].first.is_a?(Array)
+        options[:hmac][:attributes] = options[:hmac][:attributes].first.map(&:to_sym)
+      elsif options[:hmac][:attributes]
+        options[:hmac][:attributes].map!(&:to_sym)
+      else
         options[:hmac][:attributes] = [:transformations, :hash]
-      elsif options[:hmac][:attributes].first.is_a?(Array)
-        options[:hmac][:attributes] = options[:hmac][:attributes].first
       end
     end
 
@@ -28,33 +33,50 @@ class BobRoss
   end
   
   def url(hash, options = {})
-    "#{options[:host] || defaults[:host]}#{path(hash, options)}"
+    if host = options[:host] || @host
+      File.join(host, path(hash, options))
+    else
+      path(hash, options)
+    end
   end
 
   def path(hash, options = {})
-    options = defaults.merge(options) if defaults
     options = normalize_options(options)
+
+    hmac_options = if options[:hmac]
+      @hmac ? @hmac.merge(options[:hmac]) : options[:hmac]
+    else
+      @hmac
+    end
     
     transforms = encode_transformations(options)
     
-    url = options[:format] ? ".#{options[:format]}" : ""
-    url = hash + (options[:filename] ? "/#{CGI::escape("#{options[:filename]}")}" : "") + url
+    url = if fmt = (options[:format] || @transformations[:format])
+      ".#{fmt}"
+    else
+      ""
+    end
+    url = if filename = (options[:filename] || @transformations[:filename])
+      hash + "/#{CGI::escape("#{filename}")}" + url
+    else
+      hash + url
+    end
 
-    if options[:hmac]
+    if hmac_options
       hmac_data = ''
 
-      options[:hmac][:attributes].each do |attr|
+      hmac_options[:attributes].each do |attr|
         case attr
         when :hash
           hmac_data << hash
         when :transformations
           hmac_data << transforms
         when :format
-          hmac_data << options[:format].to_s
+          hmac_data << options[:format].to_s if options[:format]
         end
       end
       
-      hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), options[:hmac][:key], hmac_data)
+      hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), hmac_options[:key], hmac_data)
       transforms = "H#{hmac}#{transforms}"
     end
     
@@ -65,7 +87,14 @@ class BobRoss
     end
   end
 
+  def calculate_hmac(data, options={})
+    options = normalize_options(options)
+    OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), options[:key] || @hmac[:key], data)
+  end
+  
   def encode_transformations(options)
+    options = @transformations.merge(options)
+    
     string = []
     options.each do |key, value|
       case key

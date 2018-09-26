@@ -22,11 +22,12 @@ class BobRoss::Railtie < Rails::Railtie
   config.bob_ross.server.prefix = "/images"
   # config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
   # config.bob_ross.server.last_modified_header = true
+  # config.bob_ross.server.watermarks = 'public/watermarks' || [file, file]
   config.bob_ross.server.disk_limit = '4GB'
   config.bob_ross.server.memory_limit = '1GB'
 
   config.bob_ross.server.palette = ActiveSupport::OrderedOptions.new
-  
+    
   if ::Rails.env.to_s === 'production'
     config.bob_ross.server.palette.file = 'tmp/cache/bobross.cache'
     config.bob_ross.server.palette.path = 'tmp/cache/bobross'
@@ -41,6 +42,16 @@ class BobRoss::Railtie < Rails::Railtie
 
     if config[:server]
       config[:server][:hmac] = config[:hmac]
+      if config[:server][:watermarks].is_a?(String)
+        config[:server][:watermarks] = Dir.children(config[:server][:watermarks]).sort.map { |w|
+          File.join(config[:server][:watermarks], w)
+        }
+      elsif !config[:server][:watermarks] && Dir.exists?('public/watermarks')
+        config[:server][:watermarks] = Dir.children('public/watermarks').sort.map { |w|
+          File.join('public/watermarks', w)
+        }
+      end
+
     end
     config
   end
@@ -68,7 +79,7 @@ class BobRoss::Railtie < Rails::Railtie
     config = configs(app)
     
     client_configs = config.except(:server).deep_dup
-    BobRoss.defaults = client_configs
+    BobRoss.configure(client_configs)
 
     if config[:server]
       prefix = config[:server].delete(:prefix)

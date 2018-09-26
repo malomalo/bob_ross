@@ -3,7 +3,7 @@ require 'test_helper'
 class BobRossTest < Minitest::Test
   
   def setup
-    BobRoss.defaults = {}
+    BobRoss.configure({})
   end
   
   test "encode_transformations" do
@@ -23,9 +23,9 @@ class BobRossTest < Minitest::Test
     })
   end
   
-  test "defaults" do
+  test "configure" do
     time = 1449100194
-    BobRoss.defaults = {
+    BobRoss.configure({
       optimize: true,
       interlace: true,
       resize: '500x500^',
@@ -42,12 +42,12 @@ class BobRossTest < Minitest::Test
         key: 'secret',
         attributes: [:hash]
       }
-    }
+    })
     
     assert_equal "https://example.com/H41482f0113cc9843f0aeaa10631936644a164059BeeddccaaE#{time.to_s(16)}GILOS500x500%5EW0se/hash/image.png", BobRoss.url('hash')
   end
   
-  test "url" do
+  test "path" do
     # /hash
     assert_equal '/hash', BobRoss.path('hash')
     assert_equal '/H41482f0113cc9843f0aeaa10631936644a164059/hash', BobRoss.path('hash', hmac: {key: 'secret'})
@@ -103,6 +103,20 @@ class BobRossTest < Minitest::Test
     assert_equal '/H41482f0113cc9843f0aeaa10631936644a164059Baabbcc/hash/my+Filename%26.png', BobRoss.path('hash', background: 'aabbcc', filename: 'my Filename&', format: :png, hmac: {key: 'secret', attributes: [:hash]})
     assert_equal '/Hfae60e9eb00a16c19ff01aef0cadfe6709f024e6Baabbcc/hash/my+Filename%26.png', BobRoss.path('hash', background: 'aabbcc', filename: 'my Filename&', format: :png, hmac: {key: 'secret', attributes: [:transformations, :hash]})
     assert_equal '/He993a4e6169a3effcfc7f2ea39ec56cc81a41591Baabbcc/hash/my+Filename%26.png', BobRoss.path('hash', background: 'aabbcc', filename: 'my Filename&', format: :png, hmac: {key: 'secret', attributes: [:transformations, :hash, :format]})
+  end
+
+  test "url" do
+    BobRoss.configure(host: 'http://example.com')
+    assert_equal 'http://example.com/hash', BobRoss.url('hash')
+
+    BobRoss.configure(host: 'http://example.com/')
+    assert_equal 'http://example.com/hash', BobRoss.url('hash')
+  end
+  
+  test "host" do
+    assert_nil BobRoss.host
+    BobRoss.configure(host: 'http://example.com')
+    assert_equal 'http://example.com', BobRoss.host
   end
   
 end

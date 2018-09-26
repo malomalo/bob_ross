@@ -64,7 +64,7 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 ### Client Configuration
 
 ```ruby
-BobRoss.defaults = {
+BobRoss.configure({
 
 	# Required if generating urls (not paths)
 	host: 'https://example.com',
@@ -82,7 +82,7 @@ BobRoss.defaults = {
 	hmac: 'secret',
 	
 	# Any other options you wish to apply by default
-}
+})
 ```
 
 ## Server
