@@ -58,6 +58,9 @@ class BobRossServerWithPaletteTest < Minitest::Test
     response = server.get("/opaque", {'HTTP_DPR' => '2.0'})
     assert !response.headers.has_key?('Content-DPR')
     assert_equal "1", response.headers['From-Palette']
+
+    # Set Cache w/o DPR
+    server.get("/S100x100/opaque", {})
     
     # Requesting a image with DPR 2, with resizing gets us an image w/that DPR
     cache_test do |r|

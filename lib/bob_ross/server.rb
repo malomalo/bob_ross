@@ -69,7 +69,7 @@ class BobRoss::Server
   end
   
   def call(env)
-    path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO'])
+    path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO']).force_encoding('UTF-8')
     match = path.match(/\A\/(?:([A-Z][^\/]*)\/?)?([0-9a-z]+)(?:\/[^\/]+?)?(\.\w+)?\Z/)
     
     return not_found if !match
@@ -114,9 +114,20 @@ class BobRoss::Server
 
     if env['HTTP_DPR'] && transformations[:resize]
       transformations[:dpr] = env['HTTP_DPR'].to_f
+      
       transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-      transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] } if transformations[:padding]
-      transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] } if transformations[:crop]
+      transformation_string.gsub!(/S[^A-Z]+/, "S#{CGI.escape(transformations[:resize])}")
+
+      if transformations[:padding]
+        transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+        transformation_string.gsub!(/P[^A-Z]+/, "P#{transformations[:padding]}")
+      end
+
+      if transformations[:crop]
+        transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+        transformation_string.gsub!(/C[^A-Z]+/, "C#{transformations[:crop]}")
+      end
+      
       response_headers['Content-DPR'] = transformations[:dpr].to_s
     end
 
@@ -216,7 +227,6 @@ class BobRoss::Server
     response_headers['Content-Type'] = transformations[:format].to_s
     response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
     response_headers['From-Palette'] = '0' if @palette
-    
     @palette&.set(hash, image.transparent, transformation_string, transformations[:format].to_s, transformed_file.path)
     
     [200, response_headers, StreamFile.new(transformed_file)]
