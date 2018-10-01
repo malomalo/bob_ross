@@ -234,6 +234,8 @@ class BobRoss::Server
     @palette&.set(hash, image.transparent, transformation_string, transformations[:format].to_s, transformed_file.path)
     
     [200, response_headers, StreamFile.new(transformed_file)]
+  rescue Errno::ENOENT
+    return not_found
   ensure
     if original_file
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
