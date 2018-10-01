@@ -67,9 +67,11 @@ class BobRoss::Railtie < Rails::Railtie
     config.server.hmac = config.hmac
     config.server.store = config.server[:store].call if config.server[:store].is_a?(Proc)
     if config.server.watermarks.is_a?(String)
-      config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
-        File.join(config.server.watermarks, w)
-      }
+      if Dir.exists?(config.server.watermarks)
+        config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
+          File.join(config.server.watermarks, w)
+        }
+      end
     end
   end
   
@@ -78,7 +80,8 @@ class BobRoss::Railtie < Rails::Railtie
       namespace :palette do
         desc "Purge old cached files from the Palette"
         task :purge do
-          if config = configs(app).dig(:server, :palette)
+          initialize_configs(app)
+          if config = app.config.bob_ross.server.palette
             require 'bob_ross/palette'
 
             BobRoss::Palette.new(
