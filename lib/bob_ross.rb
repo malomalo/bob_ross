@@ -11,25 +11,30 @@ class BobRoss
   
   def configure(options)
     options = normalize_options(options)
+    
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @transformations = options
   end
   
   def normalize_options(options)
+    result = options.dup
+    result.delete(:hmac)
+    
     if options[:hmac].is_a?(String)
-      options[:hmac] = { key: options[:hmac] }
+      result[:hmac] = { key: options[:hmac] }
     elsif options[:hmac]
-      if options[:hmac][:attributes].is_a?(Array) && options[:hmac][:attributes].first.is_a?(Array)
-        options[:hmac][:attributes] = options[:hmac][:attributes].first.map(&:to_sym)
+      result[:hmac] = { key: options[:hmac][:key] }
+      if options[:hmac][:attributes].is_a?(Array)
+        result[:hmac][:attributes] = options[:hmac][:attributes].map(&:to_sym)
       elsif options[:hmac][:attributes]
-        options[:hmac][:attributes].map!(&:to_sym)
+        result[:hmac][:attributes] = [options[:hmac][:attributes].to_sym]
       else
-        options[:hmac][:attributes] = [:transformations, :hash]
+        result[:hmac][:attributes] = [:transformations, :hash]
       end
     end
 
-    options
+    result
   end
   
   def url(hash, options = {})
@@ -56,6 +61,7 @@ class BobRoss
     else
       ""
     end
+    
     url = if filename = (options[:filename] || @transformations[:filename])
       hash + "/#{CGI::escape("#{filename}")}" + url
     else

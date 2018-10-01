@@ -40,32 +40,36 @@ class BobRoss::Server
   end
   
   def normalize_options(options)
-    if options[:hmac]
-      options[:hmac] = { key: options[:hmac] } if options[:hmac].is_a?(String)
-
+    result = options.dup
+    result.delete(:hmac)
+    result.delete(:palette)
+    
+    if options[:hmac].is_a?(String)
+      result[:hmac] = { key: options[:hmac] }
+    elsif options[:hmac]
+      result[:hmac] = { key: options[:hmac][:key] }
       if options[:hmac][:attributes]
         if options[:hmac][:attributes].first.is_a?(Array)
-          options[:hmac][:attributes].each { |a| a.map!(&:to_sym) }
+          result[:hmac][:attributes] = options[:hmac][:attributes].map{ |a| a.map(&:to_sym) }
         else
-          options[:hmac][:attributes] = [options[:hmac][:attributes].map(&:to_sym)]
+          result[:hmac][:attributes] = [options[:hmac][:attributes].map(&:to_sym)]
         end
       else
-        options[:hmac][:attributes] = [[:transformations, :hash]]
+        result[:hmac][:attributes] = [[:transformations, :hash]]
       end
-      
-      options[:required] = true if !options.has_key?(:required)
+      result[:hmac][:required] = (options.has_key?(:required) ? options[:required] : true)
     end
     
     if options[:palette] && options[:palette].is_a?(Hash) && !options[:palette].empty?
       require 'bob_ross/palette'
-      options[:palette] = BobRoss::Palette.new(
+      result[:palette] = BobRoss::Palette.new(
         options[:palette][:path],
         options[:palette][:file],
         size: options[:palette][:size]
       )
     end
 
-    options
+    result
   end
   
   def call(env)
