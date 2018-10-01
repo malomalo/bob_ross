@@ -12,11 +12,6 @@ class BobRoss
       @db = SQLite3::Database.new(cachefile)
       @db.busy_timeout = 100
       migrate
-
-      @select = @db.prepare(<<-SQL)
-        SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
-        WHERE hash = ? AND transform = ?
-      SQL
     end
     
     def migrate
@@ -49,7 +44,10 @@ class BobRoss
     end
     
     def get(hash, transform)
-      @select.execute(hash, transform).to_a
+      @db.execute(<<-SQL, hash, transform).to_a
+        SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
+        WHERE hash = ? AND transform = ?
+      SQL
     end
     
     def set(hash, transparent, transform, mime, path)
