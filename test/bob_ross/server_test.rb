@@ -123,6 +123,50 @@ class BobRossServerTest < Minitest::Test
     assert_equal 200, server.get("/E#{(time+10).to_s(16)}/opaque").status
     assert_equal 410, server.get("/E#{(time-10).to_s(16)}/opaque").status
   end
+
+  test 'Responds with image auto oriented' do
+    server = create_server({
+      store: BobRoss::FileSystemStore.new({
+        path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
+      })
+    })
+    
+    Dir.mktmpdir do |tmpdir|
+      1.upto(8) do |i|
+        response = server.get("/landscape-#{i}.jpg")
+        File.write(File.join(tmpdir, i.to_s + '.jpg'), response.body)
+        command = Terrapin::CommandLine.new("identify", "-format '%[w]x%[h]' :file")
+        assert_equal '600x450', command.run({ file: File.join(tmpdir, i.to_s + '.jpg') }), "landscape-#{i} no auto oriented"
+        
+        response = server.get("/portrait-#{i}.jpg")
+        File.write(File.join(tmpdir, i.to_s + '.jpg'), response.body)
+        command = Terrapin::CommandLine.new("identify", "-format '%[w]x%[h]' :file")
+        assert_equal '450x600', command.run({ file: File.join(tmpdir, i.to_s + '.jpg') }), "portrait-#{i} no auto oriented"
+      end
+    end
+  end
+
+  test 'Responds with transformed image that is auto oriented' do
+    server = create_server({
+      store: BobRoss::FileSystemStore.new({
+        path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
+      })
+    })
+    
+    Dir.mktmpdir do |tmpdir|
+      1.upto(8) do |i|
+        response = server.get("/G/landscape-#{i}.jpg")
+        File.write(File.join(tmpdir, i.to_s + '.jpg'), response.body)
+        command = Terrapin::CommandLine.new("identify", "-format '%[w]x%[h]' :file")
+        assert_equal '600x450', command.run({ file: File.join(tmpdir, i.to_s + '.jpg') }), "landscape-#{i} no auto oriented"
+        
+        response = server.get("/G/portrait-#{i}.jpg")
+        File.write(File.join(tmpdir, i.to_s + '.jpg'), response.body)
+        command = Terrapin::CommandLine.new("identify", "-format '%[w]x%[h]' :file")
+        assert_equal '450x600', command.run({ file: File.join(tmpdir, i.to_s + '.jpg') }), "portrait-#{i} no auto oriented"
+      end
+    end
+  end
   
   test 'if hmac present and hmac not configured'
   

@@ -24,4 +24,15 @@ class BobRossImageTest < Minitest::Test
     assert_equal({width: 720, height: 480, x_offset: nil, y_offset: nil}, image.geometry)
   end
   
+  test 'photo gets oriented before being processed' do
+    1.upto(8) do |i|
+      image = BobRoss::Image.new(File.open(File.expand_path("../../fixtures/images_with_orientations/landscape-#{i}", __FILE__)))
+      assert_equal i, image.orientation
+
+      image = BobRoss::Image.new(File.open(File.expand_path("../../fixtures/images_with_orientations/portrait-#{i}", __FILE__)))
+      assert_equal i, image.orientation
+    end
+  end
+
+  
 end

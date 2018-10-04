@@ -8,7 +8,7 @@ class BobRoss::Image
     'c' => 'Center'
   }
   
-  attr_accessor :mime_type, :opaque, :geometry
+  attr_accessor :mime_type, :opaque, :geometry, :orientation
   
   def initialize(file, settings = {})
     @source = file
@@ -25,7 +25,7 @@ class BobRoss::Image
   
   def identify
     params = default_args
-    params << "-format 'Opaque: %[opaque]\nGeometry: %[w]x%[h]\n'"
+    params << "-format 'Opaque: %[opaque]\nGeometry: %[w]x%[h]\nOrientation: %[EXIF:Orientation]'"
     params << ":file"
     command = Terrapin::CommandLine.new("identify", params.join(' '))
 
@@ -43,10 +43,12 @@ class BobRoss::Image
     @mime_type = MIME::Types[mime_command.run({ file: @source.path }).split(';')[0]].first
     @opaque = output.match(/^Opaque:\s(true|false)\s*$/i)[1] == 'True'
     @geometry = parse_geometry(output.match(/^Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
+    @orientation = output.match(/^Orientation:\s(\d)\s*$/i)
+    @orientation = @orientation[1].to_i if @orientation
   end
   
   def transform(transformations)
-    return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format]
+    return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format] && [nil, 1].include?(@orientation)
     
     if transformations[:padding]
       padding = transformations[:padding].split(',').map(&:to_i)
