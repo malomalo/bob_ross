@@ -84,7 +84,7 @@ class BobRoss::Railtie < Rails::Railtie
     namespace :bob_ross do
       namespace :palette do
         desc "Purge old cached files from the Palette"
-        task :purge do
+        task purge: :environment do
           initialize_configs(app)
           if config = app.config.bob_ross.server.palette
             require 'bob_ross/palette'
