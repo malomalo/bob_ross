@@ -19,7 +19,7 @@ class BobRossServerWithPaletteTest < Minitest::Test
   
   def create_server(configs={})
     configs[:store] ||= create_store
-    configs[:palette] ||= BobRoss::Palette.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))#BobRoss::PaletteClient.new 
+    configs[:palette] ||= BobRoss::Palette.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
     Rack::MockRequest.new(BobRoss::Server.new(configs))
   end
   

@@ -1,6 +1,7 @@
 require 'terrapin'
 require 'mime/types'
 require 'bob_ross/image'
+require 'bob_ross/log_subscriber'
 
 # When we support jxr
 # if MIME::Types['image/vnd.ms-photo'].empty?
@@ -31,18 +32,18 @@ class BobRoss::Server
     end
   end
   
-  attr_accessor :settings, :palette
+  attr_accessor :settings, :palette, :logger
   
   def initialize(settings={})
     @settings = normalize_options(settings)
-    @palette = settings[:palette]
+    @palette = @settings[:palette]
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
+    @logger = (@settings.has_key?(:logger) ? @settings.delete(:logger) : Logger.new(STDOUT))
   end
   
   def normalize_options(options)
     result = options.dup
     result.delete(:hmac)
-    result.delete(:palette)
     
     if options[:hmac].is_a?(String)
       result[:hmac] = { key: options[:hmac] }
@@ -73,171 +74,211 @@ class BobRoss::Server
   end
   
   def call(env)
-    path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO']).force_encoding('UTF-8')
-    match = path.match(/\A\/(?:([A-Z][^\/]*)\/?)?([0-9a-z\-]+)(?:\/[^\/]+?)?(\.\w+)?\Z/)
+    ActiveSupport::Notifications.instrument("start_processing.bob_ross")
     
-    return not_found if !match
-
-    response_headers = {}
+    ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|
+      path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO']).force_encoding('UTF-8')
+      match = path.match(/\A\/(?:([A-Z][^\/]*)\/?)?([0-9a-z\-]+)(?:\/[^\/]+?)?(\.\w+)?\Z/)
     
-    transformation_string = match[1] || ''
-    hash = match[2]
-    requested_format = match[3]
-    
-    if transformation_string && transformation_string.start_with?('H')
-      match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
-      provided_hmac = match[1]
-      transformation_string = match[2]
-      
-      if !valid_hmac?(provided_hmac, @settings[:hmac][:attributes], {
-        transformations: transformation_string,
-        hash: hash,
-        format: requested_format
-      })
+      if !match
+        payload[:status] = 404
         return not_found
       end
-    elsif @settings.dig(:hmac, :required)
-      return not_found 
-    end
-    
-    transformations = extract_options(transformation_string)
-    
-    if transformations[:expires]
-      return gone if transformations[:expires] <= Time.now
-      transformation_string.gsub!(/E([^A-Z]+)/, '') # Remove Expires for cache
-    end
-    
-    if @settings[:last_modified_header]
-      last_modified = @settings[:store].last_modified(hash)
-      if env['HTTP_IF_MODIFIED_SINCE']
-        modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
-        return not_modified if last_modified <= modified_since_time
-      end
-      response_headers['Last-Modified'] = last_modified.httpdate
-    end
 
-    if env['HTTP_DPR'] && transformations[:resize]
-      transformations[:dpr] = env['HTTP_DPR'].to_f
+      response_headers = {}
+    
+      transformation_string = match[1] || ''
+      hash = match[2]
+      requested_format = match[3]
+    
+      if transformation_string && transformation_string.start_with?('H')
+        match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
+        provided_hmac = match[1]
+        transformation_string = match[2]
       
-      transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-      transformation_string.gsub!(/S[^A-Z]+/, "S#{CGI.escape(transformations[:resize])}")
-
-      if transformations[:padding]
-        transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-        transformation_string.gsub!(/P[^A-Z]+/, "P#{transformations[:padding]}")
+        if !valid_hmac?(provided_hmac, @settings[:hmac][:attributes], {
+          transformations: transformation_string,
+          hash: hash,
+          format: requested_format
+        })
+          payload[:status] = 404
+          return not_found
+        end
+      elsif @settings.dig(:hmac, :required)
+        payload[:status] = 404
+        return not_found 
       end
+    
+      transformations = extract_options(transformation_string)
+      original_transformations = transformations.dup
+      
+      if transformations[:expires]
+        if transformations[:expires] <= Time.now
+          ActiveSupport::Notifications.instrument("expired.bob_ross", {
+            expired_at: transformations[:expires]
+          })
+          payload[:status] = 410
+          return gone
+        end
 
-      if transformations[:crop]
-        transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-        transformation_string.gsub!(/C[^A-Z]+/, "C#{transformations[:crop]}")
+        transformation_string.gsub!(/E([^A-Z]+)/, '') # Remove Expires for cache
       end
       
-      response_headers['Content-DPR'] = transformations[:dpr].to_s
-    end
+      if @settings[:last_modified_header]
+        last_modified = @settings[:store].last_modified(hash)
+        if env['HTTP_IF_MODIFIED_SINCE']
+          modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
+          payload[:status] = 304
+          return not_modified if last_modified <= modified_since_time
+        end
+        response_headers['Last-Modified'] = last_modified.httpdate
+      end
 
-    if requested_format
-      transformations[:format] = MIME::Types.of(requested_format).first
-    end
+      if env['HTTP_DPR'] && transformations[:resize]
+        transformations[:dpr] = env['HTTP_DPR'].to_f
+      
+        transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+        transformation_string.gsub!(/S[^A-Z]+/, "S#{CGI.escape(transformations[:resize])}")
+
+        if transformations[:padding]
+          transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+          transformation_string.gsub!(/P[^A-Z]+/, "P#{transformations[:padding]}")
+        end
+
+        if transformations[:crop]
+          transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
+          transformation_string.gsub!(/C[^A-Z]+/, "C#{transformations[:crop]}")
+        end
+      
+        response_headers['Content-DPR'] = transformations[:dpr].to_s
+      end
+
+      if requested_format
+        transformations[:format] = MIME::Types.of(requested_format).first
+      end
     
-    if transformations[:format]
-      if transformations[:resize]
-        response_headers['Vary'] = 'DPR'
-      end
-    else
-      if transformations[:resize]
-        response_headers['Vary'] = 'Accept, DPR'
+      if transformations[:format]
+        if transformations[:resize]
+          response_headers['Vary'] = 'DPR'
+        end
       else
-        response_headers['Vary'] = 'Accept'
-      end
-    end
-
-    if accepts = env['HTTP_ACCEPT']
-      accepts = accepts.split(',')
-      accepts.each do |a|
-        a.sub!(/;.+$/i, '');
-        a.strip!
-      end
-      accepts.select! do |a|
-        a == '*/*' || a == 'image/*' || SUPPORTED_FORMATS.include?(a)
-      end
-
-      return unsupported_media_type if accepts.empty?
-    end
-
-    cache_hits = @palette&.get(hash, transformation_string)
-    if cache_hits && !cache_hits.empty?
-      hit = if transformations[:format]
-        cache_hits.find { |h| h[4] == transformations[:format] }
-      else
-        choice = nil
-        image_transparent = cache_hits.first[1]
-
-        acs = accepts.dup
-        if acs
-          while choice.nil? && !acs.empty?
-            accept = acs.shift
-            if accept == "*/*" || accept == "image/*"
-              choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
-            elsif SUPPORTED_FORMATS.include?(accept)
-              choice = accept
-            end
-          end
+        if transformations[:resize]
+          response_headers['Vary'] = 'Accept, DPR'
         else
-          choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+          response_headers['Vary'] = 'Accept'
         end
-        return unsupported_media_type if choice.nil?
-
-        cache_hits.find { |h| h[4] == choice }
       end
 
-      if hit
-        response_headers['Content-Type'] = hit[4]
-        response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-        response_headers['From-Palette'] = '1';
-        cached_file = File.open(@palette.destination(hash, transformation_string, hit[4]))
-        return [ 200, response_headers, StreamFile.new(cached_file) ]
+      if accepts = env['HTTP_ACCEPT']
+        accepts = accepts.split(',')
+        accepts.each do |a|
+          a.sub!(/;.+$/i, '');
+          a.strip!
+        end
+        accepts.select! do |a|
+          a == '*/*' || a == 'image/*' || SUPPORTED_FORMATS.include?(a)
+        end
+
+        if accepts.empty?
+          ActiveSupport::Notifications.instrument("unsupported_media_type.bob_ross", {
+            accept: env['HTTP_ACCEPT']
+          })
+          payload[:status] = 415
+          return unsupported_media_type
+        end
       end
-    end
-    
-    original_file = if @settings[:store].local?
-      File.open(@settings[:store].destination(hash))
-    else
-      @settings[:store].copy_to_tempfile(hash)
-    end
-    
-    image = BobRoss::Image.new(original_file, @settings)
-    if !transformations[:format]
-      choice = nil
-      if accepts
-        while choice.nil? && !accepts.empty?
-          accept = accepts.shift
-          if accept == "*/*" || accept == "image/*"
-            choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
-          elsif SUPPORTED_FORMATS.include?(accept)
-            choice = accept
+
+      ActiveSupport::Notifications.instrument("rendered.bob_ross") do |render_payload|
+        render_payload[:transformations] = original_transformations
+        
+        cache_hits = @palette&.get(hash, transformation_string)
+        if cache_hits && !cache_hits.empty?
+          hit = if transformations[:format]
+            cache_hits.find { |h| h[4] == transformations[:format] }
+          else
+            choice = nil
+            image_transparent = cache_hits.first[1]
+
+            acs = accepts.dup
+            if acs
+              while choice.nil? && !acs.empty?
+                accept = acs.shift
+                if accept == "*/*" || accept == "image/*"
+                  choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+                elsif SUPPORTED_FORMATS.include?(accept)
+                  choice = accept
+                end
+              end
+            else
+              choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+            end
+          
+            if choice.nil?
+              payload[:status] = 415
+              return unsupported_media_type
+            end
+          
+            cache_hits.find { |h| h[4] == choice }
+          end
+
+          if hit
+            render_payload[:cache] = true
+            response_headers['Content-Type']  = hit[4]
+            response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+            response_headers['From-Palette']  = '1';
+            cached_file = File.open(@palette.destination(hash, transformation_string, hit[4]))
+            return [ 200, response_headers, StreamFile.new(cached_file) ]
           end
         end
-      else
-        choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
-      end
-      return unsupported_media_type if choice.nil?
+    
+        original_file = if @settings[:store].local?
+          File.open(@settings[:store].destination(hash))
+        else
+          @settings[:store].copy_to_tempfile(hash)
+        end
+    
+        image = BobRoss::Image.new(original_file, @settings)
+        if !transformations[:format]
+          choice = nil
+          if accepts
+            while choice.nil? && !accepts.empty?
+              accept = accepts.shift
+              if accept == "*/*" || accept == "image/*"
+                choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+              elsif SUPPORTED_FORMATS.include?(accept)
+                choice = accept
+              end
+            end
+          else
+            choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+          end
+
+          if choice.nil?
+            payload[:status] = 415
+            return unsupported_media_type
+          end
       
-      transformations[:format] = MIME::Types[choice].first
+          transformations[:format] = MIME::Types[choice].first
+        end
+    
+        transformed_file = image.transform(transformations)
+    
+        # Do this at the end to not cache errors
+        payload[:status] = 200
+        response_headers['Content-Type'] = transformations[:format].to_s
+        response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+        if @palette
+          response_headers['From-Palette'] = '0'
+          @palette.set(hash, image.transparent, transformation_string, transformations[:format].to_s, transformed_file.path)
+        end
+    
+        [200, response_headers, StreamFile.new(transformed_file)]
+      end
     end
-    
-    transformed_file = image.transform(transformations)
-    
-    # Do this at the end to not cache errors
-    response_headers['Content-Type'] = transformations[:format].to_s
-    response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-    response_headers['From-Palette'] = '0' if @palette
-    @palette&.set(hash, image.transparent, transformation_string, transformations[:format].to_s, transformed_file.path)
-    
-    [200, response_headers, StreamFile.new(transformed_file)]
   rescue Errno::ENOENT
     return not_found
   ensure
-    if original_file
+    if defined?(original_file)
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
     end
   end
@@ -296,10 +337,19 @@ class BobRoss::Server
   end
   
   def valid_hmac?(hmac, using, data)
-    using.find do |mtds|
+    valid_hmacs = []
+    matching_hmac = using.find do |mtds|
       valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data[k] }.join(''))
+      valid_hmacs.push(valid_hmac)
       valid_hmac == hmac
     end
+    if !matching_hmac
+      ActiveSupport::Notifications.instrument("invalid_hmac.bob_ross", {
+        hmac: hmac,
+        valid_hmacs: valid_hmacs
+      })
+    end
+    matching_hmac
   end
   
   def accept?(env, mime)

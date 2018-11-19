@@ -14,6 +14,7 @@ require 'mocha/test_unit'
 require 'active_support/testing/time_helpers'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
+BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
 
 # File 'lib/active_support/testing/declarative.rb', somewhere in rails....
 class Minitest::Test

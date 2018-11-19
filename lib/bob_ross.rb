@@ -1,3 +1,4 @@
+require 'logger'
 require 'singleton'
 require 'openssl'
 require 'cgi'
@@ -8,12 +9,18 @@ class BobRoss
   include Singleton
   
   attr_reader :host
+  attr_accessor :logger
+  
+  def initialize
+    @logger = Logger.new(STDOUT)
+  end
   
   def configure(options)
     options = normalize_options(options)
     
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
+    @logger = options.delete(:logger)
     @transformations = options
   end
   

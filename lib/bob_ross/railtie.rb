@@ -78,6 +78,11 @@ class BobRoss::Railtie < Rails::Railtie
         }
       end
     end
+    
+    if !config.logger
+      config.logger = Rails.logger
+      config.server.logger = Rails.logger
+    end
   end
   
   rake_tasks do |app|
@@ -103,7 +108,7 @@ class BobRoss::Railtie < Rails::Railtie
   config.after_initialize do |app|
     initialize_configs(app)
     config = app.config.bob_ross
-    
+ 
     BobRoss.configure(config.except(:server))
 
     if config.server
