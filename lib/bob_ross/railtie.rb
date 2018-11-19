@@ -56,7 +56,7 @@ class BobRoss::Railtie < Rails::Railtie
         config.server.disk_limit = seekrets[:server][:disk_limit] if seekrets[:server][:disk_limit]
         config.server.memory_limit = seekrets[:server][:memory_limit] if seekrets[:server][:memory_limit]
         
-        if seekrets[:server][:palette]
+        if seekrets[:server][:palette] && Dir.exists?(seekrets[:server][:palette][:path]) && Dir.exists?(File.dirname(seekrets[:server][:palette][:file]))
           config.server.palette.file = seekrets[:server][:palette][:file] if seekrets[:server][:palette][:file]
           config.server.palette.path = seekrets[:server][:palette][:path] if seekrets[:server][:palette][:path]
           config.server.palette.size = seekrets[:server][:palette][:size] if seekrets[:server][:palette][:size]
