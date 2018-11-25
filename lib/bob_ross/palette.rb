@@ -4,11 +4,11 @@ require 'fileutils'
 class BobRoss
   class Palette
   
-    attr_reader :path, :size, :max_size, :purge_to
+    attr_reader :path, :max_size, :purge_to
     
     def initialize(path, cachefile, size: nil)
       @path = path
-      @size = size || 1_073_741_824
+      @max_size = size || 1_073_741_824
       @db = SQLite3::Database.new(cachefile)
       @db.busy_timeout = 100
       migrate
@@ -64,6 +64,8 @@ class BobRoss
       # Not unique because of index thttm, another thread probably already
       # generated the image, so we'll just continue and not bother copying over
       # another file
+    rescue Errno::ENOSPC
+      # Disk full, skip
     end
 
     def size
@@ -72,9 +74,10 @@ class BobRoss
     
     def purge!
       total_size = size
-      if total_size > @size
+      if total_size > @max_size
+        puts "Palette filled (#{total_size} / #{@max_size})"
         purged = 0
-        need_to_purge = total_size - @size
+        need_to_purge = total_size - @max_size
         while purged < need_to_purge
           r = @db.execute("SELECT hash, transform, transformed_mime, size FROM transformations ORDER BY transformed_at ASC LIMIT 1").first
           @db.execute(<<-SQL, r[0], r[1], r[2])
@@ -85,6 +88,7 @@ class BobRoss
             FileUtils.rm(destination(r[0], r[1], r[2]))
           rescue Errno::ENOENT
           end
+          puts " purged #{r[3]}"
           purged += r[3]
         end
       end
