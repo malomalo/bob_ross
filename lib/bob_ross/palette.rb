@@ -10,7 +10,7 @@ class BobRoss
       @path = path
       @max_size = size || 1_073_741_824
       @db = SQLite3::Database.new(cachefile)
-      @db.busy_timeout = 100
+      @db.busy_timeout = 300
       migrate
     end
     
@@ -48,6 +48,7 @@ class BobRoss
         SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
         WHERE hash = ? AND transform = ?
       SQL
+    rescue SQLite3::BusyException
     end
     
     def set(hash, transparent, transform, mime, path)
@@ -64,6 +65,10 @@ class BobRoss
       # Not unique because of index thttm, another thread probably already
       # generated the image, so we'll just continue and not bother copying over
       # another file
+    rescue SQLite3::BusyException
+      # Another thread is blocking us from inserting, remove image and continue
+      # Remove file
+      FileUtils.rm(dest)
     rescue Errno::ENOSPC
       # Disk full, skip
     end
@@ -88,8 +93,8 @@ class BobRoss
             FileUtils.rm(destination(r[0], r[1], r[2]))
           rescue Errno::ENOENT
           end
-          puts " purged #{r[3]}"
           purged += r[3]
+          puts " purged #{r[3]} (#{purged} / #{need_to_purge} purged)"
         end
       end
     end
