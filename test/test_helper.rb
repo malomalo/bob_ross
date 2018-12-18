@@ -12,6 +12,7 @@ require 'mocha'
 require 'mocha/test_unit'
 # require 'rack/test'
 require 'active_support/testing/time_helpers'
+require 'storage/filesystem'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)

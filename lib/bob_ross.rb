@@ -3,8 +3,6 @@ require 'singleton'
 require 'openssl'
 require 'cgi'
 
-require File.expand_path('../bob_ross/storage', __FILE__)
-
 class BobRoss
   include Singleton
   

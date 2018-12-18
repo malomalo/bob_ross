@@ -236,8 +236,48 @@ class BobRoss::Server
         else
           @settings[:store].copy_to_tempfile(hash)
         end
-    
-        image = BobRoss::Image.new(original_file, @settings)
+        
+        mime_type = @settings[:store].mime_type(hash)
+        if mime_type.nil?
+          command = Terrapin::CommandLine.new("file", '-b --mime-type :file')
+          mime_type = command.run({ file: destination(key) }).strip
+        end
+
+        image = if mime_type.start_with?('image/')
+          BobRoss::Image.new(original_file, @settings)
+        elsif mime_type == 'application/pdf'
+          screenshot = Tempfile.create(['preview', '.png'], binmode: true)
+          size = transformations[:resize] ? parse_geometry(transformations[:resize]) : nil
+          if size && size[:height] && size[:width]
+            Terrapin::CommandLine.new('mutool', 'draw -h :height -w :width -o :output :input 1').run({
+              input: original_file.path,
+              output: screenshot.path,
+              height: size[:height],
+              width: size[:width]
+            })
+          elsif size && size[:height]
+            Terrapin::CommandLine.new('mutool', 'draw -h :height -o :output :input 1').run({
+              input: original_file.path,
+              output: screenshot.path,
+              height: size[:height]
+            })
+          elsif size && size[:width]
+            Terrapin::CommandLine.new('mutool', 'draw -w :width -o :output :input 1').run({
+              input: original_file.path,
+              output: screenshot.path,
+              width: size[:width]
+            })
+          else
+            Terrapin::CommandLine.new('mutool', 'draw -o :output :input 1').run({
+              input: original_file.path,
+              output: screenshot.path
+            })
+          end
+          BobRoss::Image.new(screenshot, @settings)
+        end
+        
+        return not_implemented if image.nil?
+        
         if !transformations[:format]
           choice = nil
           if accepts
@@ -301,6 +341,10 @@ class BobRoss::Server
     [415, {"Content-Type" => "text/plain"}, ["Accept is requesting an Unsupported Media Type"]]
   end
   
+  def not_implemented
+    [501, {"Content-Type" => "text/plain"}, ["Underlying Media Type is not supported"]]
+  end
+  
   def extract_options(string)
     transformations = {}
     return transformations unless string
@@ -354,6 +398,17 @@ class BobRoss::Server
   
   def accept?(env, mime)
     env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
+  end
+  
+  def parse_geometry(string)
+    string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
+    
+    {
+      width: $1 ? $1.to_i : nil,
+      height: $2 ? $2.to_i : nil,
+      x_offset: $3 ? $3.to_i : nil,
+      y_offset: $4 ? $4.to_i : nil
+    }
   end
   
 end

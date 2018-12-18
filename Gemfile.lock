@@ -1,3 +1,10 @@
+GIT
+  remote: git://github.com/malomalo/storage.git
+  revision: abc92f3d27e32d13a415ce4f6b963174110da14f
+  specs:
+    storage (1.0.0)
+      terrapin
+
 PATH
   remote: .
   specs:
@@ -54,6 +61,7 @@ DEPENDENCIES
   mocha
   rack
   rake
+  storage!
 
 BUNDLED WITH
    1.16.0

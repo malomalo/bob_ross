@@ -4,7 +4,7 @@ require 'rack/mock'
 class BobRossServerTest < Minitest::Test
   
   def create_store
-    BobRoss::FileSystemStore.new({
+    Storage::Filesystem.new({
       path: File.expand_path('../../fixtures', __FILE__)
     })
   end
@@ -126,7 +126,7 @@ class BobRossServerTest < Minitest::Test
 
   test 'Responds with image auto oriented' do
     server = create_server({
-      store: BobRoss::FileSystemStore.new({
+      store: Storage::Filesystem.new({
         path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
       })
     })
@@ -148,7 +148,7 @@ class BobRossServerTest < Minitest::Test
 
   test 'Responds with transformed image that is auto oriented' do
     server = create_server({
-      store: BobRoss::FileSystemStore.new({
+      store: Storage::Filesystem.new({
         path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
       })
     })
@@ -171,4 +171,24 @@ class BobRossServerTest < Minitest::Test
   test 'if hmac present and hmac not configured'
   
   test 'asking for a watermark when not configured'
+  
+  test 'a PDF' do
+    server = create_server
+    
+    response = server.get("/flyer")
+    assert_equal 'image/jpeg', response.headers['Content-Type']
+    assert_equal '6d759df1195c298a857bba244e413147', Digest::MD5.hexdigest(response.body)
+    
+    response = server.get("/S100/floorplan")
+    assert_equal 'image/jpeg', response.headers['Content-Type']
+    assert_equal 'f76203c7d821dd162fea2ec9c9567013', Digest::MD5.hexdigest(response.body)
+    
+    response = server.get("/S50x50/floorplan")
+    assert_equal 'image/jpeg', response.headers['Content-Type']
+    assert_equal '9e672688041fcd37da70d3189331a28b', Digest::MD5.hexdigest(response.body)
+    
+    response = server.get("/Sx50/flyer")
+    assert_equal 'image/jpeg', response.headers['Content-Type']
+    assert_equal '450ee0f73ed790b90cb995bdae3de20a', Digest::MD5.hexdigest(response.body)
+  end
 end

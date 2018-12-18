@@ -12,7 +12,7 @@ class BobRossServerWithPaletteTest < Minitest::Test
   end
   
   def create_store
-    BobRoss::FileSystemStore.new({
+    Storage::Filesystem.new({
       path: File.expand_path('../../fixtures', __FILE__)
     })
   end
@@ -226,4 +226,24 @@ class BobRossServerWithPaletteTest < Minitest::Test
   test 'if hmac present and hmac not configured'
   
   test 'asking for a watermark when not configured'
+  
+  test 'a PDF' do
+    server = create_server
+
+    cache_test do |r|
+      assert_equal r, server.get("/flyer").headers['From-Palette']
+    end
+
+    cache_test do |r|
+      assert_equal r, server.get("/S100/floorplan").headers['From-Palette']
+    end
+
+    cache_test do |r|
+      assert_equal r, server.get("/S50x50/floorplan").headers['From-Palette']
+    end
+    
+    cache_test do |r|
+      assert_equal r, server.get("/Sx50/flyer").headers['From-Palette']
+    end
+  end
 end
