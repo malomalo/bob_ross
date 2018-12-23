@@ -238,9 +238,9 @@ class BobRoss::Server
         end
         
         mime_type = @settings[:store].mime_type(hash)
-        if mime_type.nil?
+        if mime_type.nil? || mime_type == 'application/octet-stream'
           command = Terrapin::CommandLine.new("file", '-b --mime-type :file')
-          mime_type = command.run({ file: destination(key) }).strip
+          mime_type = command.run({ file: original_file.path }).strip
         end
 
         image = if mime_type.start_with?('image/')
