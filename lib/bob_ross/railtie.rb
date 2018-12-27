@@ -56,6 +56,7 @@ class BobRoss::Railtie < Rails::Railtie
         config.server.disk_limit = seekrets[:server][:disk_limit] if seekrets[:server][:disk_limit]
         config.server.memory_limit = seekrets[:server][:memory_limit] if seekrets[:server][:memory_limit]
         
+
         if seekrets[:server][:palette] && Dir.exists?(seekrets[:server][:palette][:path]) && Dir.exists?(File.dirname(seekrets[:server][:palette][:file]))
           config.server.palette.file = seekrets[:server][:palette][:file] if seekrets[:server][:palette][:file]
           config.server.palette.path = seekrets[:server][:palette][:path] if seekrets[:server][:palette][:path]
@@ -91,7 +92,8 @@ class BobRoss::Railtie < Rails::Railtie
         desc "Purge old cached files from the Palette"
         task purge: :environment do
           initialize_configs(app)
-          if config = app.config.bob_ross.server.palette
+          config = app.config.bob_ross.server.palette
+          if !config.empty? && Dir.exists?(config[:path]) && File.exists?(config[:file])
             require 'bob_ross/palette'
 
             BobRoss::Palette.new(
