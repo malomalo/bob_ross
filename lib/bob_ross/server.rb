@@ -134,39 +134,12 @@ class BobRoss::Server
         response_headers['Last-Modified'] = last_modified.httpdate
       end
 
-      if env['HTTP_DPR'] && transformations[:resize]
-        transformations[:dpr] = env['HTTP_DPR'].to_f
-      
-        transformations[:resize] = transformations[:resize].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-        transformation_string.gsub!(/S[^A-Z]+/, "S#{CGI.escape(transformations[:resize])}")
-
-        if transformations[:padding]
-          transformations[:padding] = transformations[:padding].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-          transformation_string.gsub!(/P[^A-Z]+/, "P#{transformations[:padding]}")
-        end
-
-        if transformations[:crop]
-          transformations[:crop] = transformations[:crop].gsub(/\d+/){ |d| d.to_i * transformations[:dpr] }
-          transformation_string.gsub!(/C[^A-Z]+/, "C#{transformations[:crop]}")
-        end
-      
-        response_headers['Content-DPR'] = transformations[:dpr].to_s
-      end
-
       if requested_format
         transformations[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.'))
       end
     
-      if transformations[:format]
-        if transformations[:resize]
-          response_headers['Vary'] = 'DPR'
-        end
-      else
-        if transformations[:resize]
-          response_headers['Vary'] = 'Accept, DPR'
-        else
-          response_headers['Vary'] = 'Accept'
-        end
+      if transformations[:format].nil?
+        response_headers['Vary'] = 'Accept'
       end
 
       if accepts = env['HTTP_ACCEPT']

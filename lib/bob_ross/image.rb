@@ -48,7 +48,7 @@ class BobRoss::Image
   end
   
   def transform(transformations)
-    return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format].content_type && [nil, 1].include?(@orientation)
+    return @source if (transformations.keys - [:format]).empty? && @mime_type == transformations[:format].content_type && [nil, 1].include?(@orientation)
     
     if transformations[:padding]
       padding = transformations[:padding].split(',').map(&:to_i)

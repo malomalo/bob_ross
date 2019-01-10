@@ -43,33 +43,6 @@ class BobRossServerWithPaletteTest < Minitest::Test
     assert_equal "1", response.headers['From-Palette']
   end
 
-  # Test also for Request Header DPR
-  test 'Response Header: "Content-DPR"' do
-    server = create_server
-    
-    # Default is 1; so don't include header on normal request
-    cache_test do |r|
-      response = server.get("/opaque")
-      assert !response.headers.has_key?('Content-DPR')
-      assert_equal r, response.headers['From-Palette']
-    end
-    
-    # Requesting a image with DPR 2, without resizing just returns like normal
-    response = server.get("/opaque", {'HTTP_DPR' => '2.0'})
-    assert !response.headers.has_key?('Content-DPR')
-    assert_equal "1", response.headers['From-Palette']
-
-    # Set Cache w/o DPR
-    server.get("/S100x100/opaque", {})
-    
-    # Requesting a image with DPR 2, with resizing gets us an image w/that DPR
-    cache_test do |r|
-      response = server.get("/S100x100/opaque", {'HTTP_DPR' => '2.0'})
-      assert_equal "2.0", response.headers['Content-DPR']
-      assert_equal r, response.headers['From-Palette']
-    end
-  end
-  
   test 'Response Header: "Content-Type"' do
     server = create_server
     
@@ -156,9 +129,9 @@ class BobRossServerWithPaletteTest < Minitest::Test
       assert_equal 'Accept', server.get("/opaque").headers['Vary']
     end
     
-    # If resizing the image responses also dependon the DPR header
+    # If resizing the image
     cache_test do |r|
-      assert_equal 'Accept, DPR', server.get("/S100x100/opaque").headers['Vary']
+      assert_equal 'Accept', server.get("/S100x100/opaque").headers['Vary']
     end
     
     # If using format is specified in the URL no varying based on headers; will
@@ -167,9 +140,9 @@ class BobRossServerWithPaletteTest < Minitest::Test
       assert !server.get("/opaque.jpg").headers.has_key?('Vary')
     end
     
-    # If resizing the image responses also dependon the DPR header
+    # If resizing the image
     cache_test do |r|
-      assert_equal 'DPR', server.get("/S100x100/opaque.jpg").headers['Vary']
+      assert !server.get("/S100x100/opaque.jpg").headers.has_key?('Vary')
     end
   end
   
