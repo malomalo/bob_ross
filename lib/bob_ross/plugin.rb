@@ -1,5 +1,11 @@
 class BobRoss::Plugin
 
+  def self.encode_transformations(key, value)
+  end
+
+  def self.extract_options(transformations, key, value)
+  end
+
   def self.parse_geometry(string)
     string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
   

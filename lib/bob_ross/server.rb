@@ -135,7 +135,7 @@ class BobRoss::Server
       end
 
       if requested_format
-        transformations[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.'))
+        transformations[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
       end
     
       if transformations[:format].nil?
@@ -167,7 +167,7 @@ class BobRoss::Server
         cache_hits = @palette&.get(hash, transformation_string)
         if cache_hits && !cache_hits.empty?
           hit = if transformations[:format]
-            cache_hits.find { |h| h[4] == transformations[:format].content_type }
+            cache_hits.find { |h| h[4] == transformations[:format] }
           else
             choice = nil
             image_transparent = cache_hits.first[1]
@@ -244,18 +244,18 @@ class BobRoss::Server
             return unsupported_media_type
           end
       
-          transformations[:format] = MiniMime.lookup_by_content_type(choice)
+          transformations[:format] = choice
         end
     
         transformed_file = image.transform(transformations)
     
         # Do this at the end to not cache errors
         payload[:status] = 200
-        response_headers['Content-Type'] = transformations[:format].content_type
+        response_headers['Content-Type'] = transformations[:format]
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         if @palette
           response_headers['From-Palette'] = '0'
-          @palette.set(hash, image.transparent, transformation_string, transformations[:format].content_type, transformed_file.path)
+          @palette.set(hash, image.transparent, transformation_string, transformations[:format], transformed_file.path)
         end
     
         [200, response_headers, StreamFile.new(transformed_file)]
