@@ -218,35 +218,8 @@ class BobRoss::Server
 
         image = if mime_type.start_with?('image/')
           BobRoss::Image.new(original_file, @settings)
-        elsif mime_type == 'application/pdf'
-          screenshot = Tempfile.create(['preview', '.png'], binmode: true)
-          size = transformations[:resize] ? parse_geometry(transformations[:resize]) : nil
-          if size && size[:height] && size[:width]
-            Terrapin::CommandLine.new('mutool', 'draw -h :height -w :width -o :output :input 1').run({
-              input: original_file.path,
-              output: screenshot.path,
-              height: size[:height],
-              width: size[:width]
-            })
-          elsif size && size[:height]
-            Terrapin::CommandLine.new('mutool', 'draw -h :height -o :output :input 1').run({
-              input: original_file.path,
-              output: screenshot.path,
-              height: size[:height]
-            })
-          elsif size && size[:width]
-            Terrapin::CommandLine.new('mutool', 'draw -w :width -o :output :input 1').run({
-              input: original_file.path,
-              output: screenshot.path,
-              width: size[:width]
-            })
-          else
-            Terrapin::CommandLine.new('mutool', 'draw -o :output :input 1').run({
-              input: original_file.path,
-              output: screenshot.path
-            })
-          end
-          BobRoss::Image.new(screenshot, @settings)
+        elsif plugin = BobRoss.plugins[mime_type]
+          BobRoss::Image.new(plugin.transform(original_file, transformations), @settings)
         end
         
         return not_implemented if image.nil?
@@ -372,16 +345,5 @@ class BobRoss::Server
   def accept?(env, mime)
     env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
   end
-  
-  def parse_geometry(string)
-    string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?.*$/
-    
-    {
-      width: $1 ? $1.to_i : nil,
-      height: $2 ? $2.to_i : nil,
-      x_offset: $3 ? $3.to_i : nil,
-      y_offset: $4 ? $4.to_i : nil
-    }
-  end
-  
+
 end

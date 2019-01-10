@@ -6,10 +6,13 @@ require 'cgi'
 class BobRoss
   include Singleton
   
-  attr_reader :host
+  autoload :Plugin, File.expand_path('../bob_ross/plugin', __FILE__)
+
+  attr_reader :host, :plugins
   attr_accessor :logger
-  
+
   def initialize
+    @plugins = {}
     @logger = Logger.new(STDOUT)
   end
   
@@ -20,6 +23,12 @@ class BobRoss
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
     @transformations = options
+  end
+  
+  def register_plugin(plugin)
+    plugin.mime_types.each do |mime_type|
+      @plugins[mime_type] = plugin
+    end
   end
   
   def normalize_options(options)
@@ -135,6 +144,13 @@ class BobRoss
         end
       # when :quality
       #   string << "Q#{value}"
+      else
+        @plugins.values.find do |plugin|
+          if encode = plugin.encode_transformations(key, value)
+            string << encode
+            true
+          end
+        end
       end
     end
     

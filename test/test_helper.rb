@@ -5,6 +5,7 @@ $LOAD_PATH << File.expand_path('../lib', __FILE__)
 require 'bob_ross'
 require 'bob_ross/server'
 require 'bob_ross/palette'
+require 'bob_ross/plugins/pdf'
 require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
