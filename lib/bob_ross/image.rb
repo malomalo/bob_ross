@@ -40,7 +40,7 @@ class BobRoss::Image
     
     mime_command = Terrapin::CommandLine.new("file", '--mime -b :file')
     
-    @mime_type = MIME::Types[mime_command.run({ file: @source.path }).split(';')[0]].first
+    @mime_type = MiniMime.lookup_by_content_type(mime_command.run({ file: @source.path }).split(';')[0]).content_type
     @opaque = output.match(/^Opaque:\s(true|false)\s*$/i)[1] == 'True'
     @geometry = parse_geometry(output.match(/^Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
     @orientation = output.match(/^Orientation:\s(\d)\s*$/i)
@@ -48,7 +48,7 @@ class BobRoss::Image
   end
   
   def transform(transformations)
-    return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format] && [nil, 1].include?(@orientation)
+    return @source if (transformations.keys - [:dpr, :format]).empty? && @mime_type == transformations[:format].content_type && [nil, 1].include?(@orientation)
     
     if transformations[:padding]
       padding = transformations[:padding].split(',').map(&:to_i)
@@ -176,7 +176,7 @@ class BobRoss::Image
       when :lossless
         params << "-define webp:lossless=true"
       when :optimize
-        params << "-quality 85" unless transformations[:format].to_s == 'image/webp'
+        params << "-quality 85" unless transformations[:format].content_type == 'image/webp'
         params << "-define png:compression-filter=5"
         params << "-define png:compression-level=9"
         params << "-define png:compression-strategy=1"
@@ -193,7 +193,7 @@ class BobRoss::Image
     transformations.delete(:lossless)
     
     params << ":output"
-    output = Tempfile.new(['blob', ".#{transformations[:format].preferred_extension}"], binmode: true)
+    output = Tempfile.new(['blob', ".#{transformations[:format].extension}"], binmode: true)
     
     begin
       command = Terrapin::CommandLine.new("convert", params.join(' '))

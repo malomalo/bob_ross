@@ -27,5 +27,5 @@ Gem::Specification.new do |s|
   # Runtime
   s.add_runtime_dependency 'sqlite3'
   s.add_runtime_dependency 'terrapin'
-  s.add_runtime_dependency 'mime-types'
+  s.add_runtime_dependency 'mini_mime'
 end
