@@ -12,7 +12,7 @@ class BobRossServerWithPaletteTest < Minitest::Test
   end
   
   def create_store
-    Storage::Filesystem.new({
+    StandardStorage::Filesystem.new({
       path: File.expand_path('../../fixtures', __FILE__)
     })
   end

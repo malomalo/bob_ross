@@ -4,7 +4,7 @@ require 'rack/mock'
 class BobRossServerTest < Minitest::Test
   
   def create_store
-    Storage::Filesystem.new({
+    StandardStorage::Filesystem.new({
       path: File.expand_path('../../fixtures', __FILE__)
     })
   end
@@ -126,7 +126,7 @@ class BobRossServerTest < Minitest::Test
 
   test 'Responds with image auto oriented' do
     server = create_server({
-      store: Storage::Filesystem.new({
+      store: StandardStorage::Filesystem.new({
         path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
       })
     })
@@ -148,7 +148,7 @@ class BobRossServerTest < Minitest::Test
 
   test 'Responds with transformed image that is auto oriented' do
     server = create_server({
-      store: Storage::Filesystem.new({
+      store: StandardStorage::Filesystem.new({
         path: File.expand_path('../../fixtures/images_with_orientations', __FILE__)
       })
     })

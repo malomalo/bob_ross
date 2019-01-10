@@ -1,10 +1,3 @@
-GIT
-  remote: git://github.com/malomalo/storage.git
-  revision: abc92f3d27e32d13a415ce4f6b963174110da14f
-  specs:
-    storage (1.0.0)
-      terrapin
-
 PATH
   remote: .
   specs:
@@ -16,7 +9,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (5.2.1)
+    activesupport (5.2.2)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
@@ -24,23 +17,25 @@ GEM
     ansi (1.5.0)
     builder (3.2.3)
     climate_control (0.2.0)
-    concurrent-ruby (1.0.5)
-    i18n (1.1.0)
+    concurrent-ruby (1.1.4)
+    i18n (1.5.1)
       concurrent-ruby (~> 1.0)
     metaclass (0.0.4)
     mini_mime (1.0.1)
     minitest (5.11.3)
-    minitest-reporters (1.3.4)
+    minitest-reporters (1.3.5)
       ansi
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    mocha (1.1.0)
+    mocha (1.7.0)
       metaclass (~> 0.0.1)
-    rack (2.0.5)
-    rake (12.3.1)
+    rack (2.0.6)
+    rake (12.3.2)
     ruby-progressbar (1.10.0)
     sqlite3 (1.3.13)
+    standardstorage (1.0.2)
+      terrapin
     terrapin (0.6.0)
       climate_control (>= 0.0.3, < 1.0)
     thread_safe (0.3.6)
@@ -59,7 +54,7 @@ DEPENDENCIES
   mocha
   rack
   rake
-  storage!
+  standardstorage
 
 BUNDLED WITH
    1.16.0

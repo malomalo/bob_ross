@@ -9,10 +9,11 @@ require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
 require 'mocha'
-require 'mocha/test_unit'
+require 'mocha/minitest'
 # require 'rack/test'
 require 'active_support/testing/time_helpers'
-require 'storage/filesystem'
+require 'standard_storage'
+require 'standard_storage/filesystem'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
