@@ -216,10 +216,10 @@ class BobRoss::Server
           mime_type = command.run({ file: original_file.path }).strip
         end
 
-        image = if mime_type.start_with?('image/')
-          BobRoss::Image.new(original_file, @settings)
-        elsif plugin = BobRoss.plugins[mime_type]
+        image = if plugin = BobRoss.plugins[mime_type]
           BobRoss::Image.new(plugin.transform(original_file, transformations), @settings)
+        elsif mime_type.start_with?('image/')
+          BobRoss::Image.new(original_file, @settings)
         end
         
         return not_implemented if image.nil?
