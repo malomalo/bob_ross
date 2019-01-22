@@ -86,27 +86,6 @@ class BobRoss::Railtie < Rails::Railtie
     end
   end
   
-  rake_tasks do |app|
-    namespace :bob_ross do
-      namespace :palette do
-        desc "Purge old cached files from the Palette"
-        task purge: :environment do
-          initialize_configs(app)
-          config = app.config.bob_ross.server.palette
-          if !config.empty? && Dir.exists?(config[:path]) && File.exists?(config[:file])
-            require 'bob_ross/palette'
-
-            BobRoss::Palette.new(
-              config[:path],
-              config[:file],
-              size: config[:size]
-            ).purge!
-          end
-        end
-      end
-    end
-  end
-  
   config.after_initialize do |app|
     initialize_configs(app)
     config = app.config.bob_ross

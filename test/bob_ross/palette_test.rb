@@ -29,7 +29,7 @@ class BobRoss::PaletteTest < Minitest::Test
     assert_equal [[key, 1, transform, File.size(fixture('opaque')), 'image/png', time.to_i]], palette.get(key, transform)
   end
   
-  test 'purging once cache is full' do
+  test 'size of cache doesnt go above mas size' do
     size = File.size(fixture('opaque'))
     palette = BobRoss::Palette.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'), size: size * 5)
     keys = Array.new(5) { SecureRandom.hex(32) }
@@ -48,8 +48,6 @@ class BobRoss::PaletteTest < Minitest::Test
     keys << SecureRandom.hex(32)
     palette.set(keys.last, true, transform, 'image/png', fixture('opaque'))
     
-    assert_equal size * 6, palette.size
-    palette.purge!
     assert_equal size * 5, palette.size
   end
 

@@ -199,7 +199,7 @@ class BobRoss::Server
             response_headers['Content-Type']  = hit[4]
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
             response_headers['From-Palette']  = '1';
-            cached_file = File.open(@palette.destination(hash, transformation_string, hit[4]))
+            cached_file = @palette.use(hash, transformation_string, hit[4])
             return [ 200, response_headers, StreamFile.new(cached_file) ]
           end
         end
