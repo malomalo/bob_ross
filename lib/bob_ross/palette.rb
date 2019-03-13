@@ -86,6 +86,7 @@ class BobRoss
       SQL
       
       File.open(destination(hash, transform, mime))
+    rescue SQLite3::BusyException
     end
     
     def set(hash, transparent, transform, mime, path)
@@ -111,6 +112,24 @@ class BobRoss
       nil
     rescue Errno::ENOSPC
       # Disk full, skip
+    end
+
+    def del(hash)
+      entries = @db.execute(<<-SQL, hash).to_a
+        SELECT hash, transform, transformed_mime FROM transformations
+        WHERE hash = ?
+      SQL
+      
+      entries.each do |entry|
+        @db.execute(<<-SQL, entry[0], entry[1], entry[2])
+          DELETE FROM transformations
+          WHERE hash = ? AND transform = ? AND transformed_mime = ?
+        SQL
+        begin
+          FileUtils.rm(destination(entry[0], entry[1], entry[2]))
+        rescue Errno::ENOENT
+        end
+      end
     end
 
     def size
