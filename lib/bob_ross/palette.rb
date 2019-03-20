@@ -85,8 +85,9 @@ class BobRoss
         WHERE hash = ? AND transform = ? AND transformed_mime = ?;
       SQL
       
-      File.open(destination(hash, transform, mime))
     rescue SQLite3::BusyException
+    ensure
+      return File.open(destination(hash, transform, mime))
     end
     
     def set(hash, transparent, transform, mime, path)
