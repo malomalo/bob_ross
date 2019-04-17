@@ -97,7 +97,7 @@ class BobRoss::Server
         transformation_string = match[2]
       
         if !valid_hmac?(provided_hmac, @settings[:hmac][:attributes], {
-          transformations: transformation_string,
+          transformations: required_transformations(transformation_string),
           hash: hash,
           format: requested_format
         })
@@ -108,8 +108,14 @@ class BobRoss::Server
         payload[:status] = 404
         return not_found 
       end
-    
-      transformations = extract_options(transformation_string)
+      
+      mime_type = @settings[:store].mime_type(hash)
+      if mime_type.nil? || mime_type == 'application/octet-stream'
+        command = Terrapin::CommandLine.new("file", '-b --mime-type :file')
+        mime_type = command.run({ file: original_file.path }).strip
+      end
+      plugin = BobRoss.plugins[mime_type]
+      transformations = extract_options(transformation_string, plugin)
       original_transformations = transformations.dup
       
       if transformations[:expires]
@@ -210,13 +216,7 @@ class BobRoss::Server
           @settings[:store].copy_to_tempfile(hash)
         end
         
-        mime_type = @settings[:store].mime_type(hash)
-        if mime_type.nil? || mime_type == 'application/octet-stream'
-          command = Terrapin::CommandLine.new("file", '-b --mime-type :file')
-          mime_type = command.run({ file: original_file.path }).strip
-        end
-
-        image = if plugin = BobRoss.plugins[mime_type]
+        image = if plugin
           BobRoss::Image.new(plugin.transform(original_file, transformations), @settings)
         elsif mime_type.start_with?('image/')
           BobRoss::Image.new(original_file, @settings)
@@ -291,7 +291,7 @@ class BobRoss::Server
     [501, {"Content-Type" => "text/plain"}, ["Underlying Media Type is not supported"]]
   end
   
-  def extract_options(string)
+  def extract_options(string, plugin=nil)
     transformations = {}
     return transformations unless string
     
@@ -322,6 +322,7 @@ class BobRoss::Server
       when 'W'.freeze
         transformations[:watermark] = value
       end
+      plugin.extract_options(transformations, key, value) if plugin
     end
     transformations
   end
@@ -344,6 +345,10 @@ class BobRoss::Server
   
   def accept?(env, mime)
     env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
+  end
+  
+  def required_transformations(string)
+    string.gsub(/R[\d\*\,\-]+/, '')
   end
 
 end
