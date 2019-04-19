@@ -69,6 +69,15 @@ class BobRoss::Server
         size: options[:palette][:size]
       )
     end
+    
+    if options[:watermarks]
+      options[:watermarks].map! do |watermark_path|
+        {
+          path: watermark_path,
+          geometry: BobRoss.backend.identify(watermark_path)[:geometry]
+        }
+      end
+    end
 
     result
   end

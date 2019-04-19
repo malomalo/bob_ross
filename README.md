@@ -174,21 +174,23 @@ The __`transformations`__ is composed of the following avaiable transformations
 that can be performed on the image. The options are alphabetically sorted with
 the exception of the `H` (HMAC option) which always comes first.
 
-  - `Brrggbbaa` Sets the background color, defaults to `00000000`
+  - `Brrggbb[aa]` Sets the background color, defaults to `00000000`
 
-  - `C{geometry}{offset}` Crops the image to the specified geometry where
+  - `C{geometry}{offset_or_func_or_gravity}` Crops the image to the specified geometry where
     geometry is:
 
       - `width` - Width given, height automatically set to image height.
       - `xheight` - Height given, width automatically set to image width.
       - `widthxheight` - Width & Height explicitly given.
 
-      And offset is:
+      And `offset_or_func_or_gravity` is one of the following (default is `c`):
 
       - `{+-}x{+-}y` Can be appended to any geometry to set the horizontal
         and vertical offsets `x` and `y`, specified in pixels. Signs are
         required for both. Offsets are not affected by % or other size
-        operators. Default is `+0+0`
+        operators.
+      - `gravity` Gravity, options listed below
+	  - `sm` Smart crop, looks for features likely to draw human attention
 
   - `E5772bd72` Sets the expiration of the link. The value is the current time in
     seconds, hex encoded. Once the specified time has passed the server will
@@ -215,34 +217,34 @@ the exception of the `H` (HMAC option) which always comes first.
       !!! UNLESS jpg! need to do
     - Set's the quality/compression to 85 for JPEG, and PNG
 
-  - `P{top},{left},{bottom},{right}` - Adds N pixels of padding to the image,
-    interperted like the CSS padding statement.
+  - `P{top},{left},{bottom},{right}[w{rrggbb[aa]}]` - Adds N pixels of padding to the image,
+    interperted like the CSS padding statement, optionally followed bye the a `w` and the RGB(a)
+	color to use for the padding.
   
-  - `S{geometry}{gravity}` Resize the image to the specified geometry where the geometry is:
+  - `S{geometry}{gravity}[p{rrggbb[aa]}]` Resize the image to the specified geometry where the geometry is:
 
-    - `width` - Width given, height automatically selected to preserve aspect
-      ratio.
-    - `xheight` - Height given, width automatically selected to preserve aspect
-      ratio.
-    - `widthxheight` - Maximum values of height and width given, aspect ratio
-      preserved
-    - `widthxheight^` - Minimum values of width and height given, aspect ratio
-      preserved.
-    - `widthxheight!` - Width and height emphatically given, original aspect
-      ratio ignored.
-    - `widthxheight>` - Shrinks an image with dimension(s) larger than the
-      corresponding width and/or height argument(s).
-    - `widthxheight<` - Enlarges an image with dimension(s) smaller than the
-      corresponding width and/or height argument(s).
-    - `widthxheight#` - Width and height given, image fit to be contained by
-      deminsions while perserving aspect ratio. Image is positioned according to
-      the gravity or centered vertically and horizontally if not given and a
-      background color is applied.
-    - `widthxheight*` - Width and height given, image fit/croped to cover the
-      deminsions while perserving aspect ratio. Image is positioned according to
-      the gravity or centered centered vertically and horizontally if not given.
+    - `width` - `resize_to_height`, resize the image to given width, height
+      automatically selected to preserve aspect ratio.
+    - `xheight` - `resize_to_height`, resize the image to given height, width
+      automatically selected to preserve aspect ratio.
+    - `widthxheight` - `resize_to_fit`, resize the image to fit within the given
+      dimensions while preserving the aspect ratio.
+    - `widthxheight!` - `resize`, resize the image to the dimensions ignoring the
+      aspect ration.
+    - `widthxheight>` - `resize_down`, shrink an image with dimension(s) larger
+      than the corresponding width or height.
+    - `widthxheight<` - `resize_up`, enlarge an image with dimension(s) smaller
+      than the corresponding width or height.
+    - `widthxheight#` - `resize_to_fit`, resize the image to fit within the
+      specified dimensions while preserving the original aspect ratio. The image
+      may be shorter or narrower than specified and is positioned according to
+      the given gravity (default: centered) and a color (default: transparent black)
+      is applied to meet the given dimensions.
+    - `widthxheight*` - `resize_to_fill`, resize and fit/crop the image within
+      the specified dimensions while preserving the aspect ratio of the original
+      image. If necessary, crop the image to cover the area.
       
-    And the gravity is on of the following:
+    Gravity is on of the following:
 
     - `gravity` Where to place the watermark on the image. Valid options are:
       - `c` for Center
@@ -254,6 +256,8 @@ the exception of the `H` (HMAC option) which always comes first.
       - `sw` for South West
       - `w` for West
       - `nw` for North West
+
+    p is the color to use on the edges with `#`, defaults to '#00000000'
 
   - `T` Choose a format that supports transparency
 
@@ -296,8 +300,6 @@ By default the size of the cache is only 1GB, you can set that by setting the nu
 ```ruby
 BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 10_737_418_240)
 ```
-
-BobRoss **does not** automatically clear the cache. Currently you will need to setup a cron job to purge the cache of the oldest files. To do that you just need to run the `purge!` method on the Palette.
 
 ## Rails
 
@@ -369,8 +371,7 @@ Limit the memory used by imagemagick to transform an image. Default `"1GB"`
 **`config.bob_ross.server.palette`**
 
 If set to false the palette cache will be disabled. Default in **`production`** is
-*`false`*. If this is set to true be sure to run the `bob_ross:palette:purge` task
-on a cron to avoid filling up the disk.
+*`false`*.
 
 **`config.bob_ross.server.palette.file`**
 
@@ -385,7 +386,8 @@ Where to cache the transformed images. Default is `"tmp/cache/bobross"`
 
 Amount of disk size in bytes to use for the Palette cache. Default is `1.gigabyte`
 
-### Rake Tasks
+## Plugins
 
-BobRoss provides the `bob_ross:palette:purge` task which needs to run occasionally
-to clear the cache of old file and keep the cache dir below the size limit specified and to avoid filling up the disk.
+BobRoss can process any image format that ImageMagick accepts. To process other types of files and turn them into images that BobRoss can use.you can use 
+
+BobRoss also

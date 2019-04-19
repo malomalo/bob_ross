@@ -23,6 +23,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'activesupport'
   s.add_development_dependency 'standardstorage'
+  s.add_development_dependency 'ruby-vips'
+  s.add_development_dependency 'byebug'
   
   # Runtime
   s.add_runtime_dependency 'sqlite3'

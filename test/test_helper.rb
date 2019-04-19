@@ -2,6 +2,7 @@
 # installed gem
 $LOAD_PATH << File.expand_path('../lib', __FILE__)
 
+require 'byebug'
 require 'bob_ross'
 require 'bob_ross/server'
 require 'bob_ross/palette'
@@ -43,7 +44,58 @@ class Minitest::Test
       sleep 0.1
     end
   end
+  
+  def debug
+    $debug = true
+    yield
+  ensure
+    $debug = false
+  end
 
+  def color_to_rgba(value)
+    "##{value.map {|i| i.to_i.to_s(16) }.join('')}"
+  end
+  
+  def assert_color(exp, actual)
+    actual = color_to_rgba(actual)
+    if exp.length < actual.length
+      exp += 'ff'
+    end
+    assert_equal(exp, actual)
+  end
+  
+  def assert_geometry(geom, image)
+    image = ::Vips::Image.new_from_file(image.path)
+    
+    assert_equal geom, "#{image.width}x#{image.height}"
+  end
+  
+  # exp is the signature or [IM sig, libvips sig]
+  def assert_signature(exp, image)
+    if exp.is_a?(Array)
+      if BobRoss.backend.name == 'BobRoss::ImageMagickBackend'
+        exp = exp.first
+      else
+        exp = exp.last
+      end
+    end
+
+    signature = `identify -verbose '#{image.path}'`.match(/signature: (\w+)/)[1]
+    assert_equal(exp, signature)
+  end
+  
+  def assert_transform(input, transform, tests)
+    output = input.transform(transform)
+
+    bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
+    line = caller.find { |l| l.start_with?(File.dirname(__FILE__)) }.delete_prefix(File.dirname(__FILE__)).split(':')
+    # `cp '#{output.path}' ~/test/#{File.basename(line.first).split('.').first}.#{line[1]}.#{bnd}#{File.extname(output.path)}`
+
+    tests.each do |k, v|
+      send("assert_#{k}", v, output)
+    end
+  end
+  
   def fixture(path)
     File.expand_path(File.join('../fixtures', path), __FILE__)
   end

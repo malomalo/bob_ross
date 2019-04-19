@@ -7,6 +7,9 @@ class BobRoss
   include Singleton
   
   autoload :Plugin, File.expand_path('../bob_ross/plugin', __FILE__)
+  autoload :BackendHelpers, File.expand_path('../bob_ross/backends/helpers', __FILE__)
+  autoload :ImageMagickBackend, File.expand_path('../bob_ross/backends/imagemagick', __FILE__)
+  autoload :LibVipsBackend, File.expand_path('../bob_ross/backends/libvips', __FILE__)
 
   attr_reader :host, :plugins
   attr_accessor :logger
@@ -23,6 +26,11 @@ class BobRoss
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
     @transformations = options
+    @backend = options.delete(:backend)
+  end
+  
+  def backend
+    @backend || BobRoss::ImageMagickBackend
   end
   
   def register_plugin(plugin)
@@ -139,8 +147,10 @@ class BobRoss
       when :watermark
         if value.is_a?(Integer)
           string << 'W' + value.to_s + 'se'
-        elsif value
+        elsif value.is_a?(Hash)
           string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
+        elsif
+          string << 'W' + value
         end
       # when :quality
       #   string << "Q#{value}"

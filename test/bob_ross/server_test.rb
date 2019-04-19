@@ -97,7 +97,7 @@ class BobRossServerTest < Minitest::Test
     server = create_server
     
     assert_equal 'image/jpeg', server.get("/opaque").headers['Content-Type']
-    assert_equal 'image/png', server.get("/transparent").headers['Content-Type']
+    assert_equal 'image/png',  server.get("/transparent").headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/*,*/*;q=0.8'}).headers['Content-Type']
   end
   
@@ -162,18 +162,19 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal '6d759df1195c298a857bba244e413147', Digest::MD5.hexdigest(response.body)
+    assert_includes ['57721c8105857e29d9d18f27f445399f', '9d95b18af3bbad793d0b01427430d9e6'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal 'f76203c7d821dd162fea2ec9c9567013', Digest::MD5.hexdigest(response.body)
+    assert_includes ['919a4910d4e2afd36f0656ef86715ffe', 'fcab49d3d0ccaf2c1f1556efbcf03fc5'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal '9e672688041fcd37da70d3189331a28b', Digest::MD5.hexdigest(response.body)
+    assert_includes ['e2ec209818d3bae17a98f39ade5947ec', 'ac726a807b0aa6d68b7a67d4baedc1e4'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
+    File.write("/Users/malomalo/Code/bob_ross/test.jpg", response.body)
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal '450ee0f73ed790b90cb995bdae3de20a', Digest::MD5.hexdigest(response.body)
+    assert_includes ['f0f80b815ddbbc6c681fbd1dc730dea0', 'b0f23188357ee09f7eb6448561cb6f69'], Digest::MD5.hexdigest(response.body)
   end
 end
