@@ -164,7 +164,7 @@ class BobRoss
       end
     end
     
-    string.sort.join('')
+    string.join('')
   end
   
   # Delegates all uncauge class method calls to the singleton

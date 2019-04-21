@@ -261,7 +261,8 @@ module BobRoss::LibVipsBackend
 
   def transform(image, transformations)
     vips = ::Vips::Image.new_from_file(image.source.path, select_valid_loader_options(image.source.path, {}))
-
+    vips.add_alpha if !vips.has_alpha?
+    
     if image.orientation
       vips = case image.orientation
       when 2

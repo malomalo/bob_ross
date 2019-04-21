@@ -131,9 +131,19 @@ module BobRoss::ImageMagickBackend
       params << "-extent :resize_extent"
       interpolations[:resize_extent]  = transform[0...idx]
       interpolations[:resize]         = transform[0...idx]
+      interpolations[:size]           = parse_geometry(transform)
+    else
+      old_size = interpolations[:size].dup
+      new_size = parse_geometry(transform)
+      
+      interpolations[:size][:height] = new_size[:height] || new_size[:width]
+      interpolations[:size][:width]  = (interpolations[:size][:height] * (old_size[:width].to_f / old_size[:height].to_f)).round
+      
+      if interpolations[:size][:width] > (new_size[:height] || new_size[:width])
+        interpolations[:size][:width]   = new_size[:width]
+        interpolations[:size][:height]  = (new_size[:width] *  old_size[:height].to_f / old_size[:width].to_f).round
+      end
     end
-    
-    interpolations[:size] = parse_geometry(transform)
 
     params << "+repage"
     params
