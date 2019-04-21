@@ -272,6 +272,8 @@ class BobRoss::Server
     end
   rescue Errno::ENOENT
     return not_found
+  rescue Net::OpenTimeout, Net::ReadTimeout, Resolv::ResolvTimeout
+    return gateway_timeout
   ensure
     if defined?(original_file)
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
@@ -288,6 +290,10 @@ class BobRoss::Server
     [404, {"Content-Type" => "text/plain"}, ["404 Not Found"]]
   end
   
+  def gateway_timeout
+    [504, {"Content-Type" => "text/plain"}, ["504 Gateway Timeout"]]
+  end
+
   def gone
     [410, {"Content-Type" => "text/plain"}, ["410 Resource Gone Or No Longer Available"]]
   end
