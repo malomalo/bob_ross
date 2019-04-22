@@ -272,7 +272,7 @@ class BobRoss::Server
     end
   rescue Errno::ENOENT
     return not_found
-  rescue Net::OpenTimeout, Net::ReadTimeout, Resolv::ResolvTimeout
+  rescue Net::OpenTimeout, Net::ReadTimeout#, Resolv::ResolvTimeout
     return gateway_timeout
   ensure
     if defined?(original_file)
