@@ -16,6 +16,8 @@ class BobRoss::Railtie < Rails::Railtie
   # config.bob_ross.hmac.key = secret
   # config.bob_ross.hmac.required = false
   # config.bob_ross.hmac.attributes = [[:transformations, :hash]]
+  config.bob_ross.hmac.transformations = ActiveSupport::OrderedOptions.new
+  # config.bob_ross.hmac.transforms.optional = [:resize]
   
   config.bob_ross.server = ActiveSupport::OrderedOptions.new
   # config.bob_ross.server.store = -> {} || Value
@@ -46,6 +48,7 @@ class BobRoss::Railtie < Rails::Railtie
         config.hmac.key = seekrets[:hmac][:key] if seekrets[:hmac][:key]
         config.hmac.required = seekrets[:hmac][:required] if seekrets[:hmac][:required]
         config.hmac.attributes = seekrets[:hmac][:attributes] if seekrets[:hmac][:attributes]
+        config.hmac.transformations.optional = seekrets[:hmac][:transformations][:optional] if seekrets[:hmac][:transformations]
       end
       
       if seekrets[:server]

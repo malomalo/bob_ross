@@ -62,11 +62,11 @@ class BobRoss::Server
       
       if options[:hmac][:transformations] && options[:hmac][:transformations][:optional]
         ignorable_transformations = if options[:hmac][:transformations][:optional].is_a?(Array)
-          options[:hmac][:transformations][:optional].map(&:to_sym)
+          options[:hmac][:transformations][:optional]
         else
-          [ transformations[options[:hmac][:transformations][:optional].to_sym] ]
+          [ options[:hmac][:transformations][:optional] ]
         end
-        ignorable_transformations.map! { |t| BobRoss.transformations[t] }
+        ignorable_transformations.map! { |t| BobRoss.transformations[t.to_sym] }
         
         result[:hmac][:transformations] = { optional: [] }
         ignorable_transformations.size.times do |i|
