@@ -76,7 +76,7 @@ class BobRoss
       @hmac
     end
     
-    transforms = encode_transformations(options)
+    transforms = encode_transformations(options) + encode_transformations(@transformations)
     
     url = if fmt = (options[:format] || @transformations[:format])
       ".#{fmt}"
@@ -120,9 +120,26 @@ class BobRoss
     OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), options[:key] || @hmac[:key], data)
   end
   
-  def encode_transformations(options)
-    options = @transformations.merge(options)
-    
+  def transformations
+    trfms = {
+      background: 'B',
+      crop: 'C',
+      expires: 'E',
+      grayscale: 'G',
+      interlace: 'I',
+      lossless: 'L',
+      optimize: 'O',
+      padding: 'P',
+      resize: 'S',
+      watermark: 'W'
+    }
+    @plugins.values.find do |plugin|
+      trfms = trfms.merge(plugin.transformations)
+    end
+    trfms
+  end
+
+  def encode_transformations(options = {})
     string = []
     options.each do |key, value|
       case key
@@ -141,9 +158,15 @@ class BobRoss
       when :optimize
         string << 'O'
       when :padding
-        string << 'P' + value.join(',')
+        string << if value.is_a?(Array)
+          'P' + value.join(',')
+        else
+          'P' + value
+        end
       when :resize
         string << 'S' + value.downcase
+      when :transparent
+        string << 'T'
       when :watermark
         if value.is_a?(Integer)
           string << 'W' + value.to_s + 'se'

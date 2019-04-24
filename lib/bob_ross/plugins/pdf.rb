@@ -4,6 +4,12 @@ class BobRoss
     def self.mime_types
       ['application/pdf']
     end
+    
+    def self.transformations
+      {
+        pages: 'R'
+      }
+    end
   
     def self.encode_transformations(key, value)
       case key

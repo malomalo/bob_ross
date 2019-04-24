@@ -46,9 +46,10 @@ class BobRoss::Server
     result.delete(:hmac)
     
     if options[:hmac].is_a?(String)
-      result[:hmac] = { key: options[:hmac] }
+      result[:hmac] = { key: options[:hmac], required: true, attributes: [[:transformations, :hash]] }
     elsif options[:hmac]
       result[:hmac] = { key: options[:hmac][:key] }
+      
       if options[:hmac][:attributes]
         if options[:hmac][:attributes].first.is_a?(Array)
           result[:hmac][:attributes] = options[:hmac][:attributes].map{ |a| a.map(&:to_sym) }
@@ -58,6 +59,23 @@ class BobRoss::Server
       else
         result[:hmac][:attributes] = [[:transformations, :hash]]
       end
+      
+      if options[:hmac][:transformations] && options[:hmac][:transformations][:optional]
+        ignorable_transformations = if options[:hmac][:transformations][:optional].is_a?(Array)
+          options[:hmac][:transformations][:optional].map(&:to_sym)
+        else
+          [ transformations[options[:hmac][:transformations][:optional].to_sym] ]
+        end
+        ignorable_transformations.map! { |t| BobRoss.transformations[t] }
+        
+        result[:hmac][:transformations] = { optional: [] }
+        ignorable_transformations.size.times do |i|
+          ignorable_transformations.permutation(i+1).each do |pm|
+            result[:hmac][:transformations][:optional] << pm
+          end
+        end
+      end
+
       result[:hmac][:required] = (options.has_key?(:required) ? options[:required] : true)
     end
     
@@ -105,7 +123,7 @@ class BobRoss::Server
         provided_hmac = match[1]
         transformation_string = match[2]
       
-        if !valid_hmac?(provided_hmac, @settings[:hmac][:attributes], {
+        if !valid_hmac?(provided_hmac, {
           transformations: transformation_string,
           hash: hash,
           format: requested_format
@@ -272,8 +290,12 @@ class BobRoss::Server
     end
   rescue Errno::ENOENT
     return not_found
-  rescue Net::OpenTimeout, Net::ReadTimeout#, Resolv::ResolvTimeout
-    return gateway_timeout
+  rescue StandardError => e
+    if ['Net::OpenTimeout', 'Net::ReadTimeout'].include?(e.class.name)
+      return gateway_timeout
+    else
+      raise
+    end
   ensure
     if defined?(original_file)
       original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
@@ -293,7 +315,7 @@ class BobRoss::Server
   def gateway_timeout
     [504, {"Content-Type" => "text/plain"}, ["504 Gateway Timeout"]]
   end
-
+  
   def gone
     [410, {"Content-Type" => "text/plain"}, ["410 Resource Gone Or No Longer Available"]]
   end
@@ -341,19 +363,35 @@ class BobRoss::Server
     transformations
   end
   
-  def valid_hmac?(hmac, using, data)
+  def valid_hmac?(hmac, data)
     valid_hmacs = []
-    matching_hmac = using.find do |mtds|
+    matching_hmac = @settings[:hmac][:attributes].find do |mtds|
       valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data[k] }.join(''))
       valid_hmacs.push(valid_hmac)
       valid_hmac == hmac
     end
+
+    if !matching_hmac
+      matching_hmac = @settings[:hmac][:attributes].find do |mtds|
+        @settings[:hmac][:transformations][:optional].find do |permutation|
+          data_copy = data.dup
+          permutation.each do |transform|
+            data_copy[:transformations].gsub!(/(#{transform}[^A-Z]*)/, '')
+          end
+          valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data_copy[k] }.join(''))
+          valid_hmacs.push(valid_hmac)
+          valid_hmac == hmac
+        end
+      end
+    end
+    
     if !matching_hmac
       ActiveSupport::Notifications.instrument("invalid_hmac.bob_ross", {
         hmac: hmac,
         valid_hmacs: valid_hmacs
       })
     end
+    
     matching_hmac
   end
   

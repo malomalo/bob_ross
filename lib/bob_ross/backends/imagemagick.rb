@@ -140,8 +140,8 @@ module BobRoss::ImageMagickBackend
       interpolations[:size][:width]  = (interpolations[:size][:height] * (old_size[:width].to_f / old_size[:height].to_f)).round
       
       if interpolations[:size][:width] > (new_size[:height] || new_size[:width])
-        interpolations[:size][:width]   = new_size[:width]
-        interpolations[:size][:height]  = (new_size[:width] *  old_size[:height].to_f / old_size[:width].to_f).round
+        interpolations[:size][:width]   = new_size[:width] || new_size[:height]
+        interpolations[:size][:height]  = (interpolations[:size][:width] *  old_size[:height].to_f / old_size[:width].to_f).round
       end
     end
 

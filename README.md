@@ -171,8 +171,8 @@ The __`format`__ is the image format, valid formats and extensions:
 The __`filename`__ is the URL Encoded filename you want the image named as.
 
 The __`transformations`__ is composed of the following avaiable transformations
-that can be performed on the image. The options are alphabetically sorted with
-the exception of the `H` (HMAC option) which always comes first.
+that can be performed on the image. If an HMAC is sent the the `H` (HMAC option)
+should always comes first.
 
   - `Brrggbb[aa]` Sets the background color, defaults to `00000000`
 
@@ -199,9 +199,8 @@ the exception of the `H` (HMAC option) which always comes first.
   - `G` Converts the image to Grayscale
 
   - `H62c9c35e70316e7e828bd70df283e3f1d9eb905aB505153` The SHA1 HMAC of any
-    of combination of the `format`, `hash`, and `transformations` sorted
-    alphabetically signed with a shared secret. The server can be configured
-    to only accept certain combinations.
+    of combination of the `format`, `hash`, and `transformations` signed with a
+    shared secret. The server can be configured to only accept certain combinations.
 
   - `I` Interlace or Progressively encodes the image
   !!! Place interlace, should look at Line interlacing
@@ -217,9 +216,9 @@ the exception of the `H` (HMAC option) which always comes first.
       !!! UNLESS jpg! need to do
     - Set's the quality/compression to 85 for JPEG, and PNG
 
-  - `P{top},{left},{bottom},{right}[w{rrggbb[aa]}]` - Adds N pixels of padding to the image,
-    interperted like the CSS padding statement, optionally followed bye the a `w` and the RGB(a)
-	color to use for the padding.
+  - `P{top},{left},{bottom},{right}[rrggbb[aa]]` - Adds N pixels of padding to the image,
+    interperted like the CSS padding statement, optionally followed by a `w` and the RGB(a)
+    color to use for the padding.
   
   - `S{geometry}{gravity}[p{rrggbb[aa]}]` Resize the image to the specified geometry where the geometry is:
 

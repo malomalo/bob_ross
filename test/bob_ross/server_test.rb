@@ -153,6 +153,26 @@ class BobRossServerTest < Minitest::Test
     end
   end
   
+  test 'if hmac is required and not correct responds with a 404' do
+    server = create_server({ hmac: 'key' })
+    assert_equal 404, server.get('/opaque').status
+    assert_equal 200, server.get('/H46db1285b6f7a2cf96f4b7e012c8a6ba34fc4bcf/opaque').status
+  end
+  
+  test 'optional tranformations are not required for hmac' do
+    server = create_server({ hmac: {
+      key: 'key',
+      attributes: [[:transformations]],
+      transformations: { optional: [ :resize ] }
+    }})
+    
+    assert_equal 404, server.get('/opaque').status
+    assert_equal 404, server.get('/S100x100/opaque').status
+    assert_equal 200, server.get('/H4e4df0e870d9566c290b68f30d602f3b4559a7a5S100x100/opaque').status
+    assert_equal 200, server.get('/Hf42bb0eeb018ebbd4597ae7213711ec60760843fS100x100/opaque').status
+    assert_equal 404, server.get('/Hthisisawronghmacitshouldreturna404whenseS100x100/opaque').status
+  end
+  
   test 'if hmac present and hmac not configured'
   
   test 'asking for a watermark when not configured'
