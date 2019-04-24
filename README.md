@@ -114,7 +114,9 @@ end
                 found to any urls that are not signed or incorrectly signed
   - `attributes:` (ie. `[[:transformations], [:transformations, :hash, :format]]`) 
                   All the allowed ways to sign the url.
-
+  - `transformations:`
+    - `optional:` Transformations that can be ignored when signing the HMAC.
+                  (ie. [:resize, :grayscale])
 - `watermarks:` (Optional, ie. `["/app/assets/images/watermark.png"]`) If using 					watermark(s), the path to the watermark(s).
 
 - `cache_control:` (Optional, ie. `'public, max-age=172800, immutable'`)
