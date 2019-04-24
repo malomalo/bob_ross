@@ -376,7 +376,7 @@ class BobRoss::Server
         @settings[:hmac][:transformations][:optional].find do |permutation|
           data_copy = data.dup
           permutation.each do |transform|
-            data_copy[:transformations].gsub!(/(#{transform}[^A-Z]*)/, '')
+            data_copy[:transformations] = data_copy[:transformations].gsub(/(#{transform}[^A-Z]*)/, '')
           end
           valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data_copy[k] }.join(''))
           valid_hmacs.push(valid_hmac)
