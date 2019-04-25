@@ -60,6 +60,7 @@ class BobRoss::Server
         result[:hmac][:attributes] = [[:transformations, :hash]]
       end
       
+      result[:hmac][:transformations] = { }
       if options[:hmac][:transformations] && options[:hmac][:transformations][:optional]
         ignorable_transformations = if options[:hmac][:transformations][:optional].is_a?(Array)
           options[:hmac][:transformations][:optional]
@@ -68,7 +69,7 @@ class BobRoss::Server
         end
         ignorable_transformations.map! { |t| BobRoss.transformations[t.to_sym] }
         
-        result[:hmac][:transformations] = { optional: [] }
+        result[:hmac][:transformations][:optional] = []
         ignorable_transformations.size.times do |i|
           ignorable_transformations.permutation(i+1).each do |pm|
             result[:hmac][:transformations][:optional] << pm
@@ -370,7 +371,7 @@ class BobRoss::Server
       valid_hmac == hmac
     end
 
-    if !matching_hmac
+    if !matching_hmac && @settings[:hmac][:transformations][:optional]
       matching_hmac = @settings[:hmac][:attributes].find do |mtds|
         @settings[:hmac][:transformations][:optional].find do |permutation|
           data_copy = data.dup

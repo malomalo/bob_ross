@@ -8,6 +8,7 @@ class BobRoss::Plugin
   end
 
   def self.extract_options(transformations, key, value)
+    {}
   end
 
   def self.parse_geometry(string)
