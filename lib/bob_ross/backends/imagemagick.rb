@@ -29,43 +29,44 @@ module BobRoss::ImageMagickBackend
     ident
   end
 
-  def transform(image, transformations)
+  def transform(image, transformations, options)
     params = default_args(image.settings)
     params << "-background none :input -colorspace sRGB -auto-orient"
     
-    interpolations = transformations.dup
-    interpolations[:size] = image.geometry
-    
-    transformations.each do |key, transform|
-      params << case key
-      when :background
-        background(transform)
-      when :resize
-        resize(transform, interpolations)
-      when :crop
-        crop(transform, interpolations)
-      when :grayscale
-        "-colorspace gray"
-      when :padding
-        pad(transform, interpolations)
-      when :watermark
-        watermark(transform, interpolations, image)
-      else
-        nil
+    interpolations = { size: image.geometry }
+
+    transformations.each do |transform|
+      transform.each do |key, value|
+        params << case key
+        when :background
+          background(value, interpolations)
+        when :resize
+          resize(value, interpolations)
+        when :crop
+          crop(value, interpolations)
+        when :grayscale
+          "-colorspace gray"
+        when :padding
+          pad(value, interpolations)
+        when :watermark
+          watermark(value, interpolations, image)
+        else
+          nil
+        end
       end
     end
     
-    transformations.each do |key, value|
+    options.each do |key, value|
      case key
      when :lossless
        params << "-define webp:lossless=true"
      when :optimize
-       params << "-quality 85" unless transformations[:format] == 'image/webp'
+       params << "-quality 85" unless options[:format] == 'image/webp'
        params << "-define png:compression-filter=5"
        params << "-define png:compression-level=9"
        params << "-define png:compression-strategy=1"
        params << "-define png:exclude-chunk=all"
-       params << "-interlace none" unless transformations[:interlace]
+       params << "-interlace none" unless options[:interlace]
        params << "-colorspace sRGB"
        params << "-strip"
      when :interlace
@@ -74,7 +75,7 @@ module BobRoss::ImageMagickBackend
     end
     
     params << ":output"
-    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(transformations[:format]).extension}"], binmode: true)
+    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
     begin
       command = Terrapin::CommandLine.new("convert", params.join(' '))
       Dir.mktmpdir do |tmpdir|
@@ -94,7 +95,8 @@ module BobRoss::ImageMagickBackend
     output
   end
   
-  def background(transform)
+  def background(transform, interpolations)
+    interpolations[:background] = transform
     "-background :background -flatten"
   end
   
@@ -102,6 +104,8 @@ module BobRoss::ImageMagickBackend
     params = []
     params << "\\("
     params << "-resize :resize -unsharp 0x0.75+0.75+0.008"
+    interpolations[:resize] = transform
+    
     if idx = transform.index('*')
       params << "-gravity :resize_gravity -crop :resize_crop"
       if transform =~ /[\*\^](\w+)$/i
@@ -135,7 +139,7 @@ module BobRoss::ImageMagickBackend
     else
       old_size = interpolations[:size].dup
       new_size = parse_geometry(transform)
-      
+
       interpolations[:size][:height] = new_size[:height] || new_size[:width]
       interpolations[:size][:width]  = (interpolations[:size][:height] * (old_size[:width].to_f / old_size[:height].to_f)).round
       
@@ -224,7 +228,7 @@ module BobRoss::ImageMagickBackend
     interpolations[:padding_splice_a] = "#{transform[:right]}x#{transform[:top]}"
     params << "-gravity southwest -background :padding_background -splice :padding_splice_b"
     interpolations[:padding_splice_b] = "#{transform[:left]}x#{transform[:bottom]}"
-    interpolations[:padding_background] = interpolations[:padding][:color]
+    interpolations[:padding_background] = transform[:color]
     
     interpolations[:size][:width]   += transform[:right] + transform[:left]
     interpolations[:size][:height]  += transform[:top] + transform[:bottom]

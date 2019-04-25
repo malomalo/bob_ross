@@ -259,7 +259,7 @@ module BobRoss::LibVipsBackend
     vips
   end
 
-  def transform(image, transformations)
+  def transform(image, transformations, options)
     vips = ::Vips::Image.new_from_file(image.source.path, select_valid_loader_options(image.source.path, {}))
     vips.add_alpha if !vips.has_alpha?
     
@@ -278,49 +278,49 @@ module BobRoss::LibVipsBackend
       end
     end
 
-    transformations.each do |key, transform|
-      vips = case key
-      when :background
-        background(image, vips, transform)
-      when :resize
-        resize(image, vips, transform)
-      when :crop
-        crop(vips, transform)
-      when :grayscale
-        vips.colourspace(:'b-w')
-      when :padding
-        pad(vips, transform)
-      when :watermark
-        watermark(image, vips, transform)
-      else
-        vips
+    transformations.each do |transform|
+      transform.each do |key, value|
+        vips = case key
+        when :background
+          background(image, vips, value)
+        when :resize
+          resize(image, vips, value)
+        when :crop
+          crop(vips, value)
+        when :grayscale
+          vips.colourspace(:'b-w')
+        when :padding
+          pad(vips, value)
+        when :watermark
+          watermark(image, vips, value)
+        else
+          vips
+        end
       end
     end
     
-    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(transformations[:format]).extension}"], binmode: true)
+    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
+
+    # options.each do |key, value|
+    #   case key
+    #   when :lossless
+    #     params << "-define webp:lossless=true"
+    #   when :optimize
+    #     params << "-quality 85" unless transformations[:format] == 'image/webp'
+    #     params << "-define png:compression-filter=5"
+    #     params << "-define png:compression-level=9"
+    #     params << "-define png:compression-strategy=1"
+    #     params << "-define png:exclude-chunk=all"
+    #     params << "-interlace none" unless transformations[:interlace]
+    #     params << "-colorspace sRGB"
+    #     params << "-strip"
+    #   when :interlace
+    #     params << "-interlace Plane"
+    #   end
+    # end
+    # transformations.delete(:lossless)
     
     vips.write_to_file(output.path, select_valid_saver_options(output.path, {}))
-    return output
-      
-    transformations.each do |key, value|
-      case key
-      when :lossless
-        params << "-define webp:lossless=true"
-      when :optimize
-        params << "-quality 85" unless transformations[:format] == 'image/webp'
-        params << "-define png:compression-filter=5"
-        params << "-define png:compression-level=9"
-        params << "-define png:compression-strategy=1"
-        params << "-define png:exclude-chunk=all"
-        params << "-interlace none" unless transformations[:interlace]
-        params << "-colorspace sRGB"
-        params << "-strip"
-      when :interlace
-        params << "-interlace Plane"
-      end
-    end
-    transformations.delete(:lossless)
-    
     output
   end
   

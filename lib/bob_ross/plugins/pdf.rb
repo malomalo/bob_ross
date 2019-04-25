@@ -6,38 +6,47 @@ class BobRoss
     end
     
     def self.transformations
-      {
-        pages: 'R'
-      }
+      { pages: 'R' }
     end
   
-    def self.encode_transformations(key, value)
+    def self.encode_transformation(key, value)
       case key
       when :pages
         'R' + value.downcase
       end
     end
   
-    def self.extract_options(transformations, key, value)
-      case key
-      when 'R'.freeze
-        # "*", "1,4", "1,5,10-15", "3"
-        transformations[:pages] = value
+    def self.extract_options(string)
+      options = {}
+      return options unless string
+
+      string.scan(/([A-Z])([^A-Z]*)/) do |key, value|
+        case key
+        when 'R'.freeze
+          # "*", "1,4", "1,5,10-15", "3"
+          options[:pages] = value
+        end
       end
+
+      options
     end
   
-    def self.transform(original_file, transformations)
+    def self.transform(original_file, transformation_string, transformations)
       screenshot = Tempfile.create(['preview', '.png'], binmode: true)
-      size = transformations[:resize] ? parse_geometry(transformations[:resize]) : nil
-    
+      first_resize = transformations.find { |t| t[:resize] }
+      size = first_resize ? parse_geometry(first_resize) : nil
+      options = extract_options(transformation_string)
+      
       args = 'draw'
       args << ' -h :height' if size && size[:height]
       args << ' -w :width' if size && size[:width]
       args << ' -o :output :input'
-      args << if transformations[:pages].nil?
+      args << if options[:pages].nil?
         ' 1'
-      elsif transformations[:pages] != '*'
+      elsif options[:pages] != '*'
         ' :pages'
+      else
+        ''
       end
     
       Terrapin::CommandLine.new('mutool', args).run({
@@ -45,7 +54,7 @@ class BobRoss
           output: screenshot.path,
           height: size && size[:height],
           width: size && size[:width],
-          pages: transformations[:pages]
+          pages: options[:pages]
       })
     
       screenshot

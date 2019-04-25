@@ -19,41 +19,34 @@ class BobRoss::Image
     self.geometry = ident[:geometry]
   end
   
-  def transform(transformations)
-    return @source if (transformations.keys - [:format]).empty? && @mime_type == transformations[:format] && [nil, 1].include?(@orientation)
-    transformations[:format] ||= mime_type
+  def transform(transformations, options={})
+    transformations = [transformations].compact if !transformations.is_a?(Array)
+    return @source if transformations.empty? && @mime_type == options[:format] && [nil, 1].include?(@orientation)
+    options[:format] ||= mime_type
     
-    if transformations[:padding]
-      padding = transformations[:padding].split(',')
-      padding_color = if padding.last.index('w')
-        lp, c = padding.pop.split('w')
-        padding << lp if !lp.empty?
-        c.delete_prefix('w')
-      end
-      padding.map!(&:to_i)
-      padding[1] ||= padding[0]
-      padding[2] ||= padding[0]
-      padding[3] ||= padding[1]
-      transformations[:padding] = {
-        top: padding[0],
-        right: padding[1],
-        bottom: padding[2],
-        left: padding[3],
-        color: "##{padding_color || 'FFFFFF00'}"
-      }
-      
-      if transformations[:resize]
-        g = parse_geometry(transformations[:resize])
-        g[:width] -= (transformations[:padding][:left] + transformations[:padding][:right])
-        g[:height] -= (transformations[:padding][:top] + transformations[:padding][:bottom])
-        transformations[:resize] = "#{g[:width]}x#{g[:height]}#{transformations[:resize].sub(/^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?/, '')}"
-      else
-        @geometry[:width] += transformations[:padding][:left] + transformations[:padding][:right]
-        @geometry[:height] += transformations[:padding][:top] + transformations[:padding][:bottom]
+    transformations.each do |t|
+      if t[:padding]
+        padding = t[:padding].split(',')
+        padding_color = if padding.last.index('w')
+          lp, c = padding.pop.split('w')
+          padding << lp if !lp.empty?
+          c.delete_prefix('w')
+        end
+        padding.map!(&:to_i)
+        padding[1] ||= padding[0]
+        padding[2] ||= padding[0]
+        padding[3] ||= padding[1]
+        t[:padding] = {
+          top: padding[0],
+          right: padding[1],
+          bottom: padding[2],
+          left: padding[3],
+          color: "##{padding_color || 'FFFFFF00'}"
+        }
       end
     end
     
-    BobRoss.backend.transform(self, transformations)
+    BobRoss.backend.transform(self, transformations, options)
   end
   
   def transparent

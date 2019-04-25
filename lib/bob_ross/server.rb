@@ -117,8 +117,8 @@ class BobRoss::Server
       transformation_string = match[1] || ''
       hash = match[2]
       requested_format = match[3]
-    
-      if transformation_string && transformation_string.start_with?('H')
+      
+      if transformation_string.start_with?('H')
         match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
         provided_hmac = match[1]
         transformation_string = match[2]
@@ -135,14 +135,13 @@ class BobRoss::Server
         payload[:status] = 404
         return not_found 
       end
-    
-      transformations = extract_options(transformation_string)
-      original_transformations = transformations.dup
       
-      if transformations[:expires]
-        if transformations[:expires] <= Time.now
+      options, transformations = extract_options(transformation_string)
+      
+      if options[:expires]
+        if options[:expires] <= Time.now
           ActiveSupport::Notifications.instrument("expired.bob_ross", {
-            expired_at: transformations[:expires]
+            expired_at: options[:expires]
           })
           payload[:status] = 410
           return gone
@@ -162,10 +161,10 @@ class BobRoss::Server
       end
 
       if requested_format
-        transformations[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
+        options[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
       end
     
-      if transformations[:format].nil?
+      if options[:format].nil?
         response_headers['Vary'] = 'Accept'
       end
 
@@ -189,12 +188,12 @@ class BobRoss::Server
       end
 
       ActiveSupport::Notifications.instrument("rendered.bob_ross") do |render_payload|
-        render_payload[:transformations] = original_transformations
+        render_payload[:transformations] = transformation_string
         
         cache_hits = @palette&.get(hash, transformation_string)
         if cache_hits && !cache_hits.empty?
-          hit = if transformations[:format]
-            cache_hits.find { |h| h[4] == transformations[:format] }
+          hit = if options[:format]
+            cache_hits.find { |h| h[4] == options[:format] }
           else
             choice = nil
             image_transparent = cache_hits.first[1]
@@ -204,13 +203,13 @@ class BobRoss::Server
               while choice.nil? && !acs.empty?
                 accept = acs.shift
                 if accept == "*/*" || accept == "image/*"
-                  choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+                  choice = (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
                 elsif SUPPORTED_FORMATS.include?(accept)
                   choice = accept
                 end
               end
             else
-              choice = (image_transparent == 1 || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+              choice = (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
             end
           
             if choice.nil?
@@ -244,26 +243,26 @@ class BobRoss::Server
         end
 
         image = if plugin = BobRoss.plugins[mime_type]
-          BobRoss::Image.new(plugin.transform(original_file, transformations), @settings)
+          BobRoss::Image.new(plugin.transform(original_file, transformation_string, transformations), @settings)
         elsif mime_type.start_with?('image/')
           BobRoss::Image.new(original_file, @settings)
         end
         
         return not_implemented if image.nil?
         
-        if !transformations[:format]
+        if !options[:format]
           choice = nil
           if accepts
             while choice.nil? && !accepts.empty?
               accept = accepts.shift
               if accept == "*/*" || accept == "image/*"
-                choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+                choice = (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
               elsif SUPPORTED_FORMATS.include?(accept)
                 choice = accept
               end
             end
           else
-            choice = (image.transparent || transformations[:transparent]) ? 'image/png' : 'image/jpeg'
+            choice = (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
           end
 
           if choice.nil?
@@ -271,18 +270,18 @@ class BobRoss::Server
             return unsupported_media_type
           end
       
-          transformations[:format] = choice
+          options[:format] = choice
         end
     
-        transformed_file = image.transform(transformations)
+        transformed_file = image.transform(transformations, options)
     
         # Do this at the end to not cache errors
         payload[:status] = 200
-        response_headers['Content-Type'] = transformations[:format]
+        response_headers['Content-Type'] = options[:format]
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         if @palette
           response_headers['From-Palette'] = '0'
-          @palette.set(hash, image.transparent, transformation_string, transformations[:format], transformed_file.path)
+          @palette.set(hash, image.transparent, transformation_string, options[:format], transformed_file.path)
         end
     
         [200, response_headers, StreamFile.new(transformed_file)]
@@ -329,38 +328,38 @@ class BobRoss::Server
   end
   
   def extract_options(string)
-    transformations = {}
-    return transformations unless string
+    options = {}
+    transformations = []
+    return [options, transformations] unless string
     
     string.scan(/([A-Z])([^A-Z]*)/) do |key, value|
       case key
       when 'B'.freeze
-        transformations[:background] = "##{value}"
+        transformations << { background: "##{value}" }
       when 'C'.freeze
-        transformations[:crop] = value
+        transformations << { crop: value }
       when 'E'.freeze
-        transformations[:expires] = Time.at(value.to_i(16))
+        options[:expires] = Time.at(value.to_i(16))
       when 'G'.freeze
-        transformations[:grayscale] = true
-      when 'H'.freeze
-        transformations[:hmac] = value
+        transformations << { grayscale: true }
       when 'I'.freeze
-        transformations[:interlace] = true
+        options[:interlace] = true
       when 'L'.freeze
-        transformations[:lossless] = true
+        options[:lossless] = true
       when 'O'.freeze
-        transformations[:optimize] = true
+        options[:optimize] = true
       when 'P'.freeze
-        transformations[:padding] = value
+        transformations << { padding: value }
       when 'S'.freeze
-        transformations[:resize] = CGI.unescape(value)
+        transformations << { resize: value }
       when 'T'.freeze
-        transformations[:transparent] = true
+        options[:transparent] = true
       when 'W'.freeze
-        transformations[:watermark] = value
+        transformations << { watermark: value }
       end
     end
-    transformations
+    
+    [options, transformations]
   end
   
   def valid_hmac?(hmac, data)

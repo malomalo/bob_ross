@@ -1,6 +1,10 @@
 class BobRoss::Plugin
 
-  def self.encode_transformations(key, value)
+  def self.transformations
+    {}
+  end
+  
+  def self.encode_transformation(key, value)
   end
 
   def self.extract_options(transformations, key, value)

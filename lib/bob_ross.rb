@@ -179,7 +179,7 @@ class BobRoss
       #   string << "Q#{value}"
       else
         @plugins.values.find do |plugin|
-          if encode = plugin.encode_transformations(key, value)
+          if encode = plugin.encode_transformation(key, value)
             string << encode
             true
           end
