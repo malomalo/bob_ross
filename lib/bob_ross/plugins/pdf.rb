@@ -40,6 +40,7 @@ class BobRoss
       args = 'draw'
       args << ' -h :height' if size && size[:height]
       args << ' -w :width' if size && size[:width]
+      args << ' -i'
       args << ' -o :output :input'
       args << if options[:pages].nil?
         ' 1'
