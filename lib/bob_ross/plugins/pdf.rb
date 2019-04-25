@@ -40,7 +40,6 @@ class BobRoss
       args = 'draw'
       args << ' -h :height' if size && size[:height]
       args << ' -w :width' if size && size[:width]
-      args << ' -i'
       args << ' -o :output :input'
       args << if options[:pages].nil?
         ' 1'
@@ -50,7 +49,7 @@ class BobRoss
         ''
       end
     
-      Terrapin::CommandLine.new('mutool', args).run({
+      Terrapin::CommandLine.new('mutool', args, expected_outcodes: [0, 1]).run({
           input: original_file.path,
           output: screenshot.path,
           height: size && size[:height],
