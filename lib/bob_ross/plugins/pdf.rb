@@ -33,8 +33,8 @@ class BobRoss
   
     def self.transform(original_file, transformation_string, transformations)
       screenshot = Tempfile.create(['preview', '.png'], binmode: true)
-      first_resize = transformations.find { |t| t[:resize] }
-      size = first_resize ? parse_geometry(first_resize) : nil
+      first_resize = transformations.find { |t| t.has_key?(:resize) }
+      size = first_resize ? parse_geometry(first_resize[:resize]) : nil
       options = extract_options(transformation_string)
       
       args = 'draw'
