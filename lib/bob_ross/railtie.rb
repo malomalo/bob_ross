@@ -88,7 +88,7 @@ class BobRoss::Railtie < Rails::Railtie
     
     if !config.logger
       config.logger = Rails.logger
-      config.server.logger = Rails.logger
+      config.server.logger = Rails.logger if config.server
     end
   end
   
