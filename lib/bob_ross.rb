@@ -172,8 +172,10 @@ class BobRoss
           string << 'W' + value.to_s + 'se'
         elsif value.is_a?(Hash)
           string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
-        elsif
+        elsif value.is_a?(String)
           string << 'W' + value
+        elsif value
+          string << 'W0se'
         end
       # when :quality
       #   string << "Q#{value}"
