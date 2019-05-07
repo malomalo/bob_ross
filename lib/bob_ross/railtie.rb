@@ -69,18 +69,20 @@ class BobRoss::Railtie < Rails::Railtie
       end
     end
     
-    config.server.hmac = config.hmac.dup
-    config.server.hmac.attributes = config.server.hmac.attributes.dup
-    if config.hmac.attributes.is_a?(Array) && config.hmac.attributes.first.is_a?(Array)
-      config.hmac.attributes = config.hmac.attributes.first
-    end
-    
-    config.server.store = config.server[:store].call if config.server[:store].is_a?(Proc)
-    if config.server.watermarks.is_a?(String)
-      if Dir.exists?(config.server.watermarks)
-        config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
-          File.join(config.server.watermarks, w)
-        }
+    if config.server
+      config.server.hmac = config.hmac.dup
+      config.server.hmac.attributes = config.server.hmac.attributes.dup
+      if config.hmac.attributes.is_a?(Array) && config.hmac.attributes.first.is_a?(Array)
+        config.hmac.attributes = config.hmac.attributes.first
+      end
+
+      config.server.store = config.server[:store].call if config.server[:store].is_a?(Proc)
+      if config.server.watermarks.is_a?(String)
+        if Dir.exists?(config.server.watermarks)
+          config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
+            File.join(config.server.watermarks, w)
+          }
+        end
       end
     end
     
