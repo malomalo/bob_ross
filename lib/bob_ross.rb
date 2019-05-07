@@ -71,7 +71,7 @@ class BobRoss
     options = normalize_options(options)
 
     hmac_options = if options[:hmac]
-      @hmac ? @hmac.merge(options[:hmac]) : options[:hmac]
+      @hmac ? @hmac.merge(options[:hmac]){ |k,o,n| o } : options[:hmac]
     else
       @hmac
     end
