@@ -41,6 +41,11 @@ class BobRoss::Server
     @logger = (@settings.has_key?(:logger) ? @settings.delete(:logger) : Logger.new(STDOUT))
   end
   
+  def serve_file(status, headers, file)
+    headers['Content-Length'] = file.size
+    [status, headers, StreamFile.new(file)]
+  end
+  
   def normalize_options(options)
     result = options.dup
     result.delete(:hmac)
@@ -227,7 +232,7 @@ class BobRoss::Server
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
             response_headers['From-Palette']  = '1';
             cached_file = @palette.use(hash, transformation_string, hit[4])
-            return [ 200, response_headers, StreamFile.new(cached_file) ]
+            return serve_file(200, response_headers, cached_file)
           end
         end
     
@@ -285,7 +290,7 @@ class BobRoss::Server
           @palette.set(hash, image.transparent, transformation_string, options[:format], transformed_file.path)
         end
     
-        [200, response_headers, StreamFile.new(transformed_file)]
+        serve_file(200, response_headers, transformed_file)
       end
     end
   rescue Errno::ENOENT
