@@ -140,12 +140,16 @@ module BobRoss::ImageMagickBackend
       old_size = interpolations[:size].dup
       new_size = parse_geometry(transform)
 
-      interpolations[:size][:height] = new_size[:height] || new_size[:width]
-      interpolations[:size][:width]  = (interpolations[:size][:height] * (old_size[:width].to_f / old_size[:height].to_f)).round
+      if new_size[:modifier] == '>' && old_size[:width] < new_size[:width] && old_size[:height] < new_size[:height]
+      elsif new_size[:modifier] == '<' && old_size[:width] > new_size[:width] && old_size[:height] > new_size[:height]
+      else
+        interpolations[:size][:height] = new_size[:height] || new_size[:width]
+        interpolations[:size][:width]  = (interpolations[:size][:height] * (old_size[:width].to_f / old_size[:height].to_f)).round
       
-      if interpolations[:size][:width] > (new_size[:height] || new_size[:width])
-        interpolations[:size][:width]   = new_size[:width] || new_size[:height]
-        interpolations[:size][:height]  = (interpolations[:size][:width] *  old_size[:height].to_f / old_size[:width].to_f).round
+        if interpolations[:size][:width] > (new_size[:height] || new_size[:width])
+          interpolations[:size][:width]   = new_size[:width] || new_size[:height]
+          interpolations[:size][:height]  = (interpolations[:size][:width] *  old_size[:height].to_f / old_size[:width].to_f).round
+        end
       end
     end
 
