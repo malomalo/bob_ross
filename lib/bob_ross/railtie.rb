@@ -28,12 +28,12 @@ class BobRoss::Railtie < Rails::Railtie
   config.bob_ross.server.disk_limit = '4GB'
   config.bob_ross.server.memory_limit = '1GB'
 
-  config.bob_ross.server.palette = ActiveSupport::OrderedOptions.new
+  config.bob_ross.server.cache = ActiveSupport::OrderedOptions.new
     
   if ::Rails.env.to_s != 'production'
-    config.bob_ross.server.palette.file = 'tmp/cache/bobross.cache'
-    config.bob_ross.server.palette.path = 'tmp/cache/bobross'
-    config.bob_ross.server.palette.size = 1.gigabyte
+    config.bob_ross.server.cache.file = 'tmp/cache/bobross.cache'
+    config.bob_ross.server.cache.path = 'tmp/cache/bobross'
+    config.bob_ross.server.cache.size = 1.gigabyte
   end
   
   def initialize_configs(app)
@@ -59,12 +59,12 @@ class BobRoss::Railtie < Rails::Railtie
         config.server.disk_limit = seekrets[:server][:disk_limit] if seekrets[:server][:disk_limit]
         config.server.memory_limit = seekrets[:server][:memory_limit] if seekrets[:server][:memory_limit]
         
-        if seekrets[:server][:palette] == false
-          config.server.palette = nil
-        elsif seekrets[:server][:palette] && Dir.exists?(seekrets[:server][:palette][:path]) && Dir.exists?(File.dirname(seekrets[:server][:palette][:file]))
-          config.server.palette.file = seekrets[:server][:palette][:file] if seekrets[:server][:palette][:file]
-          config.server.palette.path = seekrets[:server][:palette][:path] if seekrets[:server][:palette][:path]
-          config.server.palette.size = seekrets[:server][:palette][:size] if seekrets[:server][:palette][:size]
+        if seekrets[:server][:cache] == false
+          config.server.cache = nil
+        elsif seekrets[:server][:cache] && Dir.exists?(seekrets[:server][:cache][:path]) && Dir.exists?(File.dirname(seekrets[:server][:cache][:file]))
+          config.server.cache.file = seekrets[:server][:cache][:file] if seekrets[:server][:cache][:file]
+          config.server.cache.path = seekrets[:server][:cache][:path] if seekrets[:server][:cache][:path]
+          config.server.cache.size = seekrets[:server][:cache][:size] if seekrets[:server][:cache][:size]
         end
       end
     end

@@ -5,7 +5,7 @@ $LOAD_PATH << File.expand_path('../lib', __FILE__)
 require 'byebug'
 require 'bob_ross'
 require 'bob_ross/server'
-require 'bob_ross/palette'
+require 'bob_ross/cache'
 require 'bob_ross/plugins/pdf'
 require "minitest/autorun"
 require 'minitest/unit'
@@ -94,6 +94,22 @@ class Minitest::Test
     tests.each do |k, v|
       send("assert_#{k}", v, output)
     end
+  end
+  
+  def assert_file(path)
+    assert File.exist?(path), "Expected file #{path.inspect} to exist, but does not"
+  end
+  
+  def assert_no_file(path)
+    assert !File.exist?(path), "Expected file #{path.inspect} to not exist, but does"
+  end
+  
+  def assert_dir(path)
+    assert Dir.exist?(path), "Expected file #{path.inspect} to exist, but does not"
+  end
+  
+  def assert_no_dir(path)
+    assert !Dir.exist?(path), "Expected file #{path.inspect} to not exist, but does"
   end
   
   def fixture(path)

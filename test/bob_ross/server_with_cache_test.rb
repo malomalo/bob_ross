@@ -1,7 +1,7 @@
 require 'test_helper'
 require 'rack/mock'
 
-class BobRossServerWithPaletteTest < Minitest::Test
+class BobRossServerWithCacheTest < Minitest::Test
   
   def setup
     @cache_dir = Dir.mktmpdir
@@ -19,7 +19,7 @@ class BobRossServerWithPaletteTest < Minitest::Test
   
   def create_server(configs={})
     configs[:store] ||= create_store
-    configs[:palette] ||= BobRoss::Palette.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
+    configs[:cache] ||= BobRoss::Cache.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
     Rack::MockRequest.new(BobRoss::Server.new(configs))
   end
   
@@ -32,15 +32,15 @@ class BobRossServerWithPaletteTest < Minitest::Test
     server = create_server
     response = server.get("/opaque")
     assert !response.headers.has_key?('Cache-Control')
-    assert_equal "0", response.headers['From-Palette']
+    assert_equal "0", response.headers['From-Cache']
     
     response = server.get("/opaque")
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     server = create_server(cache_control: 'public, max-age=172800, immutable')
     response = server.get("/opaque")
     assert_equal 'public, max-age=172800, immutable', response.headers['Cache-Control']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
   end
 
   test 'Response Header: "Content-Type"' do
@@ -49,48 +49,48 @@ class BobRossServerWithPaletteTest < Minitest::Test
     cache_test do |r|
       response = server.get("/opaque")
       assert_equal 'image/jpeg', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
     
     response = server.get("/opaque.jpg")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     cache_test do |r|
       response = server.get("/opaque.png")
       assert_equal 'image/png', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
     
     cache_test do |r|
       response = server.get("/opaque.webp")
       assert_equal 'image/webp', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
     
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/jpeg'})
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal '1', response.headers['From-Palette']
+    assert_equal '1', response.headers['From-Cache']
     
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/png'})
     assert_equal 'image/png', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp'})
     assert_equal 'image/webp', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/*,*/*;q=0.8'})
     assert_equal 'image/webp', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'})
     assert_equal 'image/webp', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
 
     response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/*,*/*;q=0.8'})
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_equal "1", response.headers['From-Palette']
+    assert_equal "1", response.headers['From-Cache']
     
     # Return a 415 Unsupported Media Type if we can't satisfy the Accept header
     cache_test do |r|
@@ -170,17 +170,17 @@ class BobRossServerWithPaletteTest < Minitest::Test
     cache_test do |r|
       response = server.get("/opaque")
       assert_equal 'image/jpeg', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
     cache_test do |r|
       response = server.get("/transparent")
       assert_equal 'image/png', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
     cache_test do |r|
       response = server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/*,*/*;q=0.8'})
       assert_equal 'image/webp', response.headers['Content-Type']
-      assert_equal r, response.headers['From-Palette']
+      assert_equal r, response.headers['From-Cache']
     end
   end
   
@@ -204,19 +204,19 @@ class BobRossServerWithPaletteTest < Minitest::Test
     server = create_server
 
     cache_test do |r|
-      assert_equal r, server.get("/flyer").headers['From-Palette']
+      assert_equal r, server.get("/flyer").headers['From-Cache']
     end
 
     cache_test do |r|
-      assert_equal r, server.get("/S100/floorplan").headers['From-Palette']
+      assert_equal r, server.get("/S100/floorplan").headers['From-Cache']
     end
 
     cache_test do |r|
-      assert_equal r, server.get("/S50x50/floorplan").headers['From-Palette']
+      assert_equal r, server.get("/S50x50/floorplan").headers['From-Cache']
     end
     
     cache_test do |r|
-      assert_equal r, server.get("/Sx50/flyer").headers['From-Palette']
+      assert_equal r, server.get("/Sx50/flyer").headers['From-Cache']
     end
   end
 end

@@ -2,7 +2,7 @@ require 'sqlite3'
 require 'fileutils'
 
 class BobRoss
-  class Palette
+  class Cache
   
     attr_reader :path, :max_size, :purge_to
     
@@ -108,7 +108,6 @@ class BobRoss
       # another file
     rescue SQLite3::BusyException
       # Another thread is blocking us from inserting, remove image and continue
-      # Remove file
       FileUtils.rm(dest)
       nil
     rescue Errno::ENOSPC
@@ -126,10 +125,7 @@ class BobRoss
           DELETE FROM transformations
           WHERE hash = ? AND transform = ? AND transformed_mime = ?
         SQL
-        begin
-          FileUtils.rm(destination(entry[0], entry[1], entry[2]))
-        rescue Errno::ENOENT
-        end
+        remove(entry[0], entry[1], entry[2])
       end
     end
 
@@ -142,21 +138,24 @@ class BobRoss
       new_size = total_size + buffer
       
       if new_size > @max_size
-        puts "Palette filled (#{total_size} / #{@max_size})"
+        puts "Cache filled (#{total_size} / #{@max_size})"
         purged = 0
         need_to_purge = new_size - @max_size
         while purged < need_to_purge
           r = @db.execute("SELECT hash, transform, transformed_mime, size FROM transformations ORDER BY last_used_at ASC LIMIT 1").first
-          @db.execute(<<-SQL, r[0], r[1], r[2])
-            DELETE FROM transformations
-            WHERE hash = ? AND transform = ? AND transformed_mime = ?
-          SQL
-          begin
-            FileUtils.rm(destination(r[0], r[1], r[2]))
-          rescue Errno::ENOENT
+          if r.nil?
+            return
+          else
+            @db.execute(<<-SQL, r[0], r[1], r[2])
+              DELETE FROM transformations
+              WHERE hash = ? AND transform = ? AND transformed_mime = ?
+            SQL
+
+            remove(r[0], r[1], r[2])
+
+            purged += r[3]
+            puts " purged #{r[3]} (#{purged} / #{need_to_purge} purged)"
           end
-          purged += r[3]
-          puts " purged #{r[3]} (#{purged} / #{need_to_purge} purged)"
         end
       end
     end
@@ -168,5 +167,23 @@ class BobRoss
       File.join(@path, [split, transform, mime.split('/').last].join('/'))
     end
 
+    private
+    
+    def remove(hash, transform, mime)
+      filename = destination(hash, transform, mime)
+      FileUtils.rm(filename)
+      
+      # If there are alot of cache file the dirs take space and if they
+      # are not removed could fill up the disk. Could come up with a way
+      # to include these in the calculation (4k for folder, inode size 
+      # 256), but for now at least remove empty directories
+      dirname = File.dirname(filename)
+      while dirname != @path && Dir.empty?(dirname)
+        FileUtils.rmdir(dirname)
+        dirname = File.dirname(dirname)
+      end
+    rescue Errno::ENOENT
+    end
+    
   end
 end

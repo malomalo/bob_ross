@@ -32,11 +32,11 @@ class BobRoss::Server
     end
   end
   
-  attr_accessor :settings, :palette, :logger
+  attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
     @settings = normalize_options(settings)
-    @palette = @settings[:palette]
+    @cache = @settings[:cache]
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
     @logger = (@settings.has_key?(:logger) ? @settings.delete(:logger) : Logger.new(STDOUT))
   end
@@ -85,12 +85,12 @@ class BobRoss::Server
       result[:hmac][:required] = (options.has_key?(:required) ? options[:required] : true)
     end
     
-    if options[:palette] && options[:palette].is_a?(Hash) && !options[:palette].empty?
-      require 'bob_ross/palette'
-      result[:palette] = BobRoss::Palette.new(
-        options[:palette][:path],
-        options[:palette][:file],
-        size: options[:palette][:size]
+    if options[:cache] && options[:cache].is_a?(Hash) && !options[:cache].empty?
+      require 'bob_ross/cache'
+      result[:cache] = BobRoss::Cache.new(
+        options[:cache][:path],
+        options[:cache][:file],
+        size: options[:cache][:size]
       )
     end
     
@@ -196,7 +196,7 @@ class BobRoss::Server
       ActiveSupport::Notifications.instrument("rendered.bob_ross") do |render_payload|
         render_payload[:transformations] = transformation_string
         
-        cache_hits = @palette&.get(hash, transformation_string)
+        cache_hits = @cache&.get(hash, transformation_string)
         if cache_hits && !cache_hits.empty?
           hit = if options[:format]
             cache_hits.find { |h| h[4] == options[:format] }
@@ -230,8 +230,8 @@ class BobRoss::Server
             render_payload[:cache] = true
             response_headers['Content-Type']  = hit[4]
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-            response_headers['From-Palette']  = '1';
-            cached_file = @palette.use(hash, transformation_string, hit[4])
+            response_headers['From-Cache']  = '1';
+            cached_file = @cache.use(hash, transformation_string, hit[4])
             return serve_file(200, response_headers, cached_file)
           end
         end
@@ -285,9 +285,9 @@ class BobRoss::Server
         payload[:status] = 200
         response_headers['Content-Type'] = options[:format]
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-        if @palette
-          response_headers['From-Palette'] = '0'
-          @palette.set(hash, image.transparent, transformation_string, options[:format], transformed_file.path)
+        if @cache
+          response_headers['From-Cache'] = '0'
+          @cache.set(hash, image.transparent, transformation_string, options[:format], transformed_file.path)
         end
     
         serve_file(200, response_headers, transformed_file)

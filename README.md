@@ -9,7 +9,7 @@ The BobRoss client does not have any dependencies.
 
 The BobRoss server depends on the following:
 
-  - `imagemagick`
+  - `imagemagick` or `libvips`
 
 Optionally:
 
@@ -17,7 +17,8 @@ Optionally:
     format.
   - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR)
     image format.
-  - The `sqlite3` gem to use the `Palette` cache, a local disk cache.
+  - The `sqlite3` gem to use a local disk cache.
+  - `mupdf-tools` for PDF support
 
 ## Client (Generating URLs)
 
@@ -125,7 +126,7 @@ end
 - `last_modified_header:` (true || false) Weather to use the `Last-Modified`
                           header or not
                           
-- `palette:` (Optional) The Palette cache to use.
+- `cache:` (Optional) Config for the cache (optionally set to true).
 
 ### Automatic Content Negotiation
 
@@ -286,20 +287,23 @@ should always comes first.
         required for both. Offsets are not affected by % or other size
         operators. Default is `+0+0`
 
-### Palette Cache
+### The Disk Cache
 
-The Palette Cache is local disk cache that can be shared amongst processes. It uses a sqlite3 file to store and share which files are cached. This file should be stored on the local filesystem. The cache files themselves can be on a local FS or a NFS.
+The local disk cache that is shared across processes. It uses a sqlite3 file to
+store and share which files are cached. This file should be stored on the local
+filesystem. The cache files themselves can be on a local FS or a NFS.
 
 Example:
 
 ```ruby
-BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3')
+BobRoss::Cache.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3')
 ```
 
-By default the size of the cache is only 1GB, you can set that by setting the number of bytes you want the cache to be:
+By default the size of the cache is only 1GB, you can set that by setting the
+number of bytes you want the cache to be:
 
 ```ruby
-BobRoss::Palette.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 10_737_418_240)
+BobRoss::Cache.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 10_737_418_240)
 ```
 
 ## Rails
@@ -369,23 +373,23 @@ Limit the disk map used by imagemagick to transform an image. Default `"4GB"`
 
 Limit the memory used by imagemagick to transform an image. Default `"1GB"`
 
-**`config.bob_ross.server.palette`**
+**`config.bob_ross.server.cache`**
 
-If set to false the palette cache will be disabled. Default in **`production`** is
+If set to false the cache will be disabled. Default in **`production`** is
 *`false`*.
 
-**`config.bob_ross.server.palette.file`**
+**`config.bob_ross.server.cache.file`**
 
-The SQLite3 database used by BobRoss to keep stats about the Palette Cache.
+The SQLite3 database used by BobRoss to keep stats about the cache.
 Default is `"tmp/cache/bobross.cache"`
 
-**`config.bob_ross.server.palette.path`**
+**`config.bob_ross.server.cache.path`**
 
 Where to cache the transformed images. Default is `"tmp/cache/bobross"`
 
-**`config.bob_ross.server.palette.size`**
+**`config.bob_ross.server.cache.size`**
 
-Amount of disk size in bytes to use for the Palette cache. Default is `1.gigabyte`
+Amount of disk size in bytes to use for the cache. Default is `1.gigabyte`
 
 ## Plugins
 
