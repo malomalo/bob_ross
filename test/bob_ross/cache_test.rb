@@ -11,6 +11,21 @@ class BobRoss::CacheTest < Minitest::Test
     FileUtils.remove_entry @cache_dir
   end
   
+  test 'cache size as a percentage of the disk' do
+    dev_size = if File.exists?('/proc/mounts')
+      mount_points = File.read('/proc/mounts').each_line.map{ |l| l.split(/\s+/)[0..1] }
+      dev = mount_points.select{ |a| @cache_dir.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]
+      Terrapin::CommandLine.new("lsblk", "-rbno SIZE :dev").run(dev: dev).to_i
+    else
+      mounts = Terrapin::CommandLine.new("df", "-lk").run.split("\n")[1..-1].map{ |l| l.split(/\s+/) }.map{|l| [l[0], l[1], l[8]] }
+      dev = mounts.select{ |a| @cache_dir.start_with?(a[2]) }.sort_by {|a| a[2].length }.last
+      dev[1].to_i * 1024
+    end
+    
+    cache = BobRoss::Cache.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'), size: '75%')
+    assert_equal( (dev_size*0.75).round, cache.max_size )
+  end
+  
   test 'set/get' do
     cache = BobRoss::Cache.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
     key = '912ec803b2ce49e4a541068d495ab570'
