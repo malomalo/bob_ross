@@ -33,7 +33,7 @@ class BobRoss::Railtie < Rails::Railtie
   if ::Rails.env.to_s != 'production'
     config.bob_ross.server.cache.file = 'tmp/cache/bobross.cache'
     config.bob_ross.server.cache.path = 'tmp/cache/bobross'
-    config.bob_ross.server.cache.size = 1.gigabyte
+    config.bob_ross.server.cache.size = 1_073_741_824 # 1GB
   end
   
   def initialize_configs(app)
