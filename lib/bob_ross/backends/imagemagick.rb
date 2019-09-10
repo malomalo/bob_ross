@@ -1,4 +1,8 @@
+require 'logger'
+
 module BobRoss::ImageMagickBackend
+  @logger = Logger.new(STDOUT)
+
   extend BobRoss::BackendHelpers
   
   class <<self
@@ -88,6 +92,11 @@ module BobRoss::ImageMagickBackend
         }))
       end
     rescue => e
+      @logger.debug <<~DEBUG
+        Exit status is: #{command.exit_status}
+        Input file #{image.source.path} exists? #{File.exist? image.source.path}
+        Output file #{output.path} exists? #{File.exist? output.path}
+      DEBUG
       output.close!
       raise
     end
