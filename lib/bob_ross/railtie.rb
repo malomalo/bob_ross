@@ -31,6 +31,7 @@ class BobRoss::Railtie < Rails::Railtie
   config.bob_ross.server.cache = ActiveSupport::OrderedOptions.new
     
   if ::Rails.env.to_s != 'production'
+    FileUtils.mkdir_p('tmp/cache/bobross')
     config.bob_ross.server.cache.file = 'tmp/cache/bobross.cache'
     config.bob_ross.server.cache.path = 'tmp/cache/bobross'
     config.bob_ross.server.cache.size = 1_073_741_824 # 1GB
