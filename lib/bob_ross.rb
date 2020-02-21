@@ -30,7 +30,8 @@ class BobRoss
   end
   
   def backend
-    @backend || BobRoss::ImageMagickBackend
+    # @backend || BobRoss::ImageMagickBackend
+    @backend || BobRoss::LibVipsBackend
   end
   
   def register_plugin(plugin)
@@ -54,6 +55,13 @@ class BobRoss
       else
         result[:hmac][:attributes] = [:transformations, :hash]
       end
+    end
+
+    result[:backend] = case options[:backend]
+    when 'libvips'
+      BobRoss::LibVipsBackend
+    else
+      BobRoss::ImageMagickBackend
     end
 
     result

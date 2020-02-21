@@ -67,22 +67,25 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 ```ruby
 BobRoss.configure({
 
-	# Required if generating urls (not paths)
-	host: 'https://example.com',
-	
-	# Required if signing paths/urls
-	hmac: {
-	
-		# The secret to sign with
-		key: 'secret',
-		
-		# The attributes to use when creating the HMAC
-		attributes: [:transformations, :hash]
-	}
-	
-	hmac: 'secret',
-	
-	# Any other options you wish to apply by default
+  # Required if generating urls (not paths)
+  host: 'https://example.com',
+
+  # Required if signing paths/urls
+  hmac: {
+
+    # The secret to sign with
+    key: 'secret',
+
+    # The attributes to use when creating the HMAC
+    attributes: [:transformations, :hash]
+  }
+
+  hmac: 'secret',
+
+  # Default is 'imagemagick', you can also pass the class of another backend to use
+  backend: 'libvips',
+
+  # Any other options you wish to apply by default
 })
 ```
 
@@ -107,6 +110,7 @@ end
            `last_modified` (if `last_modified_header` is set to true),
            `destination` (if local?), and `copy_to_tempfile` (if !local?)
 
+- `backend:` (Optional, default `imagemagick`) `imagemagick` or `libvips`
 - `memory_limit:` (Optional, ie. `"1GB"`) Limit for max memory that imagemagick will use.
 - `disk_limit:` (Optional, ie. `"4GB"`) Limit for max disk that image magick will use
 - `hmac:` (Optional)

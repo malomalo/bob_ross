@@ -20,11 +20,12 @@ class BobRoss::Railtie < Rails::Railtie
   # config.bob_ross.hmac.transforms.optional = [:resize]
   
   config.bob_ross.server = ActiveSupport::OrderedOptions.new
+  config.bob_ross.backend = 'imagemagick'
   # config.bob_ross.server.store = -> {} || Value
   config.bob_ross.server.prefix = "/images"
   # config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
   config.bob_ross.server.last_modified_header = false
-  config.bob_ross.server.watermarks = 'public/watermarks'# || [file, file]
+  config.bob_ross.server.watermarks = Dir.exist?('public/watermarks') ? 'public/watermarks' : nil # || [file, file]
   config.bob_ross.server.disk_limit = '4GB'
   config.bob_ross.server.memory_limit = '1GB'
 
@@ -42,6 +43,7 @@ class BobRoss::Railtie < Rails::Railtie
     
     if seekrets = app.secrets[:bob_ross]
       config.host = seekrets[:host] if seekrets[:host]
+      config.backend = seekrets[:backend] if seekrets[:backend]
       
       if seekrets[:hmac].is_a?(String)
         config.hmac.key = seekrets[:hmac]
@@ -83,6 +85,8 @@ class BobRoss::Railtie < Rails::Railtie
           config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
             File.join(config.server.watermarks, w)
           }
+        else
+          config.server.watermarks = nil
         end
       end
     end
