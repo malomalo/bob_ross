@@ -344,11 +344,8 @@ module BobRoss::LibVipsBackend
   # options that don't exist for a particular loader or saver.
   def select_valid_options(operation_name, options)
     operation = ::Vips::Operation.new(operation_name)
-
-    operation_options = operation.get_construct_args
-      .select { |name, flags| (flags & ::Vips::ARGUMENT_INPUT)    != 0 }
-      .select { |name, flags| (flags & ::Vips::ARGUMENT_REQUIRED) == 0 }
-      .map(&:first).map(&:to_sym)
+    introspect = ::Vips::Introspect.get(operation_name)
+    operation_options = introspect.required_input.map{ |arg| arg[:arg_name] }.map(&:to_sym)
 
     options.select { |name, value| operation_options.include?(name) }
   end
