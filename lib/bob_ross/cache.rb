@@ -94,6 +94,7 @@ class BobRoss
     end
     
     def use(hash, transform, mime)
+      file = File.open(destination(hash, transform, mime))
       @db.execute(<<-SQL, Time.now.to_i, hash, transform, mime)
         UPDATE transformations
         SET last_used_at = ?
@@ -101,8 +102,11 @@ class BobRoss
       SQL
       
     rescue SQLite3::BusyException
+    rescue Errno::ENOENT
+      del(hash)
+      return nil
     ensure
-      return File.open(destination(hash, transform, mime))
+      return file
     end
     
     def set(hash, transparent, transform, mime, path)

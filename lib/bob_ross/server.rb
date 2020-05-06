@@ -231,8 +231,9 @@ class BobRoss::Server
             response_headers['Content-Type']  = hit[4]
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
             response_headers['From-Cache']  = '1';
-            cached_file = @cache.use(hash, transformation_string, hit[4])
-            return serve_file(200, response_headers, cached_file)
+            if cached_file = @cache.use(hash, transformation_string, hit[4])
+              return serve_file(200, response_headers, cached_file)
+            end
           end
         end
     
