@@ -37,19 +37,19 @@ module BobRoss::LibVipsBackend
   # widthxheight* - resize to fill dimensions and crop, positioned according to the gravity (default center)
   def fill_geometry(vips, geometry)
     if geometry[:width]
-      geometry[:height] ||= (geometry[:width] * vips.height.to_f / vips.width.to_f).round
+      geometry[:height] ||= (geometry[:width] * vips.height.to_f / vips.width.to_f).ceil
     elsif geometry[:height]
-      geometry[:width] ||= (geometry[:height] * vips.width.to_f / vips.height.to_f).round
+      geometry[:width] ||= (geometry[:height] * vips.width.to_f / vips.height.to_f).ceil
     end
     
     if geometry[:modifier] == '*'
       output_width  = (geometry[:height] * vips.width.to_f / vips.height.to_f).round
       if output_width < geometry[:width]
-        geometry[:height] = (geometry[:width] * vips.height.to_f / vips.width.to_f).round
+        geometry[:height] = (geometry[:width] * vips.height.to_f / vips.width.to_f).ceil
       end
       output_height = (geometry[:width] * vips.height.to_f / vips.width.to_f).round
       if output_height < geometry[:height]
-        geometry[:width] = (geometry[:height] * vips.width.to_f / vips.height.to_f).round
+        geometry[:width] = (geometry[:height] * vips.width.to_f / vips.height.to_f).ceil
       end
     end
   end
@@ -68,12 +68,11 @@ module BobRoss::LibVipsBackend
     else
       :both
     end
-    
+
     vips = vips.thumbnail_image(geometry[:width], {
       height: geometry[:height],
       size: modifier
     })
-
     vips = vips.conv(SHARPEN_MASK) if image.area > (vips.width * vips.height)
     
     if geometry[:modifier] == '#'
@@ -262,7 +261,7 @@ module BobRoss::LibVipsBackend
   def transform(image, transformations, options)
     vips = ::Vips::Image.new_from_file(image.source.path, select_valid_loader_options(image.source.path, {}))
     vips.add_alpha if !vips.has_alpha?
-    
+
     if image.orientation
       vips = case image.orientation
       when 2
