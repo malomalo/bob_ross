@@ -16,6 +16,7 @@ require 'mocha/minitest'
 require 'active_support/testing/time_helpers'
 require 'standard_storage'
 require 'standard_storage/filesystem'
+require "concurrent"
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
