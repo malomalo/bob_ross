@@ -204,25 +204,24 @@ class BobRoss::Server
             choice = nil
             image_transparent = cache_hits.first[1]
 
-            acs = accepts.dup
-            if acs
-              while choice.nil? && !acs.empty?
-                accept = acs.shift
+            choices = if accepts.nil? || accepts.empty?
+              (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
+            else
+              accepts.map do |accept|
                 if accept == "*/*" || accept == "image/*"
-                  choice = (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
+                  (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
                 elsif SUPPORTED_FORMATS.include?(accept)
-                  choice = accept
+                  accept
                 end
               end
-            else
-              choice = (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
             end
           
-            if choice.nil?
+            if choices.nil?
               payload[:status] = 415
               return unsupported_media_type
             end
-          
+            
+            choice = SUPPORTED_FORMATS.find { |f|  choices.include?(f) }
             cache_hits.find { |h| h[4] == choice }
           end
 
@@ -258,20 +257,19 @@ class BobRoss::Server
         return not_implemented if image.nil?
         
         if !options[:format]
-          choice = nil
-          if accepts
-            while choice.nil? && !accepts.empty?
-              accept = accepts.shift
+          choices = if accepts.nil? || accepts.empty?
+            [(image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg']
+          else
+            accepts.map do |accept|
               if accept == "*/*" || accept == "image/*"
-                choice = (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
+                (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
               elsif SUPPORTED_FORMATS.include?(accept)
-                choice = accept
+                accept
               end
             end
-          else
-            choice = (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
           end
 
+          choice = SUPPORTED_FORMATS.find { |f|  choices.include?(f) }
           if choice.nil?
             payload[:status] = 415
             return unsupported_media_type

@@ -32,12 +32,16 @@ class BobRossServerTest < Minitest::Test
     
     
     assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/jpeg'}).headers['Content-Type']
-    assert_equal 'image/png', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/opaque",  {'HTTP_ACCEPT' => 'image/png'}).headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp'}).headers['Content-Type']
     
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/*,*/*;q=0.8'}).headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'}).headers['Content-Type']
     assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/*,*/*;q=0.8'}).headers['Content-Type']
+
+    # Apple wants pngs more than any other image, but we wanna save bandwidth,
+    # we want to send jpg in this situation
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
     
     # Return a 415 Unsupported Media Type if we can't satisfy the Accept header
     assert_equal 415, server.get('/opaque', {'HTTP_ACCEPT' => 'image/magical'}).status
