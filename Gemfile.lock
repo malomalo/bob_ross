@@ -31,7 +31,7 @@ GEM
       minitest (>= 5.0)
       ruby-progressbar
     mocha (1.11.2)
-    rack (2.2.2)
+    rack (2.2.3)
     rake (13.0.1)
     ruby-progressbar (1.10.1)
     ruby-vips (2.0.17)
