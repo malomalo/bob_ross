@@ -15,7 +15,7 @@ module BobRoss::LibVipsBackend
     mime_command = Terrapin::CommandLine.new("file", '--mime -b :file')
     ident[:mime_type] = mime_command.run({ file: path }).split(';')[0]
     
-    i = ::Vips::Image.new_from_file(path, select_valid_loader_options(path, {}))#, access: :sequential
+    i = ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))#, access: :sequential
     ident[:opaque]    = i.has_alpha? ? i.extract_band(3, n: 1).min == 255.0 : true
     ident[:geometry]  = { width: i.width, height: i.height, x_offset: nil, y_offset: nil, modifier: nil, gravity: nil, color: nil }
     ident[:orientation] = begin
