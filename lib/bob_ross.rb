@@ -6,6 +6,8 @@ require 'cgi'
 class BobRoss
   include Singleton
   
+  ASSET_PATH = File.join(__dir__, 'bob_ross', 'assets')
+  
   autoload :Plugin, File.expand_path('../bob_ross/plugin', __FILE__)
   autoload :BackendHelpers, File.expand_path('../bob_ross/backends/helpers', __FILE__)
   autoload :ImageMagickBackend, File.expand_path('../bob_ross/backends/imagemagick', __FILE__)
