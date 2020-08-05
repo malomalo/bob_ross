@@ -291,6 +291,8 @@ module BobRoss::LibVipsBackend
           pad(vips, value)
         when :watermark
           watermark(image, vips, value)
+        when :transparent
+          vips.add_alpha
         else
           vips
         end

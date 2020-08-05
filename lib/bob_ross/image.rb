@@ -49,7 +49,7 @@ class BobRoss::Image
     BobRoss.backend.transform(self, transformations, options)
   end
   
-  def transparent
+  def transparent?
     @opaque == false
   end
 

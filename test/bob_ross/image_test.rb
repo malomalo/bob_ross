@@ -6,13 +6,13 @@ class BobRossImageTest < Minitest::Test
   test 'detects when an image is opaque' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     assert_equal true,  image.opaque
-    assert_equal false, image.transparent
+    assert_equal false, image.transparent?
   end
 
   test 'detects when an image is transparent' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/transparent', __FILE__)))
     assert_equal false, image.opaque
-    assert_equal true,  image.transparent
+    assert_equal true,  image.transparent?
   end
 
   test 'detects an image mime type' do
@@ -202,7 +202,7 @@ class BobRossImageTest < Minitest::Test
     })
   end
 
-  test 'padding an image' do
+  test 'padding a transparent image' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/transparent', __FILE__)))
 
     assert_transform(image, {padding: '5'}, {
@@ -245,7 +245,18 @@ class BobRossImageTest < Minitest::Test
       ]
     })
   end
-  
+
+  test 'padding an opaque image with output to a transparent image' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/images_with_orientations/landscape-1', __FILE__)))
+    output = image.transform({transparent: true, padding: '5'}, {format: 'image/png'})
+    # bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
+    # `cp '#{output.path}' ~/test/image_test.255.#{bnd}#{File.extname(output.path)}`
+    assert_signature([
+      'b5166aeaf8466d88459f4fbfeaffd8cc0dc8994ed978415971f8bceedb4bec5b',
+      'd3403b9baf8530b426f2ae1e745c68b8983ccb2459c1789240cbafc44a6f5692'
+    ], output)
+  end
+
   test 'resize an image' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/transparent', __FILE__)))
 

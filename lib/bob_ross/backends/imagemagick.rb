@@ -50,6 +50,8 @@ module BobRoss::ImageMagickBackend
           pad(value, interpolations)
         when :watermark
           watermark(value, interpolations, image)
+        when :transparent
+          "-alpha Set"
         else
           nil
         end

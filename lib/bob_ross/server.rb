@@ -258,11 +258,11 @@ class BobRoss::Server
         
         if !options[:format]
           choices = if accepts.nil? || accepts.empty?
-            [(image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg']
+            [(image.transparent? || options[:transparent]) ? 'image/png' : 'image/jpeg']
           else
             accepts.map do |accept|
               if accept == "*/*" || accept == "image/*"
-                (image.transparent || options[:transparent]) ? 'image/png' : 'image/jpeg'
+                (image.transparent? || options[:transparent]) ? 'image/png' : 'image/jpeg'
               elsif SUPPORTED_FORMATS.include?(accept)
                 accept
               end
@@ -286,7 +286,7 @@ class BobRoss::Server
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         if @cache
           response_headers['From-Cache'] = '0'
-          @cache.set(hash, image.transparent, transformation_string, options[:format], transformed_file.path)
+          @cache.set(hash, image.transparent?, transformation_string, options[:format], transformed_file.path)
         end
     
         serve_file(200, response_headers, transformed_file)
@@ -359,6 +359,7 @@ class BobRoss::Server
         transformations << { resize: value }
       when 'T'.freeze
         options[:transparent] = true
+        transformations << { transparent: true }
       when 'W'.freeze
         transformations << { watermark: value }
       end
