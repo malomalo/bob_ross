@@ -22,6 +22,7 @@ Optionally:
 
 ## Client (Generating URLs)
 
+### Ruby
 The BobRoss client makes it easy to generate urls for requesting the server.
 
 For example to generate a path that resizes an image to 100x100:
@@ -30,12 +31,39 @@ For example to generate a path that resizes an image to 100x100:
 
 In addition there is also a `url` helper if you have configured the host:
 
+#### Configuration
+
 ```ruby
-BobRoss.host = 'https://example.com'
+BobRoss.configure({
+
+  # Required if generating urls (not paths)
+  host: 'https://example.com',
+
+  # Required if signing paths/urls
+  hmac: {
+
+    # The secret to sign with
+    key: 'secret',
+
+    # The attributes to use when creating the HMAC
+    attributes: [:transformations, :hash]
+  }
+
+  hmac: 'secret',
+
+  # Default is 'imagemagick', you can also pass the class of another backend to use
+  backend: 'libvips',
+
+  # Any other options you wish to apply by default
+})
+```
+
+#### Usage
+```ruby
 BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 ```
 
-### Available Options
+##### `BobRoss.url` Options
 
 - `:background` Set the background color of an image; Given in RGB or RGBA in
   Hex format
@@ -62,32 +90,53 @@ BobRoss.url('hash', resize: '100x100') #=> 'https://example.com/S100x100/hash'
 - `:transparent`
 - `:watermark`
 
-### Client Configuration
 
-```ruby
-BobRoss.configure({
+### Javascript
 
-  # Required if generating urls (not paths)
-  host: 'https://example.com',
+#### Configuration
+BobRoss.js can be imported by including BobRoss.ASSET_PATH in assets.
 
-  # Required if signing paths/urls
-  hmac: {
+BobRoss.js needs to be configured by a compiled js file.
+```javascript
+// config/bob-ross.js.erb
+import {setHmac, configure} from 'bob-ross';
+configure({
+    host: 'https://42floors.com/images',
+    backgroundColor: image => image.metadata.background_color,
+    aspectRatio: image => image.metadata.aspect_ratio
+})
+setHost()
+<%= [
+   {resize: '64x64*',  watermark: {},   optimize: true},
+   {resize: '400x400*',  watermark: {},   optimize: true},
+   {resize: '400x400',  watermark: false,   optimize: true},
+   {resize: '400x200',  watermark: false,   optimize: true},
+   {transparent: true, resize: '150x70#',  watermark: false,   optimize: true},
+   {transparent: true, padding: '20,0,20,0', resize: '150x70#',  watermark: false,  optimize: true},
+   {resize: '120x90*',  watermark: false,   optimize: true}
+].map { |t| BobRoss.render_set_hmac(t) }.join %>
+```
 
-    # The secret to sign with
-    key: 'secret',
+##### `configure` Options
 
-    # The attributes to use when creating the HMAC
-    attributes: [:transformations, :hash]
-  }
+- `host` url to render image requests
+- `useSrcset` boolean flag to render srcset attribute on `bobRossTag`
+- `hashKey` method to default hash for hmac if passing an image object to `bobRossTag`
+- `backgroundColor` method to default background color of `bobRossTag`
+- `aspectRatio` method to default height and width of `bobRossTag`
 
-  hmac: 'secret',
 
-  # Default is 'imagemagick', you can also pass the class of another backend to use
-  backend: 'libvips',
-
-  # Any other options you wish to apply by default
+#### Usage
+```javascript
+import {bobRossTag}
+bobRossTag('akdsfljaldf...', {
+    resize: '64x64*',
+    watermark: {},
+    optimize: true
 })
 ```
+
+
 
 ## Server
 
