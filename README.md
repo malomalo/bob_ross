@@ -105,7 +105,6 @@ configure({
     backgroundColor: image => image.metadata.background_color,
     aspectRatio: image => image.metadata.aspect_ratio
 })
-setHost()
 <%= [
    {resize: '64x64*',  watermark: {},   optimize: true},
    {resize: '400x400*',  watermark: {},   optimize: true},
