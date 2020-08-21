@@ -292,7 +292,7 @@ module BobRoss::LibVipsBackend
         when :watermark
           watermark(image, vips, value)
         when :transparent
-          vips.add_alpha
+          vips.has_alpha? ? vips : vips.add_alpha
         else
           vips
         end
