@@ -2,7 +2,7 @@ require_relative "lib/bob_ross/version"
 
 Gem::Specification.new do |s|
   s.name        = "bob_ross"
-  s.version     = 1
+  s.version     = BobRoss::VERSION
   s.authors     = ["Jon Bracy"]
   s.email       = ["jonbracy@gmail.com"]
   s.homepage    = ""

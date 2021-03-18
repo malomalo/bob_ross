@@ -1,3 +1,5 @@
+# Ensure ruby-vips > 2.1 is required
+gem 'ruby-vips', '>= 2.1'
 require 'ruby-vips'
 
 module BobRoss::LibVipsBackend
@@ -69,10 +71,7 @@ module BobRoss::LibVipsBackend
       :both
     end
 
-    vips = vips.thumbnail_image(geometry[:width], {
-      height: geometry[:height],
-      size: modifier
-    })
+    vips = vips.thumbnail_image(geometry[:width], height: geometry[:height], size: modifier)
     vips = vips.conv(SHARPEN_MASK) if image.area > (vips.width * vips.height)
     
     if geometry[:modifier] == '#'
@@ -137,16 +136,16 @@ module BobRoss::LibVipsBackend
   end
   
   def pad(vips, padding)
-    vips.embed(padding[:left], padding[:top], vips.width + padding[:right] + padding[:left], vips.height + padding[:bottom] + padding[:top], {
+    vips.embed(padding[:left], padding[:top], vips.width + padding[:right] + padding[:left], vips.height + padding[:bottom] + padding[:top],
       extend: :background,
       background: rgba_to_values(padding[:color] || '#00000000', bands: vips.bands)
-    })
+    )
   end
   
   def background(image, vips, background_color)
     bg_color = rgba_to_values(background_color, bands: vips.bands)
     background = vips.new_from_image(bg_color)
-    vips = background.composite(vips, :over)
+    background.composite(vips, :over)
   end
   
   def watermark(image, vips, transform)
@@ -171,8 +170,8 @@ module BobRoss::LibVipsBackend
           geometry[:height] = geometry[:width]
         end
       end
-      wtrmrk = ::Vips::Image.new_from_file(watermark_file[:path], select_valid_loader_options(watermark_file[:path], {}))
-      wtrmrk = wtrmrk.thumbnail_image(geometry[:width], {height: geometry[:height]})
+      wtrmrk = ::Vips::Image.new_from_file(watermark_file[:path], **select_valid_loader_options(watermark_file[:path], {}))
+      wtrmrk = wtrmrk.thumbnail_image(geometry[:width], height: geometry[:height])
       geometry[:height] = wtrmrk.height
       geometry[:width] = wtrmrk.width
       
@@ -259,8 +258,9 @@ module BobRoss::LibVipsBackend
   end
 
   def transform(image, transformations, options)
-    vips = ::Vips::Image.new_from_file(image.source.path, select_valid_loader_options(image.source.path, {}))
-
+    vips = ::Vips::Image.new_from_file(image.source.path, **select_valid_loader_options(image.source.path, {}))
+    
+    
     if image.orientation
       vips = case image.orientation
       when 2
@@ -320,7 +320,7 @@ module BobRoss::LibVipsBackend
     # end
     # transformations.delete(:lossless)
     
-    vips.write_to_file(output.path, select_valid_saver_options(output.path, {}))
+    vips.write_to_file(output.path, **select_valid_saver_options(output.path, {}))
     output
   end
   

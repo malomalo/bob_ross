@@ -1,5 +1,3 @@
-module ActiveRecord
-  module Filter
-    VERSION = '1.0.0'
-  end
+class BobRoss
+  VERSION = '2.0.0'
 end

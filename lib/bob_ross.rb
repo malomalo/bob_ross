@@ -30,7 +30,7 @@ class BobRoss
   end
   
   def backend
-    @backend || BobRoss::ImageMagickBackend
+    @backend || BobRoss::LibVipsBackend
   end
   
   def register_plugin(plugin)

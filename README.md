@@ -13,10 +13,14 @@ The BobRoss server depends on the following:
 
 Optionally:
 
+  - `libheif` to support the [HEIC](https://en.wikipedia.org/wiki/High_Efficiency_Image_File_Format)
+    image format.
   - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image
     format.
   - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR)
     image format.
+  - `giflib` for GIF support in LibVips.
+  - `libjpeg-turbo` for faster JPEG encoding/decoding.
   - The `sqlite3` gem to use a local disk cache.
   - `mupdf-tools` for PDF support
 
@@ -397,6 +401,8 @@ Amount of disk size in bytes to use for the cache. Default is `1.gigabyte`
 
 ## Plugins
 
-BobRoss can process any image format that ImageMagick accepts. To process other types of files and turn them into images that BobRoss can use.you can use 
+BobRoss can process any image format that ImageMagick or LibVips accepts.
 
-BobRoss also
+To process other types of files and turn them into images that BobRoss can create a plugin.
+
+For an example see `lib/bob_ross/plugins/pdf`.

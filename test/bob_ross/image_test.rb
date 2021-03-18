@@ -264,7 +264,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x67',
       signature: [
         'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1',
-        '17e82e94829727ea951a43f5d7b00b4ed2037813832325e29a12fbb51298efa6'
+        'c39e3f0612cdf56c3354d632e9dbbb7bcc8bd8408b19d7cd226126e744115aaa'
       ]
     })
 
@@ -272,7 +272,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '150x100',
       signature: [
         '6a119768c3135cfc8cd340fe273f765518512e99097da0961b7b80eb885a4e24',
-        '7afdf2d51e6770a844394eac2611fe0e6d0cc11d5a7df6405e72831bfe58d104'
+        'ba2a72f86332cf5f0bc2146040d1925b340a22ab831a352ec5e713379ee1c108'
       ]
     })
 
@@ -280,7 +280,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x67',
       signature: [
         'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1',
-        '17e82e94829727ea951a43f5d7b00b4ed2037813832325e29a12fbb51298efa6'
+        'c39e3f0612cdf56c3354d632e9dbbb7bcc8bd8408b19d7cd226126e744115aaa'
       ]
     })
 
@@ -288,7 +288,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x100',
       signature: [
         'b6a9cbf02cf05ba5ea6531daa6084b181ab30f5a0a078b224241297fa19619af',
-        'f7734eebb6923e6737228dec08ea38924ebca57846e25557cbfbd0db8e500658'
+        'bb90253f26775ec23e90c4465306da6a4ac1e1b18f4c14f1b1286b263373c885'
       ]
     })
 
@@ -304,7 +304,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x133',
       signature: [
         '04e2b2b059aba5fa0a094fc9e96019e19502396dce8c411c5f82a29de70db96a',
-        '21846e78dd4b5ac2d488c108cd7ccce5c80faaed9111445c88dccb8009eb0233'
+        '53446dc48de4b954252e9ca03a3022fb05cf1dab24b0cd2f5e89e2f6f5084b58'
       ]
     })
 
@@ -312,7 +312,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '800x533',
       signature: [
         '308bb6ded0c87e2d28055f962e1a13123393593baca8f173b03b31bb33e09f2e',
-        '927ff8fee09ad3c4a9396164bfa36bde12f89ffd58f596ef39d52c74c31332b6'
+        '500151ddb81f612a7416665d39513d032b93f9bfcccd8fd5240289cc171a1f9a'
       ]
     })
 
@@ -328,7 +328,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         '69a200e57445da54086a78838252ae24b9b9e6c1f0e3496368fb0be89ae73bc4',
-        '3f3f34ece66faa71b52f51ecd288b7d4235dfc0276bc874a6cb4792ddc8e59c5'
+        '6cbf8367ca117379cbe93f4d7e1da51d9def5910f42fe6f863b6145ab692f081'
       ]
     })
 
@@ -336,7 +336,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         'f3209ac875fef39f31c0746cda7b80a65a05432534754cc7f6616d34128dc342',
-        '814015550d78533c3618d88fdc3387c5e40b2f84cf9edd92b9b51a7344be8c8a'
+        '9603566efc107c75c7e48bba736ff5c2e73639c6bb9d7c541ccc0b6d2f5e8904'
       ]
     })
 
@@ -344,7 +344,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         'f887e8e7c293970bd73f3880395e2d03b9adfcd222b24331c95fa5bc679c5127',
-        '07529580c65888db633bab7d42ed0a0fc9a74889043c91b5743cf84bd655bb46'
+        '58ddee7ed63418c00da0502bb9e7917c164e1275d155bdff8b2feac0e16a280c'
       ]
     })
   end
@@ -359,7 +359,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         '5a0b0ab61d3b4cbfd32eb7f2a273c3050dbee50504544b66158fca1b7c2a90f4',
-        '9e10618d2111055cd6e7cef0a8b46513c69ef79d2abd346b0ca8f9ffba80b705'
+        'db980c1fce16fd9067ec40f700f88ac6b869dc1106ec03829c8ad87bfd2c03c8'
       ]
     })
 
@@ -367,7 +367,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         '77830c630bc2b525a6eab6dc21c29867bf8ed94736ad9f286c0b3a14467dc7af',
-        '2768d68cb31bf95cff3a23e66e534f813599d4a015f2abd578300026fe50a1a1'
+        'cd086f2d95bc20750aab6403bf9035b7b6b5ec0253c39a0702794554d39d5625'
       ]
     })
 
@@ -375,7 +375,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'c69a96ee3caf1088bab040d5d90eb77b295c9fdbe8b99838eb124e4b9dcd2393',
-        '3d5c9e8dae96200394428a108bb2ed76e3632dafe0f0412dd1d27f95ed6e4ff0'
+        '1ee816239f17bf0ff6d041b4981726a0e68b0cbef774472ceec848477ade71f2'
       ]
     })
 
@@ -383,7 +383,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         '7dac6b13a596cfaa4649f397c13e2edcf12e9e53e32df86c0a3567efe2ba8f7a',
-        '9d76d0c2661a03f383a25d3719167a16022b13eef28e44bc9ea85ceff8ff441c'
+        '0967a51465835ca28aabd5830d01568c28faa3748cfb162e865d23014a4965df'
       ]
     })
 
@@ -391,7 +391,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         '210c9b8732def89f30b49e14a00ba21f4dcb35e7773605a9b386656fad158521',
-        '1f2303e60f53b37a635dd81e56c730d67594376239b22190fac9e303907082ce'
+        '2e53eb526688724611c4ed032d0ac3cc4385bef04ede764df8e7877379ab601c'
       ]
     })
 
@@ -399,7 +399,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'd29c63e1a86a5d196c04d86cf47a755f37e659571390695662e3a9f112b4b606',
-        '16a30429b6e4dfc4a1d1f697419f3f3dde193adb0e666c8017b3d367dd26e605'
+        '6db451d0ff46afad134c46d838bb673843110e96206337d07c8990b0f92a8a2c'
       ]
     })
 
@@ -407,7 +407,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'd818279a67ab1a67f8adc107e53f4e826b46ffb9a92cdfc50a77c6978d049bb2',
-        'ec2dc0beda26c3681445b121571c16763cd73343042e84833a1c36b84178bb7b'
+        'c3cccfcd8496273e6da69e4c002e99a6c0f1acd7464405e3a5ff9488aca75283'
       ]
     })
 
@@ -415,7 +415,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'bf30cbdb4a28347aab4e8e58bf8289392c7d7527e263ed6b6232674e40dc071b',
-        '8f9f2f05123373287626c40990889b68c6e5a4e1cf4de35e916c1a50e80f7bd0'
+        'e5781c478e9a694ca0fef137bf340660635178127e5611c84824aaaa87f50bea'
       ]
     })
 
@@ -423,7 +423,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'b203550e214d3035e97202b57b72bbc4525b7bafbb71b1130f4ce0c411268dfd',
-        '808940ed1ca20ef6f831793565850c3ce46011f1d036ad41a657cfa4222746d2'
+        '1593edfca341c4b6a9e3fa0466d94da68d6f53bf79e083d50ae1e86fcdee7c84'
       ]
     })
 
@@ -431,7 +431,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: [
         'add7d6ea1fc4ae3ebd0a80f2d40dedfc07fd5a382981c5de063ad062b15de238',
-        '9a0b71ee3ee50328145e8368c90d233240e19cf1ec5c4526027784d900fccc88'
+        '4f798c285d89c346a4931b87338bbc76ab14242d027e677d65cb15938bfe5a0d'
       ]
     })
   end
