@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  sunstone:
+    name: BobRoss Test
+    runs-on: ubuntu-20.04
+
+    steps:
+      - run: |
+          sudo apt-get install libvips imagemagick mupdf-tools
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+
+      - uses: actions/checkout@v2
+
+      - run: bundle
+
+      - run: bundle exec rake test
