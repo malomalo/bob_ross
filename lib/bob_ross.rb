@@ -6,6 +6,8 @@ require 'cgi'
 class BobRoss
   include Singleton
   
+  ASSET_PATH = File.join(__dir__, 'bob_ross', 'assets')
+  
   autoload :Plugin, File.expand_path('../bob_ross/plugin', __FILE__)
   autoload :BackendHelpers, File.expand_path('../bob_ross/backends/helpers', __FILE__)
   autoload :ImageMagickBackend, File.expand_path('../bob_ross/backends/imagemagick', __FILE__)
@@ -138,7 +140,8 @@ class BobRoss
       optimize: 'O',
       padding: 'P',
       resize: 'S',
-      watermark: 'W'
+      watermark: 'W',
+      transparent: 'T'
     }
     @plugins.values.find do |plugin|
       trfms = trfms.merge(plugin.transformations)
@@ -197,6 +200,19 @@ class BobRoss
     end
     
     string.join('')
+  end
+  
+  def render_set_hmac(transformations)
+    if transformations[:resize]
+      [1,2,3].map { |multiplier|
+        size = t[:resize].gsub(/\d+/) { |d| d.to_i * multiplier }
+        key = encode_transformations(transformations.merge(resize: size))
+        "setHmac(#{key}, #{calculate_hmac(key)});"
+      }.join
+    else
+      key = BobRoss.encode_transformations(transformations)
+      "setHmac(#{key}, #{calculate_hmac(key)});"
+    end
   end
   
   # Delegates all uncauge class method calls to the singleton
