@@ -149,6 +149,7 @@ class BobRoss
   def encode_transformations(options = {})
     string = []
     options.each do |key, value|
+      next if value.nil?
       case key
       when :background
         string << 'B' + value.downcase
