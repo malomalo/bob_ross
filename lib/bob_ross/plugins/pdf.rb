@@ -11,8 +11,8 @@ class BobRoss
   
     def self.encode_transformation(key, value)
       case key
-      when :pages
-        'R' + value.downcase
+      when :pages, :page
+        'R' + value.to_s.downcase
       end
     end
   
