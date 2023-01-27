@@ -64,7 +64,7 @@ class BobRoss::Railtie < Rails::Railtie
         
         if seekrets[:server][:cache] == false
           config.server.cache = nil
-        elsif seekrets[:server][:cache] && Dir.exists?(seekrets[:server][:cache][:path]) && Dir.exists?(File.dirname(seekrets[:server][:cache][:file]))
+        elsif seekrets[:server][:cache] && Dir.exist?(seekrets[:server][:cache][:path]) && Dir.exist?(File.dirname(seekrets[:server][:cache][:file]))
           config.server.cache.file = seekrets[:server][:cache][:file] if seekrets[:server][:cache][:file]
           config.server.cache.path = seekrets[:server][:cache][:path] if seekrets[:server][:cache][:path]
           config.server.cache.size = seekrets[:server][:cache][:size] if seekrets[:server][:cache][:size]
@@ -81,7 +81,7 @@ class BobRoss::Railtie < Rails::Railtie
 
       config.server.store = config.server[:store].call if config.server[:store].is_a?(Proc)
       if config.server.watermarks.is_a?(String)
-        if Dir.exists?(config.server.watermarks)
+        if Dir.exist?(config.server.watermarks)
           config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
             File.join(config.server.watermarks, w)
           }

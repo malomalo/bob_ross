@@ -12,7 +12,7 @@ class BobRoss::CacheTest < Minitest::Test
   end
   
   test 'cache size as a percentage of the disk' do
-    dev_size = if File.exists?('/proc/mounts')
+    dev_size = if File.exist?('/proc/mounts')
       mount_points = File.read('/proc/mounts').each_line.map{ |l| l.split(/\s+/)[0..1] }
       dev = mount_points.select{ |a| @cache_dir.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]
       Terrapin::CommandLine.new("lsblk", "-rbno SIZE :dev").run(dev: dev).to_i
@@ -39,7 +39,7 @@ class BobRoss::CacheTest < Minitest::Test
       cache.set(key, true, transform, 'image/png', fixture('opaque'))
     end
     
-    assert File.exists?(File.join(@cache_dir, '912e/c803/b2ce/49e4a541068d495ab570/S100x100/png'))
+    assert File.exist?(File.join(@cache_dir, '912e/c803/b2ce/49e4a541068d495ab570/S100x100/png'))
     assert_equal File.size(fixture('opaque')), cache.size
     assert_equal [[key, 1, transform, File.size(fixture('opaque')), 'image/png', time.to_i]], cache.get(key, transform)
   end

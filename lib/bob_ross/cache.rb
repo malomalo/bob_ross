@@ -11,7 +11,7 @@ class BobRoss
       
       if size.is_a?(String) && size.end_with?('%')
         size.delete_suffix!('%')
-        dev_size = if File.exists?('/proc/mounts')
+        dev_size = if File.exist?('/proc/mounts')
           mount_points = File.read('/proc/mounts').each_line.map{ |l| l.split(/\s+/)[0..1] }
           dev = mount_points.select{ |a| path.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]
           Terrapin::CommandLine.new("lsblk", "-rbno SIZE :dev").run(dev: dev).to_i
