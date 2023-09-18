@@ -6,57 +6,65 @@ class BobRoss
     end
     
     def self.transformations
-      { pages: 'R' }
+      { page: 'R' }
     end
   
     def self.encode_transformation(key, value)
       case key
-      when :pages, :page
+      when :page
         'R' + value.to_s.downcase
       end
     end
   
-    def self.extract_options(string)
-      options = {}
-      return options unless string
-
-      string.scan(/([A-Z])([^A-Z]*)/) do |key, value|
-        case key
-        when 'R'.freeze
-          # "*", "1,4", "1,5,10-15", "3"
-          options[:pages] = value
+    def self.extract_transformations(transformation_string)
+      transformations = []
+      
+      while match = transformation_string.match(/\A([A-Z])([^A-Z]+)/)
+        case match[1]
+        when 'R'
+          # 3 - Page 3
+          if match[2] =~ /\A\d+\z/
+            transformations << { page: match[2] }
+          else
+            break
+          end
+        else
+          break
         end
+        transformation_string.delete_prefix!(match[0])
       end
-
-      options
+      
+      transformations
     end
   
-    def self.transform(original_file, transformation_string, transformations)
+    def self.transform(original_file, transformations=[], ross_transformations=[])
       screenshot = Tempfile.create(['preview', '.png'], binmode: true)
-      first_resize = transformations.find { |t| t.has_key?(:resize) }
-      size = first_resize ? parse_geometry(first_resize[:resize]) : nil
-      options = extract_options(transformation_string)
+      interpolations = { input: original_file.path, output: screenshot.path }
       
       args = 'draw'
-      args << ' -h :height' if size && size[:height]
-      args << ' -w :width' if size && size[:width]
-      args << ' -o :output :input'
-      args << if options[:pages].nil?
-        ' 1'
-      elsif options[:pages] != '*'
-        ' :pages'
-      else
-        ''
+      
+      if first_resize = ross_transformations.find { |t| t[0] == :resize }
+        size = parse_geometry(first_resize[1])
+        if size[:height]
+          args << ' -h :height'
+          interpolations[:height] = size[:height]
+        end
+        if size[:width]
+          args << ' -w :width'
+          interpolations[:width] = size[:width]
+        end
       end
-    
-      Terrapin::CommandLine.new('mutool', args, expected_outcodes: [0, 1]).run({
-          input: original_file.path,
-          output: screenshot.path,
-          height: size && size[:height],
-          width: size && size[:width],
-          pages: options[:pages]
-      })
-    
+      
+      transformations << [:page, 1] if transformations.empty?
+      transformations.each do |transform|
+        case transform[0]
+        when :page
+          args << ' -o :output :input :page'
+          interpolations[:page] = transform[1]
+        end
+      end
+      
+      Terrapin::CommandLine.new('mutool', args).run(interpolations)
       screenshot
     end
 

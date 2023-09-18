@@ -10,7 +10,9 @@ class BobRoss
   autoload :BackendHelpers, File.expand_path('../bob_ross/backends/helpers', __FILE__)
   autoload :ImageMagickBackend, File.expand_path('../bob_ross/backends/imagemagick', __FILE__)
   autoload :LibVipsBackend, File.expand_path('../bob_ross/backends/libvips', __FILE__)
-
+  autoload :PDFPlugin, File.expand_path('../bob_ross/plugins/pdf', __FILE__)
+  autoload :VideoPlugin, File.expand_path('../bob_ross/plugins/video', __FILE__)
+  
   attr_reader :host, :plugins
   attr_accessor :logger
 

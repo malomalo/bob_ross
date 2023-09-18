@@ -114,7 +114,7 @@ class Minitest::Test
   end
   
   def fixture(path)
-    File.expand_path(File.join('../fixtures', path), __FILE__)
+    File.open(File.expand_path(File.join('../fixtures', path), __FILE__))
   end
   
   # test/unit backwards compatibility methods

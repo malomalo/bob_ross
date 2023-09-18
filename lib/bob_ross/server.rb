@@ -125,9 +125,9 @@ class BobRoss::Server
       requested_format = match[3]
       
       if transformation_string.start_with?('H')
-        match = transformation_string.match(/^H([^A-Z]+)(.*)$/)
+        match = transformation_string.match(/^H([^A-Z]+)(?=[A-Z]|\z)/)
         provided_hmac = match[1]
-        transformation_string = match[2]
+        transformation_string.delete_prefix!(match[0])
       
         if !valid_hmac?(provided_hmac, {
           transformations: transformation_string,
@@ -142,18 +142,18 @@ class BobRoss::Server
         return not_found 
       end
       
-      options, transformations = extract_options(transformation_string)
-      
-      if options[:expires]
-        if options[:expires] <= Time.now
+      if transformation_string.start_with?('E')
+        match = transformation_string.match(/^E([^A-Z]+)(?=[A-Z]|\z)/)
+        expiration_time = Time.at(match[1].to_i(16))
+        transformation_string.delete_prefix!(match[0])
+
+        if expiration_time <= Time.now
           ActiveSupport::Notifications.instrument("expired.bob_ross", {
-            expired_at: options[:expires]
+            expired_at: expiration_time
           })
           payload[:status] = 410
           return gone
         end
-
-        transformation_string.gsub!(/E([^A-Z]+)/, '') # Remove Expires for cache
       end
       
       if @settings[:last_modified_header]
@@ -166,11 +166,11 @@ class BobRoss::Server
         response_headers['Last-Modified'] = last_modified.httpdate
       end
 
+      format_options = extract_format_options(transformation_string)
+      
       if requested_format
-        options[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
-      end
-    
-      if options[:format].nil?
+        format_options[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
+      else
         response_headers['Vary'] = 'Accept'
       end
 
@@ -198,18 +198,18 @@ class BobRoss::Server
         
         cache_hits = @cache&.get(hash, transformation_string)
         if cache_hits && !cache_hits.empty?
-          hit = if options[:format]
-            cache_hits.find { |h| h[4] == options[:format] }
+          hit = if format_options[:format]
+            cache_hits.find { |h| h[4] == format_options[:format] }
           else
             choice = nil
             image_transparent = cache_hits.first[1]
 
             choices = if accepts.nil? || accepts.empty?
-              (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
+              (image_transparent == 1 || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
             else
               accepts.map do |accept|
                 if accept == "*/*" || accept == "image/*"
-                  (image_transparent == 1 || options[:transparent]) ? 'image/png' : 'image/jpeg'
+                  (image_transparent == 1 || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
                 elsif SUPPORTED_FORMATS.include?(accept)
                   accept
                 end
@@ -248,21 +248,25 @@ class BobRoss::Server
           mime_type = command.run({ file: original_file.path }).strip
         end
 
-        image = if plugin = BobRoss.plugins[mime_type]
-          BobRoss::Image.new(plugin.transform(original_file, transformation_string, transformations), @settings)
+        transformations = []
+        image = if plugin = BobRoss.plugins.find { |k,v| k.is_a?(Regexp) ? k.match(mime_type) : k == mime_type }&.[](1)
+          plugin_transformations = plugin.extract_transformations(transformation_string)
+          transformations = extract_transformations(transformation_string)
+          BobRoss::Image.new(plugin.transform(original_file, plugin_transformations, transformations), @settings)
         elsif mime_type.start_with?('image/')
+          transformations = extract_transformations(transformation_string)
           BobRoss::Image.new(original_file, @settings)
         end
         
         return not_implemented if image.nil?
         
-        if !options[:format]
+        if !format_options[:format]
           choices = if accepts.nil? || accepts.empty?
-            [(image.transparent? || options[:transparent]) ? 'image/png' : 'image/jpeg']
+            [(image.transparent? || format_options[:transparent]) ? 'image/png' : 'image/jpeg']
           else
             accepts.map do |accept|
               if accept == "*/*" || accept == "image/*"
-                (image.transparent? || options[:transparent]) ? 'image/png' : 'image/jpeg'
+                (image.transparent? || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
               elsif SUPPORTED_FORMATS.include?(accept)
                 accept
               end
@@ -275,18 +279,18 @@ class BobRoss::Server
             return unsupported_media_type
           end
       
-          options[:format] = choice
+          format_options[:format] = choice
         end
     
-        transformed_file = image.transform(transformations, options)
+        transformed_file = image.transform(transformations, format_options)
     
         # Do this at the end to not cache errors
         payload[:status] = 200
-        response_headers['Content-Type'] = options[:format]
+        response_headers['Content-Type'] = format_options[:format]
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         if @cache
           response_headers['From-Cache'] = '0'
-          @cache.set(hash, image.transparent?, transformation_string, options[:format], transformed_file.path)
+          @cache.set(hash, image.transparent?, transformation_string, format_options[:format], transformed_file.path)
         end
     
         serve_file(200, response_headers, transformed_file)
@@ -332,40 +336,53 @@ class BobRoss::Server
     [501, {"Content-Type" => "text/plain"}, ["Underlying Media Type is not supported"]]
   end
   
-  def extract_options(string)
+  def extract_format_options(string)
     options = {}
+    return options unless string
+    
+    string.gsub!(/([ILOT]+)\z/) do |match|
+      match[1].each_char  do |char|
+        case char
+        when 'I'.freeze
+          options[:interlace] = true
+        when 'L'.freeze
+          options[:lossless] = true
+        when 'O'.freeze
+          options[:optimize] = true
+        when 'T'.freeze
+          options[:transparent] = true
+        end
+      end
+      ''
+    end
+    
+    options
+  end
+  
+  def extract_transformations(string)
     transformations = []
-    return [options, transformations] unless string
+    return transformations unless string
     
     string.scan(/([A-Z])([^A-Z]*)/) do |key, value|
       case key
-      when 'B'.freeze
+      when 'B'
         transformations << { background: "##{value}" }
-      when 'C'.freeze
+      when 'C'
         transformations << { crop: value }
-      when 'E'.freeze
-        options[:expires] = Time.at(value.to_i(16))
-      when 'G'.freeze
+      when 'G'
         transformations << { grayscale: true }
-      when 'I'.freeze
-        options[:interlace] = true
-      when 'L'.freeze
-        options[:lossless] = true
-      when 'O'.freeze
-        options[:optimize] = true
-      when 'P'.freeze
+      when 'P'
         transformations << { padding: value }
-      when 'S'.freeze
+      when 'S'
         transformations << { resize: value }
-      when 'T'.freeze
-        options[:transparent] = true
+      when 'T'
         transformations << { transparent: true }
-      when 'W'.freeze
+      when 'W'
         transformations << { watermark: value }
       end
     end
     
-    [options, transformations]
+    transformations
   end
   
   def valid_hmac?(hmac, data)

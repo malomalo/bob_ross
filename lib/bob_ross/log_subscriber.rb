@@ -1,4 +1,6 @@
+require 'active_support/version'
 require 'active_support/log_subscriber'
+require 'active_support/isolated_execution_state' if ActiveSupport::VERSION::MAJOR > 6
 
 class BobRoss::LogSubscriber < ActiveSupport::LogSubscriber
     INTERNAL_PARAMS = %w(controller action format _method only_path)

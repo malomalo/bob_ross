@@ -186,18 +186,18 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['609cbcb0b8852dcf9405be375f99cc30', '189cc7b799e9fde05de11db2566a42f9'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['0bfb297897f6f5cb3395105745fd35a0', '195747571378c6846af4fe11fdb0d71e'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['2afe7fc722030521488dac3e1511988b', '162afccbb48ac9b89ad72667dfca1f1b'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['0f3ce776621680da230e625554aa5372', '6426ee4419252d1302981c28b00541ac'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['6bf004d745febd8c029c04fc287487b2', 'b4516392568496638fcae8978550131c'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '3f87ca20d97a95346eb9df622e67017b'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['a665f53431284af2e58b2e6a4f6bafe9', '4b6733e19cb870cb7263e7d99b0e0ff0'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '949a8da63e2ad289b0a9e76e0727666a'], Digest::MD5.hexdigest(response.body)
   end
 end
