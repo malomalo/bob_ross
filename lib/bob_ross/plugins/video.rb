@@ -65,7 +65,7 @@ class BobRoss
       transformations
     end
   
-    def self.transform(original_file, transformations=[])
+    def self.transform(original_file, transformations=[], ross_transformations=[])
       screenshot = Tempfile.create(['preview', '.png'], binmode: true)
       interpolations = { input: original_file.path, output: screenshot.path }
       movie = Movie.new(original_file.path)

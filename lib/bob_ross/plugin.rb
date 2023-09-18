@@ -7,8 +7,8 @@ class BobRoss::Plugin
   def self.encode_transformation(key, value)
   end
 
-  def self.extract_options(transformations, key, value)
-    {}
+  def self.extract_transformations(transformation_string)
+    []
   end
 
   def self.parse_geometry(string)

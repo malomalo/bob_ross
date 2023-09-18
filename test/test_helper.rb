@@ -7,6 +7,7 @@ require 'bob_ross'
 require 'bob_ross/server'
 require 'bob_ross/cache'
 require 'bob_ross/plugins/pdf'
+require 'bob_ross/plugins/video'
 require "minitest/autorun"
 require 'minitest/unit'
 require 'minitest/reporters'
@@ -17,6 +18,7 @@ require 'active_support/testing/time_helpers'
 require 'standard_storage'
 require 'standard_storage/filesystem'
 require "concurrent"
+require 'ruby-vips'
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)

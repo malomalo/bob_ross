@@ -341,7 +341,7 @@ class BobRoss::Server
     return options unless string
     
     string.gsub!(/([ILOT]+)\z/) do |match|
-      match[1].each_char  do |char|
+      match[1]&.each_char  do |char|
         case char
         when 'I'.freeze
           options[:interlace] = true
