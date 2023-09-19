@@ -149,57 +149,60 @@ class BobRoss
   end
 
   def encode_transformations(options = {})
-    string = []
+    pre_transform_options = []
+    transform_options = []
+    post_transform_options = []
+
     options.each do |key, value|
       next if value.nil?
       case key
       when :background
-        string << 'B' + value.downcase
+        transform_options << 'B' + value.downcase
       when :crop
-        string << 'C' + value.downcase
+        transform_options << 'C' + value.downcase
       when :expires
-        string << 'E' + value.to_i.to_s(16)
+        pre_transform_options << 'E' + value.to_i.to_s(16)
       when :grayscale
-        string << 'G'
+        transform_options << 'G'
       when :interlace
-        string << 'I'
+        post_transform_options << 'I'
       when :lossless
-        string << 'L'
+        post_transform_options << 'L'
       when :optimize
-        string << 'O'
+        post_transform_options << 'O'
       when :padding
-        string << if value.is_a?(Array)
+        transform_options << if value.is_a?(Array)
           'P' + value.join(',')
         else
           'P' + value
         end
       when :resize
-        string << 'S' + value.downcase
+        transform_options << 'S' + value.downcase
       when :transparent
-        string << 'T'
+        post_transform_options << 'T'
       when :watermark
         if value.is_a?(Integer)
-          string << 'W' + value.to_s + 'se'
+          transform_options << 'W' + value.to_s + 'se'
         elsif value.is_a?(Hash)
-          string << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
+          transform_options << 'W' + (value[:id] || 0).to_s + (value[:position] || 'se') + value[:offset].to_s
         elsif value.is_a?(String)
-          string << 'W' + value
+          transform_options << 'W' + value
         elsif value
-          string << 'W0se'
+          transform_options << 'W0se'
         end
       # when :quality
-      #   string << "Q#{value}"
+      #   post_transform_options << "Q#{value}"
       else
         @plugins.values.find do |plugin|
           if encode = plugin.encode_transformation(key, value)
-            string << encode
+            transform_options << encode
             true
           end
         end
       end
     end
     
-    string.join('')
+    pre_transform_options.join('') + transform_options.join('') + post_transform_options.join('')
   end
   
   # Delegates all uncauge class method calls to the singleton
