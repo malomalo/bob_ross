@@ -24,7 +24,7 @@ class BobRoss
         when 'R'
           # 3 - Page 3
           if match[2] =~ /\A\d+\z/
-            transformations << { page: match[2] }
+            transformations << [:page, match[2]]
           else
             break
           end
