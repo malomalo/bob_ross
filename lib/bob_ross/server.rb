@@ -375,8 +375,6 @@ class BobRoss::Server
         transformations << { padding: value }
       when 'S'
         transformations << { resize: value }
-      when 'T'
-        transformations << { transparent: true }
       when 'W'
         transformations << { watermark: value }
       end

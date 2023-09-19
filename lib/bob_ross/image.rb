@@ -24,6 +24,8 @@ class BobRoss::Image
     return @source if transformations.empty? && @mime_type == options[:format] && [nil, 1].include?(@orientation)
     options[:format] ||= mime_type
     
+    transformations.unshift({transparent: true}) if options[:transparent]
+    
     transformations.each do |t|
       if t[:padding]
         padding = t[:padding].split(',')

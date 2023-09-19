@@ -202,7 +202,7 @@ class BobRoss
       end
     end
     
-    pre_transform_options.join('') + transform_options.join('') + post_transform_options.join('')
+    pre_transform_options.join('') + transform_options.join('') + post_transform_options.sort.join('')
   end
   
   # Delegates all uncauge class method calls to the singleton
