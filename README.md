@@ -14,11 +14,12 @@ The BobRoss server depends on the following:
 Optionally:
 
   - `libheif` to support the [HEIC](https://en.wikipedia.org/wiki/High_Efficiency_Image_File_Format)
-    image format.
+    and [AVIF](https://en.wikipedia.org/wiki/AVIF) image formats.
   - `libwebp` to support the [WEBP](https://en.wikipedia.org/wiki/WebP) image
     format.
-  - `jxrlib` to support the [JPEG XR](https://en.wikipedia.org/wiki/JPEG_XR)
+  - `libjxl` to support the [JPEG XL](https://en.wikipedia.org/wiki/JPEG_XL)
     image format.
+  - `OpenJPEG` to support the [JPEG 2000](https://en.wikipedia.org/wiki/JPEG_2000) image format.
   - `giflib` for GIF support in LibVips.
   - `libjpeg-turbo` for faster JPEG encoding/decoding.
   - The `sqlite3` gem to use a local disk cache.
@@ -213,9 +214,8 @@ should always comes first.
     of combination of the `format`, `hash`, and `transformations` signed with a
     shared secret. The server can be configured to only accept certain combinations.
 
-  - `I` Interlace or Progressively encodes the image
-  !!! Place interlace, should look at Line interlacing
-  
+  - `I` Interlace or Progressively encode the image
+
   - `L` Losslessly encode images.
 
   - `O` - Optimize the image for delivery
@@ -294,6 +294,10 @@ should always comes first.
         and vertical offsets `x` and `y`, specified in pixels. Signs are
         required for both. Offsets are not affected by % or other size
         operators. Default is `+0+0`
+
+  - `Q{quality}` Set the Q-factor for saving the image (1-100; 100 being best quality)
+
+  - `R{quality}` Remove any metadata from the image
 
 ### The Disk Cache
 

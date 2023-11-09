@@ -9,7 +9,7 @@ class BobRossTest < Minitest::Test
   test "encode_transformations" do
     time = 1449100194
     
-    assert_equal "E#{time.to_s(16)}S500x500^GW0seP1,2,3,4weeddccaaOILT", BobRoss.encode_transformations({
+    assert_equal "E#{time.to_s(16)}S500x500^GW0seP1,2,3,4weeddccaaILOT", BobRoss.encode_transformations({
       expires: time,
       optimize: true,
       interlace: true,
@@ -44,7 +44,7 @@ class BobRossTest < Minitest::Test
       }
     })
 
-    assert_equal "https://example.com/H41482f0113cc9843f0aeaa10631936644a164059E#{time.to_s(16)}S500x500%5EBeeddccaaGW0seOILT/hash/image.png", BobRoss.url('hash')
+    assert_equal "https://example.com/H41482f0113cc9843f0aeaa10631936644a164059E#{time.to_s(16)}S500x500%5EBeeddccaaGW0seILOT/hash/image.png", BobRoss.url('hash')
   end
   
   test "path" do

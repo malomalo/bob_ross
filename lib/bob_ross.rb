@@ -190,8 +190,10 @@ class BobRoss
         elsif value
           transform_options << 'W0se'
         end
-      # when :quality
-      #   post_transform_options << "Q#{value}"
+      when :quality
+        post_transform_options << 'Q' + value.to_s
+      when :strip # Remove Metadata
+        post_transform_options << 'D'
       else
         @plugins.values.find do |plugin|
           if encode = plugin.encode_transformation(key, value)

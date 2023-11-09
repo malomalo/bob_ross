@@ -340,9 +340,9 @@ class BobRoss::Server
     options = {}
     return options unless string
     
-    string.gsub!(/([ILOT]+)\z/) do |match|
-      match[1]&.each_char  do |char|
-        case char
+    string.gsub!(/([ILOT]|Q\d+)+\z/) do |match|
+      match[1]&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
+        case key
         when 'I'.freeze
           options[:interlace] = true
         when 'L'.freeze
@@ -351,6 +351,10 @@ class BobRoss::Server
           options[:optimize] = true
         when 'T'.freeze
           options[:transparent] = true
+        when 'D'.freeze
+          options[:strip] = true
+        when 'Q'.freeze
+          options[:quality] = value.to_i
         end
       end
       ''

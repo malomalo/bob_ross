@@ -16,13 +16,13 @@ class PDFPluginTest < Minitest::Test
     # Just transformations for plugin
     transformation_string = 'R1'
     transformations = BobRoss::PDFPlugin.extract_transformations(transformation_string)
-    assert_equal [{page: '1'}], transformations
+    assert_equal [[:page, '1']], transformations
     assert_equal '', transformation_string
 
     # transformations for both plugin and BobRoss
     transformation_string = 'R10G'
     transformations = BobRoss::PDFPlugin.extract_transformations(transformation_string)
-    assert_equal [{page: '10'}], transformations
+    assert_equal [[:page, '10']], transformations
     assert_equal 'G', transformation_string
 
     # malformed options are skipped

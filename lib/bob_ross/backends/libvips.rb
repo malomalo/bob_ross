@@ -301,8 +301,19 @@ module BobRoss::LibVipsBackend
     
     output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
 
-    # options.each do |key, value|
-    #   case key
+    saver_options = {}
+    options.each do |key, value|
+      case key
+      when :x
+      when :quality
+        saver_options[:Q] = [[1, value].max, 100].min
+      when :strip
+        saver_options[:strip] = true
+      when :interlace
+        saver_options[:interlace] = true
+      else
+        puts [key, value].inspect
+      end
     #   when :lossless
     #     params << "-define webp:lossless=true"
     #   when :optimize
@@ -317,10 +328,11 @@ module BobRoss::LibVipsBackend
     #   when :interlace
     #     params << "-interlace Plane"
     #   end
-    # end
+    end
     # transformations.delete(:lossless)
     
-    vips.write_to_file(output.path, **select_valid_saver_options(output.path, {}))
+
+    vips.write_to_file(output.path, **select_valid_saver_options(output.path, saver_options))
     output
   end
   
@@ -345,8 +357,7 @@ module BobRoss::LibVipsBackend
   def select_valid_options(operation_name, options)
     operation = ::Vips::Operation.new(operation_name)
     introspect = ::Vips::Introspect.get(operation_name)
-    operation_options = introspect.required_input.map{ |arg| arg[:arg_name] }.map(&:to_sym)
-
+    operation_options = introspect.args.map{ |arg| arg[:arg_name] }.map(&:to_sym)
     options.select { |name, value| operation_options.include?(name) }
   end
   end
