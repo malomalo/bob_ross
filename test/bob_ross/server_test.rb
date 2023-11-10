@@ -186,19 +186,19 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['0bfb297897f6f5cb3395105745fd35a0', '195747571378c6846af4fe11fdb0d71e'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['0bfb297897f6f5cb3395105745fd35a0', 'e35901e7be8d4ce03a0b7b94da8e8778'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['0f3ce776621680da230e625554aa5372', '6426ee4419252d1302981c28b00541ac'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['0f3ce776621680da230e625554aa5372', 'ebc5b062a01c0a957bf2edf8d2a34244'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '3f87ca20d97a95346eb9df622e67017b'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '466df5bff4883d22f022bc77a7497481'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '949a8da63e2ad289b0a9e76e0727666a'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '4a62e849f803ab865d8d3ae4a8f777cf'], Digest::MD5.hexdigest(response.body)
   end
   
   test 'a Video' do
@@ -206,18 +206,18 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['53a4df2f7588fe954f2dcc57d6b8bab8', '74e86a389b6ddb49c0f158145b7f1246'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['53a4df2f7588fe954f2dcc57d6b8bab8', 'd3d0ffa9b1dd870594b6af2dabb782b8'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['2303a1cb94aed6e5889ed082071c52d5', '294f226f756953d282f2afd0aebd7cfc'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['2303a1cb94aed6e5889ed082071c52d5', '205cbdf7daea9af314a0685e036a389f'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['ed50d0301a8f5c6029154a084a1f4eb7', 'c261559cc42867ac2fe49528cab80e83'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['ed50d0301a8f5c6029154a084a1f4eb7', '6005e29dd99b8561c6253c5868582b5c'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['a6055e4f8356c833dde52d4daa9f5570', '1c7244a5028fc23ecc398dfe865f71d1'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['a6055e4f8356c833dde52d4daa9f5570', '97af57afe70815f6a459275600fba1a9'], Digest::MD5.hexdigest(response.body)
   end
 end

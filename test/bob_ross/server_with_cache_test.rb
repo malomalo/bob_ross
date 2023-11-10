@@ -200,6 +200,30 @@ class BobRossServerWithCacheTest < Minitest::Test
   
   test 'asking for a watermark when not configured'
   
+  test 'transforming an image' do
+    server = create_server
+
+    response = server.get("/opaque")
+    response = server.get("/opaque")
+    assert_equal "1", response.headers['From-Cache']
+
+    response = server.get("D/opaque")
+    assert_equal "0", response.headers['From-Cache']
+    
+    response = server.get("Q70/opaque")
+    response = server.get("Q70/opaque")
+    assert_equal "1", response.headers['From-Cache']
+
+    large_image_size = response.body.bytesize
+    response = server.get("Q40/opaque")
+    assert response.body.bytesize < large_image_size
+    assert_equal "0", response.headers['From-Cache']
+
+    response = server.get("Q40/opaque")
+    assert response.body.bytesize < large_image_size
+    assert_equal "1", response.headers['From-Cache']
+  end
+  
   test 'a PDF' do
     server = create_server
 

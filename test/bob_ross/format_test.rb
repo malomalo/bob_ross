@@ -12,6 +12,7 @@ class BobRossFormatTest < Minitest::Test
     yoffset
     yoffset
     yres
+    resolution-unit
     
     filename
     format
@@ -27,12 +28,6 @@ class BobRossFormatTest < Minitest::Test
     jpeg-chroma-subsample
   )
 
-  # JPEG
-  # PNG
-  # WebP
-  # HEIF
-  # JXR
-  
   # ------- JPEG test ----------------------------------------------------------
   test 'saves a jpg' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
@@ -44,7 +39,7 @@ class BobRossFormatTest < Minitest::Test
   test 'saves a jpeg with Quality' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
-    low_q_output = image.transform({}, {quality: 1, format: 'image/jpeg'})
+    low_q_output = image.transform({}, {quality: 0, format: 'image/jpeg'})
     high_q_output = image.transform({}, {quality: 100, format: 'image/jpeg'})
     
     assert low_q_output.size < high_q_output.size
@@ -54,7 +49,7 @@ class BobRossFormatTest < Minitest::Test
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/jpeg'}).path)
 
-    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
   end
 
   test 'saves a jpeg as progressive' do
@@ -63,6 +58,32 @@ class BobRossFormatTest < Minitest::Test
 
     assert_equal 1, output.get('jpeg-multiscan')
   end
+  
+  # ------- JPEG 2000 test -----------------------------------------------------
+  test 'saves a jp2' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+    output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/jp2'}).path)
+    
+    assert_equal 'jp2kload', output.get("vips-loader")
+  end
+  
+  test 'saves a jp2 with Quality' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+
+    low_q_output = image.transform({}, {quality: 0, format: 'image/jp2'})
+    high_q_output = image.transform({}, {quality: 100, format: 'image/jp2'})
+    
+    assert low_q_output.size < high_q_output.size
+  end
+
+  test 'saves a jp2 stripping the exif/metadata' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
+    output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/jp2'}).path)
+
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
+  end
+
+  # I think JP2 is always progressive?
 
   # ------- Webp test ----------------------------------------------------------
   test 'saves a webp' do
@@ -75,7 +96,7 @@ class BobRossFormatTest < Minitest::Test
   test 'saves a webp with Quality' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
-    low_q_output = image.transform({}, {quality: 1, format: 'image/webp'})
+    low_q_output = image.transform({}, {quality: 0, format: 'image/webp'})
     high_q_output = image.transform({}, {quality: 100, format: 'image/webp'})
     
     assert low_q_output.size < high_q_output.size
@@ -85,7 +106,7 @@ class BobRossFormatTest < Minitest::Test
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/webp'}).path)
 
-    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
   end
 
   # Webp does not support progressive images
@@ -104,7 +125,7 @@ class BobRossFormatTest < Minitest::Test
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/png'}).path)
 
-    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
   end
 
   test 'saves a png as progressive' do
@@ -125,7 +146,7 @@ class BobRossFormatTest < Minitest::Test
   test 'saves a heif with Quality' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
-    low_q_output = image.transform({}, {quality: 1, format: 'image/heif'})
+    low_q_output = image.transform({}, {quality: 0, format: 'image/heif'})
     high_q_output = image.transform({}, {quality: 100, format: 'image/heif'})
     
     assert low_q_output.size < high_q_output.size
@@ -135,9 +156,35 @@ class BobRossFormatTest < Minitest::Test
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/heif'}).path)
     
-    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
   end
 
   # HEIF does not support progressive images
+
+  # ------- AVIF test ----------------------------------------------------------
+  test 'saves a avif' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+    output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/avif'}).path)
+    
+    assert_equal 'heifload', output.get("vips-loader")
+  end
+  
+  test 'saves a avif with Quality' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+
+    low_q_output = image.transform({}, {quality: 0, format: 'image/avif'})
+    high_q_output = image.transform({}, {quality: 100, format: 'image/avif'})
+    
+    assert low_q_output.size < high_q_output.size
+  end
+
+  test 'saves a avif stripping the exif/metadata' do
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
+    output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/avif'}).path)
+
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
+  end
+
+  # AVIF does not support progressive images
 
 end

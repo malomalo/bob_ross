@@ -58,19 +58,26 @@ module BobRoss::ImageMagickBackend
       end
     end
     
+    case options[:format]
+    when 'image/jpeg'
+      params << "-define jpeg:optimize-coding=on"
+    when 'image/png'
+      params << "-define png:compression-level=9"
+    # else 'image/webp', 'image/jp2', 'image/heif', , 'image/avif'
+    end
+    
     options.each do |key, value|
      case key
+     when :quality
+       params << "-quality " << if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
+         [[1, value.to_i].max, 100].min.to_s
+       else
+         value.to_i
+       end
+     when :strip
+       params << "-strip"
      when :lossless
        params << "-define webp:lossless=true"
-     when :optimize
-       params << "-quality 85" unless options[:format] == 'image/webp'
-       params << "-define png:compression-filter=5"
-       params << "-define png:compression-level=9"
-       params << "-define png:compression-strategy=1"
-       params << "-define png:exclude-chunk=all"
-       params << "-interlace none" unless options[:interlace]
-       params << "-colorspace sRGB"
-       params << "-strip"
      when :interlace
        params << "-interlace Plane"
      end

@@ -301,33 +301,33 @@ module BobRoss::LibVipsBackend
     
     output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
 
-    saver_options = {}
+    saver_options = case options[:format]
+    when 'image/jpeg'
+      {optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
+    when 'image/webp'
+      {min_size: true, effort: 6}
+    when 'image/png'
+      {compression: 9}
+    else # 'image/jp2', 'image/heif', , 'image/avif'
+      {}
+    end
+    
     options.each do |key, value|
       case key
-      when :x
       when :quality
-        saver_options[:Q] = [[1, value].max, 100].min
+        saver_options[:Q] = if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
+          [[1, value.to_i].max, 100].min
+        else
+          value.to_i
+        end
       when :strip
         saver_options[:strip] = true
       when :interlace
         saver_options[:interlace] = true
-      else
-        puts [key, value].inspect
+        saver_options[:optimize_scans] = true if options[:format] == 'image/jpeg'
+      when :lossless
+        saver_options[:lossless] = true
       end
-    #   when :lossless
-    #     params << "-define webp:lossless=true"
-    #   when :optimize
-    #     params << "-quality 85" unless transformations[:format] == 'image/webp'
-    #     params << "-define png:compression-filter=5"
-    #     params << "-define png:compression-level=9"
-    #     params << "-define png:compression-strategy=1"
-    #     params << "-define png:exclude-chunk=all"
-    #     params << "-interlace none" unless transformations[:interlace]
-    #     params << "-colorspace sRGB"
-    #     params << "-strip"
-    #   when :interlace
-    #     params << "-interlace Plane"
-    #   end
     end
     # transformations.delete(:lossless)
     

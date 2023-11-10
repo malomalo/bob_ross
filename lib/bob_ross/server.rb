@@ -166,7 +166,7 @@ class BobRoss::Server
         response_headers['Last-Modified'] = last_modified.httpdate
       end
 
-      format_options = extract_format_options(transformation_string)
+      format_options, format_options_string = extract_format_options(transformation_string)
       
       if requested_format
         format_options[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
@@ -195,8 +195,8 @@ class BobRoss::Server
 
       ActiveSupport::Notifications.instrument("rendered.bob_ross") do |render_payload|
         render_payload[:transformations] = transformation_string
-        
-        cache_hits = @cache&.get(hash, transformation_string)
+        transform_key = transformation_string + format_options_string
+        cache_hits = @cache&.get(hash, transform_key)
         if cache_hits && !cache_hits.empty?
           hit = if format_options[:format]
             cache_hits.find { |h| h[4] == format_options[:format] }
@@ -230,7 +230,7 @@ class BobRoss::Server
             response_headers['Content-Type']  = hit[4]
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
             response_headers['From-Cache']  = '1';
-            if cached_file = @cache.use(hash, transformation_string, hit[4])
+            if cached_file = @cache.use(hash, transform_key, hit[4])
               return serve_file(200, response_headers, cached_file)
             end
           end
@@ -290,7 +290,7 @@ class BobRoss::Server
         response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
         if @cache
           response_headers['From-Cache'] = '0'
-          @cache.set(hash, image.transparent?, transformation_string, format_options[:format], transformed_file.path)
+          @cache.set(hash, image.transparent?, transform_key, format_options[:format], transformed_file.path)
         end
     
         serve_file(200, response_headers, transformed_file)
@@ -338,10 +338,12 @@ class BobRoss::Server
   
   def extract_format_options(string)
     options = {}
-    return options unless string
+    return [options, ''] unless string
     
-    string.gsub!(/([ILOT]|Q\d+)+\z/) do |match|
-      match[1]&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
+    options_string = ''
+    string.gsub!(/([ILOTD]|Q\d+)+\z/) do |match|
+      options_string = match if match
+      match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
         case key
         when 'I'.freeze
           options[:interlace] = true
@@ -360,7 +362,7 @@ class BobRoss::Server
       ''
     end
     
-    options
+    [options, options_string]
   end
   
   def extract_transformations(string)
