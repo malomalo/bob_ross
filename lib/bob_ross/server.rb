@@ -82,7 +82,7 @@ class BobRoss::Server
         end
       end
 
-      result[:hmac][:required] = (options.has_key?(:required) ? options[:required] : true)
+      result[:hmac][:required] = (options[:hmac].has_key?(:required) ? options[:hmac][:required] : true)
     end
     
     if options[:cache] && options[:cache].is_a?(Hash) && !options[:cache].empty?
