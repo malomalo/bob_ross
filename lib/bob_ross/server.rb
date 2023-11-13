@@ -15,7 +15,14 @@ require 'bob_ross/log_subscriber'
 
 class BobRoss::Server
   
-  SUPPORTED_FORMATS = ["image/webp", "image/jpeg", "image/png"]
+  SUPPORTED_FORMATS = {
+    'image/avif' => {transparency: true,  lossless: true},
+    'image/heic' => {transparency: true,  lossless: true},
+    'image/webp' => {transparency: true,  lossless: true},
+    'image/jp2' =>  {transparency: true,  lossless: true},
+    'image/jpeg' => {transparency: false, lossless: false},
+    'image/png' =>  {transparency: true,  lossless: true}
+  }
 
   class StreamFile
     def initialize(file)
@@ -177,7 +184,7 @@ class BobRoss::Server
       if accepts = env['HTTP_ACCEPT']
         accepts = accepts.split(',')
         accepts.each do |a|
-          a.sub!(/;.+$/i, '');
+          a.sub!(/;.+$/i, '')
           a.strip!
         end
         accepts.select! do |a|
@@ -196,36 +203,12 @@ class BobRoss::Server
       ActiveSupport::Notifications.instrument("rendered.bob_ross") do |render_payload|
         render_payload[:transformations] = transformation_string
         transform_key = transformation_string + format_options_string
+        
         cache_hits = @cache&.get(hash, transform_key)
         if cache_hits && !cache_hits.empty?
-          hit = if format_options[:format]
-            cache_hits.find { |h| h[4] == format_options[:format] }
-          else
-            choice = nil
-            image_transparent = cache_hits.first[1]
+          format_options[:format] ||= select_format(accepts, (cache_hits.first[1] == 1) || format_options[:transparent])
 
-            choices = if accepts.nil? || accepts.empty?
-              (image_transparent == 1 || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
-            else
-              accepts.map do |accept|
-                if accept == "*/*" || accept == "image/*"
-                  (image_transparent == 1 || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
-                elsif SUPPORTED_FORMATS.include?(accept)
-                  accept
-                end
-              end
-            end
-          
-            if choices.nil?
-              payload[:status] = 415
-              return unsupported_media_type
-            end
-            
-            choice = SUPPORTED_FORMATS.find { |f|  choices.include?(f) }
-            cache_hits.find { |h| h[4] == choice }
-          end
-
-          if hit
+          if hit = cache_hits.find { |h| h[4] == format_options[:format] }
             render_payload[:cache] = true
             response_headers['Content-Type']  = hit[4]
             response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
@@ -235,7 +218,7 @@ class BobRoss::Server
             end
           end
         end
-    
+
         original_file = if @settings[:store].local?
           File.open(@settings[:store].destination(hash))
         else
@@ -259,29 +242,8 @@ class BobRoss::Server
         end
         
         return not_implemented if image.nil?
-        
-        if !format_options[:format]
-          choices = if accepts.nil? || accepts.empty?
-            [(image.transparent? || format_options[:transparent]) ? 'image/png' : 'image/jpeg']
-          else
-            accepts.map do |accept|
-              if accept == "*/*" || accept == "image/*"
-                (image.transparent? || format_options[:transparent]) ? 'image/png' : 'image/jpeg'
-              elsif SUPPORTED_FORMATS.include?(accept)
-                accept
-              end
-            end
-          end
-
-          choice = SUPPORTED_FORMATS.find { |f|  choices.include?(f) }
-          if choice.nil?
-            payload[:status] = 415
-            return unsupported_media_type
-          end
-      
-          format_options[:format] = choice
-        end
     
+        format_options[:format] ||= select_format(accepts, image.transparent? || format_options[:transparent])
         transformed_file = image.transform(transformations, format_options)
     
         # Do this at the end to not cache errors
@@ -311,6 +273,26 @@ class BobRoss::Server
   end
   
   private
+  
+  def select_format(accepts, image_transparent)
+    if accepts.nil? || accepts.empty?
+      image_transparent ? 'image/png' : 'image/jpeg'
+    else
+      accepts = accepts.reduce([]) do |memo, accept|
+        if accept == "*/*" || accept == "image/*"
+          memo << (image_transparent ? 'image/png' : 'image/jpeg')
+        elsif supported_format = SUPPORTED_FORMATS[accept]
+          if image_transparent
+            memo << accept if supported_format[:transparency]
+          else
+            memo << accept
+          end
+        end
+        memo
+      end
+      SUPPORTED_FORMATS.keys.find { |f|  accepts.include?(f) }
+    end
+  end
   
   def not_modified
     [304, {}, []]

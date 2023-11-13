@@ -72,8 +72,11 @@ module BobRoss::LibVipsBackend
     end
 
     vips = vips.thumbnail_image(geometry[:width], height: geometry[:height], size: modifier)
-    # TODO: we used to sharpen but it breaks saving as jp2, not sure if we need it anymore?
-    # vips = vips.conv(SHARPEN_MASK) if image.area > (vips.width * vips.height)
+    # precision: :integer for jp2 support
+    # The jp2k saver in libvips only supports integer formats (8, 16 and
+    # 32-bits, signed and unsigned), but conv defaults to float output. re: 
+    # https://github.com/libvips/ruby-vips/issues/375#issuecomment-1806822356
+    vips = vips.conv(SHARPEN_MASK, precision: :integer) if image.area > (vips.width * vips.height)
     
     if geometry[:modifier] == '#'
       fill_width = (geometry[:width] - vips.width).to_f/2.0

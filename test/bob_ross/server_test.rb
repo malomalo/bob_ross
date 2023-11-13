@@ -30,7 +30,6 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/png', server.get("/opaque.png").headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque.webp").headers['Content-Type']
     
-    
     assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/jpeg'}).headers['Content-Type']
     assert_equal 'image/png', server.get("/opaque",  {'HTTP_ACCEPT' => 'image/png'}).headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp'}).headers['Content-Type']
@@ -45,6 +44,38 @@ class BobRossServerTest < Minitest::Test
     
     # Return a 415 Unsupported Media Type if we can't satisfy the Accept header
     assert_equal 415, server.get('/opaque', {'HTTP_ACCEPT' => 'image/magical'}).status
+  end
+  
+  test 'Response Header: "Content-Type" for various browser Accept Headers' do
+    server = create_server
+    
+    # Firefox 92 and later
+    assert_equal 'image/avif', server.get("/opaque", {'HTTP_ACCEPT' => 'image/avif,image/webp,*/*'}).headers['Content-Type']
+    assert_equal 'image/avif', server.get("/transparent", {'HTTP_ACCEPT' => 'image/avif,image/webp,*/*'}).headers['Content-Type']
+
+    # Firefox 65 to 91
+    assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,*/*'}).headers['Content-Type']
+    assert_equal 'image/webp', server.get("/transparent", {'HTTP_ACCEPT' => 'image/webp,*/*'}).headers['Content-Type']
+
+    # Firefox 47 to 63
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => '*/*'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => '*/*'}).headers['Content-Type']
+
+    # Firefox prior to 47
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png,image/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => 'image/png,image/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Safari (since Mac OS Big Sur)
+    assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/webp', server.get("/transparent", {'HTTP_ACCEPT' => 'image/webp,image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Safari (before Mac OS Big Sur)
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => 'image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Chrome
+    assert_equal 'image/avif', server.get("/opaque", {'HTTP_ACCEPT' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'}).headers['Content-Type']
+    assert_equal 'image/avif', server.get("/transparent", {'HTTP_ACCEPT' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'}).headers['Content-Type']
   end
   
   test 'Response Header: "Last-Modified" if last_modified_header' do
@@ -190,15 +221,15 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['0f3ce776621680da230e625554aa5372', 'ebc5b062a01c0a957bf2edf8d2a34244'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['0f3ce776621680da230e625554aa5372', '05b1a34160cbcce7d19cbd2293e5b3bf'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '466df5bff4883d22f022bc77a7497481'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '9200b154ad0488b05dc8ea775bbda46d'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '4a62e849f803ab865d8d3ae4a8f777cf'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '2dee9aa27e44be62796f0ca6d086eda7'], Digest::MD5.hexdigest(response.body)
   end
   
   test 'a Video' do
@@ -210,14 +241,14 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/S100/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['2303a1cb94aed6e5889ed082071c52d5', '205cbdf7daea9af314a0685e036a389f'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['2303a1cb94aed6e5889ed082071c52d5', '9f5cf9cef5377d7222aaf071eeaeb60a'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['ed50d0301a8f5c6029154a084a1f4eb7', '6005e29dd99b8561c6253c5868582b5c'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['ed50d0301a8f5c6029154a084a1f4eb7', '768ff98e2a6936d61574c9511aae3546'], Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['a6055e4f8356c833dde52d4daa9f5570', '97af57afe70815f6a459275600fba1a9'], Digest::MD5.hexdigest(response.body)
+    assert_includes ['a6055e4f8356c833dde52d4daa9f5570', '5364e3a417d111b38fa05e503400c553'], Digest::MD5.hexdigest(response.body)
   end
 end
