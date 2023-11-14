@@ -87,8 +87,8 @@ BobRoss.configure({
 
   hmac: 'secret',
 
-  # Default is 'imagemagick', you can also pass the class of another backend to use
-  backend: 'libvips',
+  # Default is 'libvips', you can also pass the class of another backend to use
+  backend: 'imagemagick',
 
   # Any other options you wish to apply by default
 })
@@ -115,7 +115,7 @@ end
            `last_modified` (if `last_modified_header` is set to true),
            `destination` (if local?), and `copy_to_tempfile` (if !local?)
 
-- `backend:` (Optional, default `imagemagick`) `imagemagick` or `libvips`
+- `backend:` (Optional, default `libvips`) `imagemagick` or `libvips`
 - `memory_limit:` (Optional, ie. `"1GB"`) Limit for max memory that imagemagick will use.
 - `disk_limit:` (Optional, ie. `"4GB"`) Limit for max disk that image magick will use
 - `hmac:` (Optional)

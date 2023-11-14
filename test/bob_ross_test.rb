@@ -6,6 +6,10 @@ class BobRossTest < Minitest::Test
     BobRoss.configure({})
   end
   
+  def teardown
+    BobRoss.configure({})
+  end
+  
   test "encode_transformations" do
     time = 1449100194
     

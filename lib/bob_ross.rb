@@ -61,8 +61,10 @@ class BobRoss
     result[:backend] = case options[:backend]
     when 'libvips'
       BobRoss::LibVipsBackend
-    else
+    when 'imagemagick'
       BobRoss::ImageMagickBackend
+    else
+      BobRoss::LibVipsBackend
     end
 
     result

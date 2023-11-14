@@ -2,6 +2,26 @@ module BobRoss::ImageMagickBackend
   extend BobRoss::BackendHelpers
   
   class <<self
+  
+  def format_supported?(mime)
+    supported_formats.include?(mime)
+  end
+  
+  def supported_formats
+    return @supported_formats if @supported_formats
+    
+    formats_cmd = Terrapin::CommandLine.new("magick", 'identify -list format')
+    
+    @supported_formats = formats_cmd.run.gsub(/\s{10,}[^\n]+(?=\n)/, '').lines[2..-6].reduce([]) do |memo, line|
+      line = line.split(/\s+/).select { |c| !c.empty? }
+      if line[2][1] == 'w'
+        mime = MiniMime.lookup_by_extension(line[0].delete_suffix('*').downcase)
+        memo << mime.content_type if mime
+      end
+      memo
+    end
+  end
+  
   def default_args(options)
     params = []
     params << "-limit memory :memory_limit" if options[:memory_limit]
@@ -57,24 +77,6 @@ module BobRoss::ImageMagickBackend
         end
       end
     end
-    
-    saver_options = case options[:format]
-    when 'image/avif'
-      {Q: 45}
-    when 'image/heic'
-      {Q: 40}
-    when 'image/webp'
-      {Q: 45, min_size: true, effort: 6}
-    when 'image/jp2'
-      {Q: 40}
-    when 'image/jpeg'
-      {Q: 43, optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
-    when 'image/png'
-      {compression: 9}
-    else
-      {}
-    end
-    
     
     case options[:format]
     when 'image/avif'

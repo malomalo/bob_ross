@@ -46,6 +46,8 @@ class BobRoss::Server
     @cache = @settings[:cache]
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
     @logger = (@settings.has_key?(:logger) ? @settings.delete(:logger) : Logger.new(STDOUT))
+    
+    @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.format_supported?(k) }
   end
   
   def serve_file(status, headers, file)
@@ -188,7 +190,7 @@ class BobRoss::Server
           a.strip!
         end
         accepts.select! do |a|
-          a == '*/*' || a == 'image/*' || SUPPORTED_FORMATS.include?(a)
+          a == '*/*' || a == 'image/*' || @useable_formats.has_key?(a)
         end
 
         if accepts.empty?
@@ -281,7 +283,7 @@ class BobRoss::Server
       accepts = accepts.reduce([]) do |memo, accept|
         if accept == "*/*" || accept == "image/*"
           memo << (image_transparent ? 'image/png' : 'image/jpeg')
-        elsif supported_format = SUPPORTED_FORMATS[accept]
+        elsif supported_format = @useable_formats[accept]
           if image_transparent
             memo << accept if supported_format[:transparency]
           else
@@ -290,7 +292,7 @@ class BobRoss::Server
         end
         memo
       end
-      SUPPORTED_FORMATS.keys.find { |f|  accepts.include?(f) }
+      @useable_formats.keys.find { |f|  accepts.include?(f) }
     end
   end
   

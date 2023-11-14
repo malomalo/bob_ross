@@ -10,7 +10,24 @@ module BobRoss::LibVipsBackend
                                                [-1, -1, -1]], 24
 
   class <<self
+  
+  def format_supported?(mime)
+    supported_formats.include?(mime)
+  end
 
+  def supported_formats
+    return @supported_formats if @supported_formats
+  
+    formats_cmd = Terrapin::CommandLine.new("magick", 'identify -list format')
+  
+    @supported_formats = Vips::get_suffixes.reduce([]) do |memo, suffix|
+      if mime = MiniMime.lookup_by_extension(suffix.delete_prefix('.'))
+        memo << mime.content_type
+      end
+      memo
+    end
+  end
+  
   def identify(path)
     ident = {}
 
