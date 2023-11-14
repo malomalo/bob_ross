@@ -1,4 +1,6 @@
 require 'active_support/version'
+require 'active_support/deprecation'
+require 'active_support/deprecator'
 require 'active_support/log_subscriber'
 require 'active_support/isolated_execution_state' if ActiveSupport::VERSION::MAJOR > 6
 
