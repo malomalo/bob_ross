@@ -306,23 +306,31 @@ module BobRoss::LibVipsBackend
     output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
 
     saver_options = case options[:format]
-    when 'image/jpeg'
-      {optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
+    when 'image/avif'
+      {Q: 45}
+    when 'image/heic'
+      {Q: 40}
     when 'image/webp'
-      {min_size: true, effort: 6}
+      {Q: 45, min_size: true, effort: 6}
+    when 'image/jp2'
+      {Q: 40}
+    when 'image/jpeg'
+      {Q: 43, optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
     when 'image/png'
       {compression: 9}
-    else # 'image/jp2', 'image/heif', , 'image/avif'
+    else
       {}
     end
     
     options.each do |key, value|
       case key
       when :quality
-        saver_options[:Q] = if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
-          [[1, value.to_i].max, 100].min
-        else
-          value.to_i
+        if !value.nil?
+          saver_options[:Q] = if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
+            [[1, value.to_i].max, 100].min
+          else
+            value.to_i
+          end
         end
       when :strip
         saver_options[:strip] = true
@@ -333,9 +341,7 @@ module BobRoss::LibVipsBackend
         saver_options[:lossless] = true
       end
     end
-    # transformations.delete(:lossless)
     
-
     vips.write_to_file(output.path, **select_valid_saver_options(output.path, saver_options))
     output
   end

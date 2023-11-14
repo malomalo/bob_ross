@@ -263,7 +263,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x67',
       signature: [
         'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1',
-        'c39e3f0612cdf56c3354d632e9dbbb7bcc8bd8408b19d7cd226126e744115aaa'
+        '5c86d9f437c1cbc9827b36d1c08d5bd4d8b31828786f194cd2a7f2fd125868c8'
       ]
     })
 
@@ -271,7 +271,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '150x100',
       signature: [
         '6a119768c3135cfc8cd340fe273f765518512e99097da0961b7b80eb885a4e24',
-        'ba2a72f86332cf5f0bc2146040d1925b340a22ab831a352ec5e713379ee1c108'
+        '6d1bd3539daa6de5e6cb8b97f1e90cc6e0c5694d0bc2abe0aa5fe01c27717ba7'
       ]
     })
 
@@ -279,7 +279,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x67',
       signature: [
         'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1',
-        'c39e3f0612cdf56c3354d632e9dbbb7bcc8bd8408b19d7cd226126e744115aaa'
+        '5c86d9f437c1cbc9827b36d1c08d5bd4d8b31828786f194cd2a7f2fd125868c8'
       ]
     })
 
@@ -287,7 +287,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '100x100',
       signature: [
         'b6a9cbf02cf05ba5ea6531daa6084b181ab30f5a0a078b224241297fa19619af',
-        'bb90253f26775ec23e90c4465306da6a4ac1e1b18f4c14f1b1286b263373c885'
+        'fcd4f1025705227b31d1310fd8c4160c0669c4f31fd840d9b4107165ef55f07a'
       ]
     })
 
@@ -303,7 +303,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x133',
       signature: [
         '04e2b2b059aba5fa0a094fc9e96019e19502396dce8c411c5f82a29de70db96a',
-        '53446dc48de4b954252e9ca03a3022fb05cf1dab24b0cd2f5e89e2f6f5084b58'
+        '47c34660701ddc02c5f18ba41392c3fe6188b1339c92d71ed324d3184d86173e'
       ]
     })
 
@@ -327,7 +327,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         'd0900a56baa9dc3ca3f3499263565eca2f3595023b999a1308cabc01f0266a74',
-        '6cbf8367ca117379cbe93f4d7e1da51d9def5910f42fe6f863b6145ab692f081'
+        '10927e09b94dffc29842d3e760d9a02c7e3ce7eef613aba45dcba1abe4297a56'
       ]
     })
 
@@ -335,7 +335,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         'f3209ac875fef39f31c0746cda7b80a65a05432534754cc7f6616d34128dc342',
-        '9603566efc107c75c7e48bba736ff5c2e73639c6bb9d7c541ccc0b6d2f5e8904'
+        'e2d39515596ec280e3f92b2f767ae90aec51c26b593e82214d023c8e45686aa4'
       ]
     })
 
@@ -343,7 +343,7 @@ class BobRossImageTest < Minitest::Test
       geometry: '200x200',
       signature: [
         'f887e8e7c293970bd73f3880395e2d03b9adfcd222b24331c95fa5bc679c5127',
-        '58ddee7ed63418c00da0502bb9e7917c164e1275d155bdff8b2feac0e16a280c'
+        '1033fa0394f2d141f2fcf8ad40c6dfe9eb7f189a793101c8fef0ae75b5a87d78'
       ]
     })
   end

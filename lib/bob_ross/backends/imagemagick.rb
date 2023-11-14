@@ -58,12 +58,38 @@ module BobRoss::ImageMagickBackend
       end
     end
     
-    case options[:format]
+    saver_options = case options[:format]
+    when 'image/avif'
+      {Q: 45}
+    when 'image/heic'
+      {Q: 40}
+    when 'image/webp'
+      {Q: 45, min_size: true, effort: 6}
+    when 'image/jp2'
+      {Q: 40}
     when 'image/jpeg'
+      {Q: 43, optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
+    when 'image/png'
+      {compression: 9}
+    else
+      {}
+    end
+    
+    
+    case options[:format]
+    when 'image/avif'
+      params << "-quality 45" unless options[:quality]
+    when 'image/heic'
+      params << "-quality 40" unless options[:quality]
+    when 'image/webp'
+      params << "-quality 45" unless options[:quality]
+    when 'image/jp2'
+      params << "-quality 40" unless options[:quality]
+    when 'image/jpeg'
+      params << "-quality 43" unless options[:quality]
       params << "-define jpeg:optimize-coding=on"
     when 'image/png'
       params << "-define png:compression-level=9"
-    # else 'image/webp', 'image/jp2', 'image/heif', , 'image/avif'
     end
     
     options.each do |key, value|
