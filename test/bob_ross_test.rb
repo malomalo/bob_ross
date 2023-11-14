@@ -2,12 +2,18 @@ require 'test_helper'
 
 class BobRossTest < Minitest::Test
   
+  CONFIG_VARS = [:@host, :@hmac, :@logger, :@tranformations, :@backend, :@plugins]
+  
   def setup
-    BobRoss.configure({})
+    @old_config = CONFIG_VARS.map do |var|
+      [var, BobRoss.instance.instance_variable_get(var)]
+    end.to_h
   end
   
   def teardown
-    BobRoss.configure({})
+    @old_config.each do |var, value|
+      BobRoss.instance.instance_variable_set(var, value)
+    end
   end
   
   test "encode_transformations" do
