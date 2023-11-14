@@ -11,8 +11,8 @@ module BobRoss::LibVipsBackend
 
   class <<self
   
-  def format_supported?(mime)
-    supported_formats.include?(mime)
+  def supports?(*mimes)
+    (mimes - supported_formats).empty?
   end
 
   def supported_formats

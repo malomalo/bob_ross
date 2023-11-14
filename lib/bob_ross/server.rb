@@ -47,7 +47,7 @@ class BobRoss::Server
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
     @logger = (@settings.has_key?(:logger) ? @settings.delete(:logger) : Logger.new(STDOUT))
     
-    @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.format_supported?(k) }
+    @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.supports?(k) }
   end
   
   def serve_file(status, headers, file)

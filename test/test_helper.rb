@@ -29,12 +29,18 @@ class Minitest::Test
  include ActiveSupport::Testing::TimeHelpers
   
   # File 'lib/active_support/testing/declarative.rb'
-  def self.test(name, &block)
+  def self.test(name, requires: nil, &block)
     test_name = "test_#{name.gsub(/\s+/, '_')}".to_sym
     defined = method_defined? test_name
     raise "#{test_name} is already defined in #{self}" if defined
     if block_given?
-      define_method(test_name, &block)
+      define_method(test_name) do
+        if requires && !BobRoss.backend.supports?(*requires)
+          skip "Format #{requires.inspect} not supported"
+        else
+          instance_eval(&block)
+        end
+      end
     else
       define_method(test_name) do
         skip "No implementation provided for #{name}"

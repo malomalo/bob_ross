@@ -60,14 +60,14 @@ class BobRossFormatTest < Minitest::Test
   end
   
   # ------- JPEG 2000 test -----------------------------------------------------
-  test 'saves a jp2' do
+  test 'saves a jp2', requires: 'image/jp2' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/jp2'}).path)
     
     assert_equal 'jp2kload', output.get("vips-loader")
   end
   
-  test 'saves a jp2 with Quality' do
+  test 'saves a jp2 with Quality', requires: 'image/jp2' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
     low_q_output = image.transform({}, {quality: 0, format: 'image/jp2'})
@@ -76,7 +76,7 @@ class BobRossFormatTest < Minitest::Test
     assert low_q_output.size < high_q_output.size
   end
 
-  test 'saves a jp2 stripping the exif/metadata' do
+  test 'saves a jp2 stripping the exif/metadata', requires: 'image/jp2' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/jp2'}).path)
 
@@ -86,14 +86,14 @@ class BobRossFormatTest < Minitest::Test
   # I think JP2 is always progressive?
 
   # ------- Webp test ----------------------------------------------------------
-  test 'saves a webp' do
+  test 'saves a webp', requires: 'image/webp' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/webp'}).path)
     
     assert_equal 'webpload', output.get("vips-loader")
   end
   
-  test 'saves a webp with Quality' do
+  test 'saves a webp with Quality', requires: 'image/webp' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
     low_q_output = image.transform({}, {quality: 0, format: 'image/webp'})
@@ -102,7 +102,7 @@ class BobRossFormatTest < Minitest::Test
     assert low_q_output.size < high_q_output.size
   end
 
-  test 'saves a webp stripping the exif/metadata' do
+  test 'saves a webp stripping the exif/metadata', requires: 'image/webp' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/webp'}).path)
 
@@ -136,14 +136,14 @@ class BobRossFormatTest < Minitest::Test
   end
 
   # ------- HEIF test ----------------------------------------------------------
-  test 'saves a heif' do
+  test 'saves a heif', requires: 'image/heif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/heif'}).path)
     
     assert_equal 'heifload', output.get("vips-loader")
   end
   
-  test 'saves a heif with Quality' do
+  test 'saves a heif with Quality', requires: 'image/heif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
     low_q_output = image.transform({}, {quality: 0, format: 'image/heif'})
@@ -152,7 +152,7 @@ class BobRossFormatTest < Minitest::Test
     assert low_q_output.size < high_q_output.size
   end
 
-  test 'saves a heif stripping the exif/metadata' do
+  test 'saves a heif stripping the exif/metadata', requires: 'image/heif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/heif'}).path)
     
@@ -162,14 +162,14 @@ class BobRossFormatTest < Minitest::Test
   # HEIF does not support progressive images
 
   # ------- AVIF test ----------------------------------------------------------
-  test 'saves a avif' do
+  test 'saves a avif', requires: 'image/avif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {format: 'image/avif'}).path)
     
     assert_equal 'heifload', output.get("vips-loader")
   end
   
-  test 'saves a avif with Quality' do
+  test 'saves a avif with Quality', requires: 'image/avif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
     low_q_output = image.transform({}, {quality: 0, format: 'image/avif'})
@@ -178,7 +178,7 @@ class BobRossFormatTest < Minitest::Test
     assert low_q_output.size < high_q_output.size
   end
 
-  test 'saves a avif stripping the exif/metadata' do
+  test 'saves a avif stripping the exif/metadata', requires: 'image/avif' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
     output = ::Vips::Image.new_from_file(image.transform({}, {strip: true, format: 'image/avif'}).path)
 
