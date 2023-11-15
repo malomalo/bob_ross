@@ -2,7 +2,7 @@ require 'test_helper'
 
 class BobRossTest < Minitest::Test
   
-  CONFIG_VARS = [:@host, :@hmac, :@logger, :@tranformations, :@backend, :@plugins]
+  CONFIG_VARS = [:@host, :@hmac, :@logger, :@transformations, :@backend, :@plugins]
   
   def setup
     @old_config = CONFIG_VARS.map do |var|

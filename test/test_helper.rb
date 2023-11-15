@@ -20,6 +20,10 @@ require 'standard_storage/filesystem'
 require "concurrent"
 require 'ruby-vips'
 
+
+
+BobRoss.configure(backend: ENV["BOBROSS_BACKEND"]) if ENV["BOBROSS_BACKEND"]
+
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
 

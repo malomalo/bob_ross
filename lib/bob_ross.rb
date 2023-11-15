@@ -19,6 +19,7 @@ class BobRoss
   def initialize
     @plugins = {}
     @logger = Logger.new(STDOUT)
+    @transformations = {}
   end
   
   def configure(options)
