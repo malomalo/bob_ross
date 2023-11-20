@@ -10,7 +10,7 @@ module BobRoss::ImageMagickBackend
   def supported_formats
     return @supported_formats if @supported_formats
     
-    formats_cmd = Terrapin::CommandLine.new("magick", 'identify -list format')
+    formats_cmd = Terrapin::CommandLine.new("identify", '-list format')
     
     @supported_formats = formats_cmd.run.gsub(/\s{10,}[^\n]+(?=\n)/, '').lines[2..-6].reduce([]) do |memo, line|
       line = line.split(/\s+/).select { |c| !c.empty? }
