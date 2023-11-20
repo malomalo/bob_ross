@@ -20,14 +20,17 @@ jobs:
           - imagemagick
 
     steps:
+      - name: Install Image libs
+        run: sudo apt-get -y install libjpeg-turbo8-dev libgsf-1-dev libexif-dev libwebp-dev libopenjp2-7-dev libheif-dev
+
       - name: Install libvips
         run: sudo apt-get -y install libvips libvips-dev
 
       - name: Install Imagemagick
         run: sudo apt-get -y install imagemagick
 
-      - name: Install MuPDF
-        run: sudo apt-get -y install mupdf-tools
+      - name: Install MuPDF & FFMpeg
+        run: sudo apt-get -y install mupdf-tools ffmpeg
 
       - uses: actions/checkout@v4
 
