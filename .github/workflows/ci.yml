@@ -12,32 +12,112 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
+        vips-version:
+          - 8.14.5
+        im-version:
+          - 7.1.1-17
         ruby-version:
           - 3.0.5
-          - 3.1.3
         backend:
           - libvips
-          - imagemagick
 
     steps:
-      - name: Install Image libs
-        run: sudo apt-get -y install libjpeg-turbo8-dev libgsf-1-dev libexif-dev libwebp-dev libopenjp2-7-dev libheif-dev
+      - name: Install Deps
+        run: |
+          sudo apt-get -y install \
+                                  libtiff-dev \
+                                  libpng-dev libpng16-16 \
+                                  libjpeg-dev libjpeg-turbo8-dev libjpeg-turbo-progs \
+                                  libwebp-dev \
+                                  libopenexr-dev \
+                                  libopenjp2-7-dev libopenjp2-tools \
+                                  libheif-dev \
+                                  libexif-dev \
+                                  libfreetype6-dev \
+                                  libgsf-1-dev libltdl-dev libraw-dev \
+                                  meson ninja-build libgirepository1.0-dev
 
-      - name: Install libvips
-        run: sudo apt-get -y install libvips libvips-dev
+      - name: libvips Build Cache
+        id: vips-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: /home/runner/vips
+          key: compiled-vips-${{ matrix.vips-version }}
+
+      - name: Compile Libvips
+        if: steps.vips-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/vips
+          cd /home/runner/vips
+          wget --content-disposition --no-verbose 'https://github.com/libvips/libvips/releases/download/v${{ matrix.vips-version }}/vips-${{ matrix.vips-version }}.tar.xz'
+          tar xf vips-${{ matrix.vips-version }}.tar.xz
+          cd vips-${{ matrix.vips-version }}
+          meson setup build-dir --buildtype=release
+          cd build-dir
+          meson compile
+          meson test
+
+      - name: Cache libvips Build
+        if: steps.vips-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: /home/runner/vips
+          key: compiled-vips-${{ matrix.vips-version }}
+
+      - name: Install Libvips
+        run: |
+          cd /home/runner/vips/vips-${{ matrix.vips-version }}/build-dir
+          sudo meson install
+
+
+      - name: ImageMagick Build Cache
+        id: im-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: /home/runner/im
+          key: compiled-im-${{ matrix.im-version }}
+
+      - name: Compile Imagemagick
+        if: steps.im-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /home/runner/im
+          cd /home/runner/im
+          wget --content-disposition --no-verbose 'https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${{ matrix.im-version }}.tar.gz'
+          tar xf ImageMagick-${{ matrix.im-version }}.tar.gz
+          cd ImageMagick-${{ matrix.im-version }}
+          ./configure --with-modules --enable-file-type --with-quantum-depth=16 --with-jpeg=yes --with-png=yes --with-gif=yes --with-webp=yes --with-heic=yes --with-raw=yes --with-tiff=yes --with-openjp2 --with-freetype=yes --with-openexr=yes --with-gslib=yes  --with-perl=yes --with-jxl=yes
+          make
+
+      - name: Cache ImageMagick Build
+        if: steps.im-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: /home/runner/im
+          key: compiled-im-${{ matrix.im-version }}
 
       - name: Install Imagemagick
-        run: sudo apt-get -y install imagemagick
+        run: |
+          cd /home/runner/im/ImageMagick-${{ matrix.im-version }}
+          sudo make install
+          sudo ldconfig /usr/local/lib
 
-      - name: Install MuPDF & FFMpeg
-        run: sudo apt-get -y install mupdf-tools ffmpeg
+      - name: Install FFMpeg
+        run: |
+          sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6
+          sudo apt install ffmpeg
+
+      - name: Install MuPDF
+        run: sudo apt-get -y install mupdf-tools
 
       - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
-      - run: bundle
-
-      - run: bundle exec rake test:${{ matrix.backend }}
+      - run: |
+          vips --version
+          identify --version
+          ffmpeg -version
+          bundle exec rake test:${{ matrix.backend }}
