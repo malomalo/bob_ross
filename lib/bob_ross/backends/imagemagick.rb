@@ -50,7 +50,7 @@ module BobRoss::ImageMagickBackend
     output = command.run(file: path)
     ident[:opaque]    = output.match(/^Opaque:\s(true|false)\s*$/i)[1] == 'True'
     ident[:geometry]  = parse_geometry(output.match(/^Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
-    orientation = output.match(/^Orientation:\s(\d)\s*$/i)
+    orientation = output.match(/^Orientation:\s+(\d)/i)
     ident[:orientation] = orientation[1].to_i if orientation
     ident
   end

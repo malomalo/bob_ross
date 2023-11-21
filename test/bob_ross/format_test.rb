@@ -13,6 +13,7 @@ class BobRossFormatTest < Minitest::Test
     yoffset
     yres
     resolution-unit
+    bits-per-sample
     
     filename
     format
