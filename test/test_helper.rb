@@ -84,17 +84,22 @@ class Minitest::Test
   end
   
   # exp is the signature or [IM sig, libvips sig]
-  def assert_signature(exp, image)
-    if exp.is_a?(Array)
-      if BobRoss.backend.name == 'BobRoss::ImageMagickBackend'
-        exp = exp.first
-      else
-        exp = exp.last
+  def assert_signature(expected, image)
+    if expected.is_a?(Hash)
+      case BobRoss.backend.name
+      when 'BobRoss::ImageMagickBackend'
+        expected = expected[:im].find do |k,v|
+          Gem::Dependency.new('a', k).match?('a', BobRoss.backend.version.gsub('-', '.'))
+        end&.[](1)
+      when 'BobRoss::LibVipsBackend'
+        expected = expected[:vips].find do |k,v|
+          Gem::Dependency.new('a', k).match?('a', BobRoss.backend.version.gsub('-', '.'))
+        end&.[](1)
       end
     end
 
     signature = `identify -verbose '#{image.path}'`.match(/signature: (\w+)/)[1]
-    assert_equal(exp, signature)
+    assert_equal(expected, signature, "Invalid signature for #{BobRoss.backend.name}/#{BobRoss.backend.version}")
   end
   
   def assert_transform(input, transform, tests)

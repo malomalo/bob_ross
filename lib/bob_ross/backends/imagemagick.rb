@@ -3,6 +3,12 @@ module BobRoss::ImageMagickBackend
   
   class <<self
   
+  def version
+    return @version if @version
+    version_cmd = Terrapin::CommandLine.new("identify", '-version')
+    @version = version_cmd.run.match(/Version: ImageMagick (\S+)/)[1]
+  end
+  
   def supports?(*mimes)
     (mimes - supported_formats).empty?
   end

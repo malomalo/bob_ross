@@ -11,6 +11,10 @@ module BobRoss::LibVipsBackend
 
   class <<self
   
+  def version
+    Vips.version_string
+  end
+  
   def supports?(*mimes)
     (mimes - supported_formats).empty?
   end
