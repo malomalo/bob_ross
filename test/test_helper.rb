@@ -51,7 +51,14 @@ class Minitest::Test
       end
     end
   end
-  
+
+  def mupdf_version
+    return @version if @version
+    version_cmd = Terrapin::CommandLine.new("mutool", '-v')
+    version_cmd.run
+    @version = version_cmd.output.error_output.match(/version\s+(\S+)/)[1]
+  end
+
   def wait_until
     while !yield
       sleep 0.1
@@ -83,19 +90,26 @@ class Minitest::Test
     assert_equal geom, "#{image.width}x#{image.height}"
   end
   
+  def backend
+    BobRoss.backend.key
+  end
+  
+  def key_for_backend(hash, backend=nil)
+    hash[backend || BobRoss.backend.key]
+  end
+  
+  def key_for_version(hash, version=nil)
+    version ||= BobRoss.backend.version
+    
+    hash.find do |k,v|
+      Gem::Dependency.new('a', k).match?('a', version.gsub('-', '.'))
+    end&.[](1)
+  end
+  
   # exp is the signature or [IM sig, libvips sig]
   def assert_signature(expected, image)
     if expected.is_a?(Hash)
-      case BobRoss.backend.name
-      when 'BobRoss::ImageMagickBackend'
-        expected = expected[:im].find do |k,v|
-          Gem::Dependency.new('a', k).match?('a', BobRoss.backend.version.gsub('-', '.'))
-        end&.[](1)
-      when 'BobRoss::LibVipsBackend'
-        expected = expected[:vips].find do |k,v|
-          Gem::Dependency.new('a', k).match?('a', BobRoss.backend.version.gsub('-', '.'))
-        end&.[](1)
-      end
+      expected = key_for_version(key_for_backend(expected))
     end
 
     signature = `identify -verbose '#{image.path}'`.match(/signature: (\w+)/)[1]

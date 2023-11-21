@@ -217,7 +217,16 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['7d5daa0941b10cb47277e954a77413b2', '2f4645b128d93f5d9304b79baabb9fdd'], Digest::MD5.hexdigest(response.body)
+    assert_includes key_for_version(key_for_backend(key_for_version({
+      '>= 1.19.0' => {
+        im: {
+          '>= 7.1.1-21' => '7d5daa0941b10cb47277e954a77413b2'
+        },
+        vips: {
+          '>= 8.15.0' => '2f4645b128d93f5d9304b79baabb9fdd'
+        }
+      }
+    }, mupdf_version))), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']

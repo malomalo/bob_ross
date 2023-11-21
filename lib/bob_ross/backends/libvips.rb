@@ -11,6 +11,10 @@ module BobRoss::LibVipsBackend
 
   class <<self
   
+  def key
+    :vips
+  end
+  
   def version
     Vips.version_string
   end

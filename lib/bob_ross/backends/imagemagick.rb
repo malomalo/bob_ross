@@ -3,6 +3,10 @@ module BobRoss::ImageMagickBackend
   
   class <<self
   
+  def key
+    :im
+  end
+  
   def version
     return @version if @version
     version_cmd = Terrapin::CommandLine.new("identify", '-version')
