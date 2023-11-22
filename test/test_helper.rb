@@ -53,10 +53,16 @@ class Minitest::Test
   end
 
   def mupdf_version
-    return @version if @version
+    return @mupdf_version if @mupdf_version
     version_cmd = Terrapin::CommandLine.new("mutool", '-v')
     version_cmd.run
-    @version = version_cmd.output.error_output.match(/version\s+(\S+)/)[1]
+    @mupdf_version = version_cmd.output.error_output.match(/version\s+([\d\.\-]+)/)[1]
+  end
+
+  def ffmpeg_version
+    return @ffmpeg_version if @ffmpeg_version
+    version_cmd = Terrapin::CommandLine.new("ffmpeg", '-version')
+    @ffmpeg_version = version_cmd.run.match(/version\s+([\d\.\-]+)/)[1]
   end
 
   def wait_until
@@ -94,16 +100,24 @@ class Minitest::Test
     BobRoss.backend.key
   end
   
+  def value_for_versions(hash, *versions)
+    hash.find do |k,v|
+      if versions.size == 1
+        Gem::Dependency.new('a', k).match?('a', versions[0].gsub('-', '.'))
+      else
+        k.zip(versions).to_h.all? do |key, version|
+          Gem::Dependency.new('a', key).match?('a', version.gsub('-', '.'))
+        end
+      end
+    end&.[](1)
+  end
+  
   def key_for_backend(hash, backend=nil)
     hash[backend || BobRoss.backend.key]
   end
   
   def key_for_version(hash, version=nil)
-    version ||= BobRoss.backend.version
-    
-    hash.find do |k,v|
-      Gem::Dependency.new('a', k).match?('a', version.gsub('-', '.'))
-    end&.[](1)
+    value_for_versions(hash, version || BobRoss.backend.version)
   end
   
   # exp is the signature or [IM sig, libvips sig]

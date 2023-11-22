@@ -17,14 +17,18 @@ jobs:
         im-version:
           - 7.1.1-21
         ruby-version:
-          - 3.0.5
+          - 3.3.0-preview3
+          - 3.2
+          - 3.1
         backend:
           - libvips
+          - imagemagick
 
     steps:
       - name: Install Deps
         run: |
           sudo apt-get -y install \
+                                  ffmpeg mupdf-tools \
                                   libtiff-dev \
                                   libpng-dev libpng16-16 \
                                   libjpeg-dev libjpeg-turbo8-dev libjpeg-turbo-progs \
@@ -42,7 +46,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/vips
-          key: compiled-vips-${{ matrix.vips-version }}
+          key: compile-vips-${{ matrix.vips-version }}
 
       - name: Compile Libvips
         if: steps.vips-cache.outputs.cache-hit != 'true'
@@ -62,7 +66,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /home/runner/vips
-          key: compiled-vips-${{ matrix.vips-version }}
+          key: compile-vips-${{ matrix.vips-version }}
 
       - name: Install Libvips
         run: |
@@ -75,7 +79,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/im
-          key: compiled-im-${{ matrix.im-version }}
+          key: compile-im-${{ matrix.im-version }}
 
       - name: Compile Imagemagick
         if: steps.im-cache.outputs.cache-hit != 'true'
@@ -93,7 +97,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /home/runner/im
-          key: compiled-im-${{ matrix.im-version }}
+          key: compile-im-${{ matrix.im-version }}
 
       - name: Install Imagemagick
         run: |
@@ -101,13 +105,12 @@ jobs:
           sudo make install
           sudo ldconfig /usr/local/lib
 
-      - name: Install FFMpeg
+      - name: Version Info
         run: |
-          sudo add-apt-repository ppa:ubuntuhandbook1/ffmpeg6
-          sudo apt install ffmpeg
-
-      - name: Install MuPDF
-        run: sudo apt-get -y install mupdf-tools
+          vips --version
+          identify --version
+          ffmpeg -version
+          mutool -v
 
       - uses: actions/checkout@v4
 
@@ -119,8 +122,4 @@ jobs:
       - env:
           VIPS_WARNING: 1
         run: |
-          vips --version
-          identify --version
-          ffmpeg -version
-          mutool -v
           bundle exec rake test:${{ matrix.backend }}

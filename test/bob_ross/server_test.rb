@@ -217,28 +217,51 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes key_for_version(key_for_backend(key_for_version({
-      '>= 1.19.0' => {
-        im: {
-          '>= 7.1.1-21' => '7d5daa0941b10cb47277e954a77413b2'
-        },
-        vips: {
-          '>= 8.15.0' => '2f4645b128d93f5d9304b79baabb9fdd'
-        }
-      }
-    }, mupdf_version))), Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'c0e5d6b674ed162bfdd212cffad42585',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '7d5daa0941b10cb47277e954a77413b2'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'c0bd56a48d4c81423ae926988d21c55f',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2f4645b128d93f5d9304b79baabb9fdd'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['592a7aed4be6c66f3deac77762153823', '2d0c2c8966dc484c540141f57ae73cae'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'bab2943711de8adcf01a711983c52b15',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '592a7aed4be6c66f3deac77762153823'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'fb65fd6089b9b01aa71a95f053cc09bb',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['4bd78a3a3f7be88b2272b2697e10183b', '9863144037ac5cccca31b0d22304bf7b'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'f6df84e2708d0add72f1e3d3e28098cb',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '4bd78a3a3f7be88b2272b2697e10183b'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'e42bb91cf34a3cce419ffec9fbefec0e',
+        ['>= 8.15.0', ['>= 1.22.2']] => '9863144037ac5cccca31b0d22304bf7b'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['c7bb8896007fdc48fcb683a5533e5712', 'ff8552e8b6990d9b293c2c2c88bfa116'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'deafd01854b9ed9aaacb6b486d30f290',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => 'c7bb8896007fdc48fcb683a5533e5712'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => '86b2fbe3f875ca59b77d9d1abaff0e2e',
+        ['>= 8.15.0', ['>= 1.22.2']] => 'ff8552e8b6990d9b293c2c2c88bfa116'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
   end
   
   test 'a Video' do
@@ -246,18 +269,50 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['dd0af2d65277b93f7c3de4007be21081', '76311e89661fc5d21828084271c08455'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => 'f0b9194eafb984d4d4273c33570eb91b',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'dd0af2d65277b93f7c3de4007be21081'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '85196b91ab4e189da1eef3fda9d7fce8',
+        ['>= 8.15.0', ['>= 6.0']] => '76311e89661fc5d21828084271c08455'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['549a9a3fff71f7ae5c135142a2885166', '351a240af0ec0db5758d5120abc73984'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '69f8bd89d373f45f6ee92cd8db8fa096',
+        ['>= 7.1.1-21', ['>= 6.0']] => '549a9a3fff71f7ae5c135142a2885166'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => 'df8501dba59a7f5d34f26cf932b857e7',
+        ['>= 8.15.0', ['>= 6.0']] => '351a240af0ec0db5758d5120abc73984'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['f103fb67f500511bd29ec10c5205b40f', '87c98e63d160c2d15ff5aeec1ed866b7'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '9418f242fbbca265063ccef0b8313d71',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'f103fb67f500511bd29ec10c5205b40f'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '8db0afaf7f747d2d6884e115e3f018a5',
+        ['>= 8.15.0', ['>= 6.0']] => '87c98e63d160c2d15ff5aeec1ed866b7'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['d462eac44ca95715b288c4e501dc1f7d', '2b00b06f58ede4e365e3f7e33e65df99'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '700f7a0e8cfb73345a0e60d66255f4c2',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'd462eac44ca95715b288c4e501dc1f7d'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '448cb17829d0adf6e0326239cb3c32d5',
+        ['>= 8.15.0', ['>= 6.0']] => '2b00b06f58ede4e365e3f7e33e65df99'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
   end
 end
