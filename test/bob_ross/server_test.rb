@@ -30,7 +30,6 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/png', server.get("/opaque.png").headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque.webp").headers['Content-Type']
     
-    
     assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/jpeg'}).headers['Content-Type']
     assert_equal 'image/png', server.get("/opaque",  {'HTTP_ACCEPT' => 'image/png'}).headers['Content-Type']
     assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp'}).headers['Content-Type']
@@ -45,6 +44,38 @@ class BobRossServerTest < Minitest::Test
     
     # Return a 415 Unsupported Media Type if we can't satisfy the Accept header
     assert_equal 415, server.get('/opaque', {'HTTP_ACCEPT' => 'image/magical'}).status
+  end
+  
+  test 'Response Header: "Content-Type" for various browser Accept Headers' do
+    server = create_server
+    
+    # Firefox 92 and later
+    assert_equal 'image/avif', server.get("/opaque", {'HTTP_ACCEPT' => 'image/avif,image/webp,*/*'}).headers['Content-Type']
+    assert_equal 'image/avif', server.get("/transparent", {'HTTP_ACCEPT' => 'image/avif,image/webp,*/*'}).headers['Content-Type']
+
+    # Firefox 65 to 91
+    assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,*/*'}).headers['Content-Type']
+    assert_equal 'image/webp', server.get("/transparent", {'HTTP_ACCEPT' => 'image/webp,*/*'}).headers['Content-Type']
+
+    # Firefox 47 to 63
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => '*/*'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => '*/*'}).headers['Content-Type']
+
+    # Firefox prior to 47
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png,image/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => 'image/png,image/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Safari (since Mac OS Big Sur)
+    assert_equal 'image/webp', server.get("/opaque", {'HTTP_ACCEPT' => 'image/webp,image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/webp', server.get("/transparent", {'HTTP_ACCEPT' => 'image/webp,image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Safari (before Mac OS Big Sur)
+    assert_equal 'image/jpeg', server.get("/opaque", {'HTTP_ACCEPT' => 'image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+    assert_equal 'image/png', server.get("/transparent", {'HTTP_ACCEPT' => 'image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5'}).headers['Content-Type']
+
+    # Chrome
+    assert_equal 'image/avif', server.get("/opaque", {'HTTP_ACCEPT' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'}).headers['Content-Type']
+    assert_equal 'image/avif', server.get("/transparent", {'HTTP_ACCEPT' => 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8'}).headers['Content-Type']
   end
   
   test 'Response Header: "Last-Modified" if last_modified_header' do
@@ -186,19 +217,51 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['0bfb297897f6f5cb3395105745fd35a0', '195747571378c6846af4fe11fdb0d71e'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'c0e5d6b674ed162bfdd212cffad42585',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '7d5daa0941b10cb47277e954a77413b2'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'c0bd56a48d4c81423ae926988d21c55f',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2f4645b128d93f5d9304b79baabb9fdd'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['0f3ce776621680da230e625554aa5372', '6426ee4419252d1302981c28b00541ac'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'bab2943711de8adcf01a711983c52b15',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '592a7aed4be6c66f3deac77762153823'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'fb65fd6089b9b01aa71a95f053cc09bb',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/floorplan")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['f50d18da6bd6a86952cf4bad797553ec', '3f87ca20d97a95346eb9df622e67017b'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'f6df84e2708d0add72f1e3d3e28098cb',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '4bd78a3a3f7be88b2272b2697e10183b'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'e42bb91cf34a3cce419ffec9fbefec0e',
+        ['>= 8.15.0', ['>= 1.22.2']] => '9863144037ac5cccca31b0d22304bf7b'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['8db654d754f9c7e584669f4cb75f57ad', '949a8da63e2ad289b0a9e76e0727666a'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'deafd01854b9ed9aaacb6b486d30f290',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => 'c7bb8896007fdc48fcb683a5533e5712'
+      }, vips: {
+        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => '86b2fbe3f875ca59b77d9d1abaff0e2e',
+        ['>= 8.15.0', ['>= 1.22.2']] => 'ff8552e8b6990d9b293c2c2c88bfa116'
+      }}), BobRoss.backend.version, mupdf_version
+    ), Digest::MD5.hexdigest(response.body)
   end
   
   test 'a Video' do
@@ -206,18 +269,50 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['53a4df2f7588fe954f2dcc57d6b8bab8', '74e86a389b6ddb49c0f158145b7f1246'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => 'f0b9194eafb984d4d4273c33570eb91b',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'dd0af2d65277b93f7c3de4007be21081'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '85196b91ab4e189da1eef3fda9d7fce8',
+        ['>= 8.15.0', ['>= 6.0']] => '76311e89661fc5d21828084271c08455'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S100/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['2303a1cb94aed6e5889ed082071c52d5', '294f226f756953d282f2afd0aebd7cfc'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '69f8bd89d373f45f6ee92cd8db8fa096',
+        ['>= 7.1.1-21', ['>= 6.0']] => '549a9a3fff71f7ae5c135142a2885166'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => 'df8501dba59a7f5d34f26cf932b857e7',
+        ['>= 8.15.0', ['>= 6.0']] => '351a240af0ec0db5758d5120abc73984'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/S50x50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['ed50d0301a8f5c6029154a084a1f4eb7', 'c261559cc42867ac2fe49528cab80e83'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '9418f242fbbca265063ccef0b8313d71',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'f103fb67f500511bd29ec10c5205b40f'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '8db0afaf7f747d2d6884e115e3f018a5',
+        ['>= 8.15.0', ['>= 6.0']] => '87c98e63d160c2d15ff5aeec1ed866b7'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
     
     response = server.get("/Sx50/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    assert_includes ['a6055e4f8356c833dde52d4daa9f5570', '1c7244a5028fc23ecc398dfe865f71d1'], Digest::MD5.hexdigest(response.body)
+    assert_equal value_for_versions(key_for_backend({
+      im: {
+        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '700f7a0e8cfb73345a0e60d66255f4c2',
+        ['>= 7.1.1-21', ['>= 6.0']] => 'd462eac44ca95715b288c4e501dc1f7d'
+      }, vips: {
+        ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '448cb17829d0adf6e0326239cb3c32d5',
+        ['>= 8.15.0', ['>= 6.0']] => '2b00b06f58ede4e365e3f7e33e65df99'
+      }}), BobRoss.backend.version, ffmpeg_version
+    ), Digest::MD5.hexdigest(response.body)
   end
 end

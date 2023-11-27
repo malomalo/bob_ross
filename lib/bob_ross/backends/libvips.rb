@@ -10,7 +10,32 @@ module BobRoss::LibVipsBackend
                                                [-1, -1, -1]], 24
 
   class <<self
+  
+  def key
+    :vips
+  end
+  
+  def version
+    Vips.version_string
+  end
+  
+  def supports?(*mimes)
+    (mimes - supported_formats).empty?
+  end
 
+  def supported_formats
+    return @supported_formats if @supported_formats
+  
+    formats_cmd = Terrapin::CommandLine.new("magick", 'identify -list format')
+  
+    @supported_formats = Vips::get_suffixes.reduce([]) do |memo, suffix|
+      if mime = MiniMime.lookup_by_extension(suffix.delete_prefix('.'))
+        memo << mime.content_type
+      end
+      memo
+    end
+  end
+  
   def identify(path)
     ident = {}
 
@@ -72,7 +97,11 @@ module BobRoss::LibVipsBackend
     end
 
     vips = vips.thumbnail_image(geometry[:width], height: geometry[:height], size: modifier)
-    vips = vips.conv(SHARPEN_MASK) if image.area > (vips.width * vips.height)
+    # precision: :integer for jp2 support
+    # The jp2k saver in libvips only supports integer formats (8, 16 and
+    # 32-bits, signed and unsigned), but conv defaults to float output. re: 
+    # https://github.com/libvips/ruby-vips/issues/375#issuecomment-1806822356
+    vips = vips.conv(SHARPEN_MASK, precision: :integer) if image.area > (vips.width * vips.height)
     
     if geometry[:modifier] == '#'
       fill_width = (geometry[:width] - vips.width).to_f/2.0
@@ -301,26 +330,44 @@ module BobRoss::LibVipsBackend
     
     output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
 
-    # options.each do |key, value|
-    #   case key
-    #   when :lossless
-    #     params << "-define webp:lossless=true"
-    #   when :optimize
-    #     params << "-quality 85" unless transformations[:format] == 'image/webp'
-    #     params << "-define png:compression-filter=5"
-    #     params << "-define png:compression-level=9"
-    #     params << "-define png:compression-strategy=1"
-    #     params << "-define png:exclude-chunk=all"
-    #     params << "-interlace none" unless transformations[:interlace]
-    #     params << "-colorspace sRGB"
-    #     params << "-strip"
-    #   when :interlace
-    #     params << "-interlace Plane"
-    #   end
-    # end
-    # transformations.delete(:lossless)
+    saver_options = case options[:format]
+    when 'image/avif'
+      {Q: 45}
+    when 'image/heic'
+      {Q: 40}
+    when 'image/webp'
+      {Q: 45, min_size: true, effort: 6}
+    when 'image/jp2'
+      {Q: 40}
+    when 'image/jpeg'
+      {Q: 43, optimize_coding: true, trellis_quant: true, overshoot_deringing: true}
+    when 'image/png'
+      {compression: 9}
+    else
+      {}
+    end
     
-    vips.write_to_file(output.path, **select_valid_saver_options(output.path, {}))
+    options.each do |key, value|
+      case key
+      when :quality
+        if !value.nil?
+          saver_options[:Q] = if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
+            [[1, value.to_i].max, 100].min
+          else
+            value.to_i
+          end
+        end
+      when :strip
+        saver_options[:strip] = true
+      when :interlace
+        saver_options[:interlace] = true
+        saver_options[:optimize_scans] = true if options[:format] == 'image/jpeg'
+      when :lossless
+        saver_options[:lossless] = true
+      end
+    end
+    
+    vips.write_to_file(output.path, **select_valid_saver_options(output.path, saver_options))
     output
   end
   
@@ -345,8 +392,7 @@ module BobRoss::LibVipsBackend
   def select_valid_options(operation_name, options)
     operation = ::Vips::Operation.new(operation_name)
     introspect = ::Vips::Introspect.get(operation_name)
-    operation_options = introspect.required_input.map{ |arg| arg[:arg_name] }.map(&:to_sym)
-
+    operation_options = introspect.args.map{ |arg| arg[:arg_name] }.map(&:to_sym)
     options.select { |name, value| operation_options.include?(name) }
   end
   end

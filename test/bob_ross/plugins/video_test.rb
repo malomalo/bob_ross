@@ -36,30 +36,30 @@ class VideoPluginTest < Minitest::Test
     image = BobRoss::VideoPlugin.transform(fixture('videos/world.mp4'))
 
     assert_geometry('640x360', image)
-    assert_signature(
-      'fed332e73ca87a31749b6f27056fc271cc8efd0402315aed0fb7e938b919512a',
-      image
-    )
+    assert_signature(value_for_versions({
+      ['>= 4.4.2-0', '< 6.0'] => 'adb611d67ff335ab564e13b4a29daf5f19868588950afd00f2c874bdc92bc0f6',
+      ['>= 6.0'] => 'fed332e73ca87a31749b6f27056fc271cc8efd0402315aed0fb7e938b919512a'
+    }, ffmpeg_version), image)
   end
 
   test 'creates a thumbnail for the selected timestamp' do
     image = BobRoss::VideoPlugin.transform(fixture('videos/world.mp4'), {seek: 0})
 
     assert_geometry('640x360', image)
-    assert_signature(
-      '1d3e16995c5dfadf73f67a5695c02f14b1cbae07ca168aaf79c9f0d728db44c8',
-      image
-    )
+    assert_signature(value_for_versions({
+      ['>= 4.4.2-0', '< 6.0'] => '5ff4311478633fb23f44ff1d6d16286baafb885531a86ddb2c7ccaf22fe4f52f',
+      ['>= 6.0'] => '1d3e16995c5dfadf73f67a5695c02f14b1cbae07ca168aaf79c9f0d728db44c8'
+    }, ffmpeg_version), image)
   end
 
   test 'creates a thumbnail for the selected percentage of movie' do
     image = BobRoss::VideoPlugin.transform(fixture('videos/world.mp4'), {seek: '100%'})
 
     assert_geometry('640x360', image)
-    assert_signature(
-      '74c9aaaedbd064a5bbb71c65df3e42f9c56e4146ac5830147619cec39adbf8e9',
-      image
-    )
+    assert_signature(value_for_versions({
+      ['>= 4.4.2-0', '< 6.0'] => 'd1e07b1a1d504b30a6e6f01281bb647fab67a5b23b2ca369ca946531f85eff69',
+      ['>= 6.0'] => '74c9aaaedbd064a5bbb71c65df3e42f9c56e4146ac5830147619cec39adbf8e9'
+    }, ffmpeg_version), image)
   end
 
 end

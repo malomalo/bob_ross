@@ -2,6 +2,36 @@ module BobRoss::ImageMagickBackend
   extend BobRoss::BackendHelpers
   
   class <<self
+  
+  def key
+    :im
+  end
+  
+  def version
+    return @version if @version
+    version_cmd = Terrapin::CommandLine.new("identify", '-version')
+    @version = version_cmd.run.match(/Version: ImageMagick (\S+)/)[1]
+  end
+  
+  def supports?(*mimes)
+    (mimes - supported_formats).empty?
+  end
+  
+  def supported_formats
+    return @supported_formats if @supported_formats
+    
+    formats_cmd = Terrapin::CommandLine.new("identify", '-list format')
+    
+    @supported_formats = formats_cmd.run.gsub(/\s{10,}[^\n]+(?=\n)/, '').lines[2..-6].reduce([]) do |memo, line|
+      line = line.split(/\s+/).select { |c| !c.empty? }
+      if line[2][1] == 'w'
+        mime = MiniMime.lookup_by_extension(line[0].delete_suffix('*').downcase)
+        memo << mime.content_type if mime
+      end
+      memo
+    end
+  end
+  
   def default_args(options)
     params = []
     params << "-limit memory :memory_limit" if options[:memory_limit]
@@ -24,7 +54,7 @@ module BobRoss::ImageMagickBackend
     output = command.run(file: path)
     ident[:opaque]    = output.match(/^Opaque:\s(true|false)\s*$/i)[1] == 'True'
     ident[:geometry]  = parse_geometry(output.match(/^Geometry:\s([0-9x\-\+]+)\s*$/i)[1])
-    orientation = output.match(/^Orientation:\s(\d)\s*$/i)
+    orientation = output.match(/^Orientation:\s+(\d)/i)
     ident[:orientation] = orientation[1].to_i if orientation
     ident
   end
@@ -58,19 +88,34 @@ module BobRoss::ImageMagickBackend
       end
     end
     
+    case options[:format]
+    when 'image/avif'
+      params << "-quality 45" unless options[:quality]
+    when 'image/heic'
+      params << "-quality 40" unless options[:quality]
+    when 'image/webp'
+      params << "-quality 45" unless options[:quality]
+    when 'image/jp2'
+      params << "-quality 40" unless options[:quality]
+    when 'image/jpeg'
+      params << "-quality 43" unless options[:quality]
+      params << "-define jpeg:optimize-coding=on"
+    when 'image/png'
+      params << "-define png:compression-level=9"
+    end
+    
     options.each do |key, value|
      case key
+     when :quality
+       params << "-quality " << if %w(image/jpeg image/jp2 image/heif image/avif).include?(options[:format])
+         [[1, value.to_i].max, 100].min.to_s
+       else
+         value.to_i
+       end
+     when :strip
+       params << "-strip"
      when :lossless
        params << "-define webp:lossless=true"
-     when :optimize
-       params << "-quality 85" unless options[:format] == 'image/webp'
-       params << "-define png:compression-filter=5"
-       params << "-define png:compression-level=9"
-       params << "-define png:compression-strategy=1"
-       params << "-define png:exclude-chunk=all"
-       params << "-interlace none" unless options[:interlace]
-       params << "-colorspace sRGB"
-       params << "-strip"
      when :interlace
        params << "-interlace Plane"
      end

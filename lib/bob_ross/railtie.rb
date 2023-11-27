@@ -47,9 +47,9 @@ class BobRoss::Railtie < Rails::Railtie
       
       if seekrets[:hmac].is_a?(String)
         config.hmac.key = seekrets[:hmac]
-      else
+      elsif seekrets[:hmac]
         config.hmac.key = seekrets[:hmac][:key] if seekrets[:hmac][:key]
-        config.hmac.required = seekrets[:hmac][:required] if seekrets[:hmac][:required]
+        config.hmac.required = seekrets[:hmac][:required] if seekrets[:hmac].has_key?(:required)
         config.hmac.attributes = seekrets[:hmac][:attributes] if seekrets[:hmac][:attributes]
         config.hmac.transformations.optional = seekrets[:hmac][:transformations][:optional] if seekrets[:hmac][:transformations]
       end

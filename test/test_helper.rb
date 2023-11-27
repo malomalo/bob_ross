@@ -20,6 +20,10 @@ require 'standard_storage/filesystem'
 require "concurrent"
 require 'ruby-vips'
 
+
+
+BobRoss.configure(backend: ENV["BOBROSS_BACKEND"]) if ENV["BOBROSS_BACKEND"]
+
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
 
@@ -29,19 +33,38 @@ class Minitest::Test
  include ActiveSupport::Testing::TimeHelpers
   
   # File 'lib/active_support/testing/declarative.rb'
-  def self.test(name, &block)
+  def self.test(name, requires: nil, &block)
     test_name = "test_#{name.gsub(/\s+/, '_')}".to_sym
     defined = method_defined? test_name
     raise "#{test_name} is already defined in #{self}" if defined
     if block_given?
-      define_method(test_name, &block)
+      define_method(test_name) do
+        if requires && !BobRoss.backend.supports?(*requires)
+          skip "Format #{requires.inspect} not supported"
+        else
+          instance_eval(&block)
+        end
+      end
     else
       define_method(test_name) do
         skip "No implementation provided for #{name}"
       end
     end
   end
-  
+
+  def mupdf_version
+    return @mupdf_version if @mupdf_version
+    version_cmd = Terrapin::CommandLine.new("mutool", '-v')
+    version_cmd.run
+    @mupdf_version = version_cmd.output.error_output.match(/version\s+([\d\.\-]+)/)[1]
+  end
+
+  def ffmpeg_version
+    return @ffmpeg_version if @ffmpeg_version
+    version_cmd = Terrapin::CommandLine.new("ffmpeg", '-version')
+    @ffmpeg_version = version_cmd.run.match(/version\s+([\d\.\-]+)/)[1]
+  end
+
   def wait_until
     while !yield
       sleep 0.1
@@ -73,18 +96,38 @@ class Minitest::Test
     assert_equal geom, "#{image.width}x#{image.height}"
   end
   
-  # exp is the signature or [IM sig, libvips sig]
-  def assert_signature(exp, image)
-    if exp.is_a?(Array)
-      if BobRoss.backend.name == 'BobRoss::ImageMagickBackend'
-        exp = exp.first
+  def backend
+    BobRoss.backend.key
+  end
+  
+  def value_for_versions(hash, *versions)
+    hash.find do |k,v|
+      if versions.size == 1
+        Gem::Dependency.new('a', k).match?('a', versions[0].gsub('-', '.'))
       else
-        exp = exp.last
+        k.zip(versions).to_h.all? do |key, version|
+          Gem::Dependency.new('a', key).match?('a', version.gsub('-', '.'))
+        end
       end
+    end&.[](1)
+  end
+  
+  def key_for_backend(hash, backend=nil)
+    hash[backend || BobRoss.backend.key]
+  end
+  
+  def key_for_version(hash, version=nil)
+    value_for_versions(hash, version || BobRoss.backend.version)
+  end
+  
+  # exp is the signature or [IM sig, libvips sig]
+  def assert_signature(expected, image)
+    if expected.is_a?(Hash)
+      expected = key_for_version(key_for_backend(expected))
     end
 
     signature = `identify -verbose '#{image.path}'`.match(/signature: (\w+)/)[1]
-    assert_equal(exp, signature)
+    assert_equal(expected, signature, "Invalid signature for #{BobRoss.backend.name}/#{BobRoss.backend.version}")
   end
   
   def assert_transform(input, transform, tests)
