@@ -43,8 +43,8 @@ class BobRoss
       
       args = 'draw'
       
-      if size = ross_transformations.find { |t| t[:resize] }
-        size = parse_geometry(first_resize[:resize])
+      if size = ross_transformations.find { |t| t[:resize] }&.[](:resize)
+        size = parse_geometry(size)
         if size[:height]
           args << ' -h :height'
           interpolations[:height] = size[:height]
