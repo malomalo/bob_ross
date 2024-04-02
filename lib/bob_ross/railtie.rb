@@ -78,8 +78,7 @@ class BobRoss::Railtie < Rails::Railtie
       if config.hmac.attributes.is_a?(Array) && config.hmac.attributes.first.is_a?(Array)
         config.hmac.attributes = config.hmac.attributes.first
       end
-
-      config.server.store = config.server[:store].call if config.server[:store].is_a?(Proc)
+      
       if config.server.watermarks.is_a?(String)
         if Dir.exist?(config.server.watermarks)
           config.server.watermarks = Dir.children(config.server.watermarks).sort.map { |w|
@@ -100,15 +99,24 @@ class BobRoss::Railtie < Rails::Railtie
   config.after_initialize do |app|
     initialize_configs(app)
     config = app.config.bob_ross
- 
-    BobRoss.configure(config.except(:server))
 
+    BobRoss.configure(config.except(:server))
     if config.server
       require 'bob_ross/server'
+      
       app.bob_ross_server = BobRoss::Server.new(config.server.except(:prefix))
       app.routes.prepend do
         mount app.bob_ross_server => config.server.prefix
       end
+    end
+  end
+  
+  server do |app|
+    # Do this here instead of in after_initialize because the Proc may call
+    # ActiveRecord and this might cause things like db:create to fail because
+    # it looks for the Store first
+    if app.bob_ross_server.settings[:store].is_a?(Proc)
+      app.bob_ross_server.settings[:store] = app.bob_ross_server.settings[:store].call
     end
   end
 
