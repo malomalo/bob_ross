@@ -43,7 +43,7 @@ class BobRoss
       
       args = 'draw'
       
-      if size = ross_transformations.find { |t| t[:resize] }&.[](:resize)
+      if size = ross_transformations.find { |t| t[0] == :resize }&.[](1)
         size = parse_geometry(size)
         if size[:height]
           args << ' -h :height'
