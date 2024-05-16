@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'byebug'
   
   # Runtime
-  s.add_runtime_dependency 'sqlite3'
+  s.add_runtime_dependency 'sqlite3', '>= 1.3.0'
   s.add_runtime_dependency 'terrapin'
   s.add_runtime_dependency 'mini_mime'
 end

@@ -86,7 +86,7 @@ class BobRoss
     end
     
     def get(hash, transform)
-      @db.execute(<<-SQL, hash, transform).to_a
+      @db.execute(<<-SQL, [hash, transform]).to_a
         SELECT hash, transparent, transform, size, transformed_mime, transformed_at FROM transformations
         WHERE hash = ? AND transform = ?
       SQL
@@ -95,7 +95,7 @@ class BobRoss
     
     def use(hash, transform, mime)
       file = File.open(destination(hash, transform, mime))
-      @db.execute(<<-SQL, Time.now.to_i, hash, transform, mime)
+      @db.execute(<<-SQL, [Time.now.to_i, hash, transform, mime])
         UPDATE transformations
         SET last_used_at = ?
         WHERE hash = ? AND transform = ? AND transformed_mime = ?;
@@ -117,7 +117,7 @@ class BobRoss
       
       FileUtils.mkdir_p(File.dirname(dest))
       FileUtils.cp(path, dest)
-      @db.execute(<<-SQL, hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i, Time.now.to_i)
+      @db.execute(<<-SQL, [hash, transparent ? 1 : 0, transform, stat.size, mime, Time.now.to_i, Time.now.to_i])
         INSERT INTO transformations (hash, transparent, transform, size, transformed_mime, transformed_at, last_used_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       SQL
@@ -134,13 +134,13 @@ class BobRoss
     end
 
     def del(hash)
-      entries = @db.execute(<<-SQL, hash).to_a
+      entries = @db.execute(<<-SQL, [hash]).to_a
         SELECT hash, transform, transformed_mime FROM transformations
         WHERE hash = ?
       SQL
       
       entries.each do |entry|
-        @db.execute(<<-SQL, entry[0], entry[1], entry[2])
+        @db.execute(<<-SQL, [entry[0], entry[1], entry[2]])
           DELETE FROM transformations
           WHERE hash = ? AND transform = ? AND transformed_mime = ?
         SQL
@@ -165,7 +165,7 @@ class BobRoss
           if r.nil?
             return
           else
-            @db.execute(<<-SQL, r[0], r[1], r[2])
+            @db.execute(<<-SQL, [r[0], r[1], r[2]])
               DELETE FROM transformations
               WHERE hash = ? AND transform = ? AND transformed_mime = ?
             SQL
