@@ -14,6 +14,15 @@ class BobRossImageTest < Minitest::Test
     assert_equal true,  image.transparent?
   end
 
+  test 'detects when an bw image is transparent' do
+    image_path = File.expand_path('../../fixtures/bw-transparent.png', __FILE__)
+    assert_equal(false, BobRoss.backend.identify(image_path)[:opaque])
+    
+    image = BobRoss::Image.new(File.open(image_path))
+    assert_equal false, image.opaque
+    assert_equal true,  image.transparent?
+  end
+  
   test 'detects an image mime type' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/transparent', __FILE__)))
     assert_equal 'image/png', image.mime_type.to_s
