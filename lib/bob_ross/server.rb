@@ -292,6 +292,8 @@ class BobRoss::Server
     end
   rescue Errno::ENOENT
     return not_found
+  rescue BobRoss::InvalidTransformationError => e
+    return unprocessable_entity(e.message)
   rescue StandardError => e
     if ['Net::OpenTimeout', 'Net::ReadTimeout'].include?(e.class.name)
       return gateway_timeout
@@ -332,6 +334,10 @@ class BobRoss::Server
   
   def not_found
     [404, {"Content-Type" => "text/plain"}, ["404 Not Found"]]
+  end
+  
+  def unprocessable_entity(message)
+    [422, {"Content-Type" => "text/plain"}, [message || "422 Unprocessable Entity"]]
   end
   
   def gateway_timeout

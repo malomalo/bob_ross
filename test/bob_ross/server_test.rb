@@ -212,6 +212,14 @@ class BobRossServerTest < Minitest::Test
   
   test 'asking for a watermark when not configured'
   
+  test 'a malformed crop transformation' do
+    server = create_server
+    
+    response = server.get('/C___S100x100/opaque')
+    assert_equal 422, response.status
+    assert_equal 'Invalid geometry "___"', response.body
+  end
+  
   test 'a PDF' do
     server = create_server
     

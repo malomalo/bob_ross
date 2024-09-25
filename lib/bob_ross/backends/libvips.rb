@@ -183,7 +183,7 @@ module BobRoss::LibVipsBackend
       watermark_geometry = $3
       watermark_postion = $2.downcase#.gsub(/\w/) { |s| GRAVITIES[s] } 
       
-      geometry = parse_geometry(watermark_geometry)
+      geometry = parse_geometry(watermark_geometry, require_dimension: false)
       if !geometry[:width] && !geometry[:height]
         if watermark_postion == 'o'
           geometry[:width] = vips.width

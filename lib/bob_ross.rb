@@ -13,6 +13,8 @@ class BobRoss
   autoload :PDFPlugin, File.expand_path('../bob_ross/plugins/pdf', __FILE__)
   autoload :VideoPlugin, File.expand_path('../bob_ross/plugins/video', __FILE__)
   
+  class InvalidTransformationError < StandardError; end
+  
   attr_reader :host, :plugins
   attr_accessor :logger
 

@@ -188,14 +188,15 @@ should always comes first.
 
   - `Brrggbb[aa]` Sets the background color, defaults to `00000000`
 
-  - `C{geometry}{offset_or_func_or_gravity}` Crops the image to the specified geometry where
-    geometry is:
+  - `C{geometry}[offset_or_func_or_gravity]` Crops the image to the specified
+    geometry where geometry is:
 
       - `width` - Width given, height automatically set to image height.
       - `xheight` - Height given, width automatically set to image width.
       - `widthxheight` - Width & Height explicitly given.
 
-      And `offset_or_func_or_gravity` is one of the following (default is `c`):
+      And optionally `offset_or_func_or_gravity` is one of the following
+      (defaults to `c`):
 
       - `{+-}x{+-}y` Can be appended to any geometry to set the horizontal
         and vertical offsets `x` and `y`, specified in pixels. Signs are

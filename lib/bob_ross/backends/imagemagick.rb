@@ -213,7 +213,7 @@ module BobRoss::ImageMagickBackend
     interpolations[:watermark_geometry] = $3
     watermark_postion = $2
       
-    geo = parse_geometry(interpolations[:watermark_geometry])
+    geo = parse_geometry(interpolations[:watermark_geometry], require_dimension: false)
     if !geo[:width] && !geo[:height]
       if watermark_postion == 'o'
         wtrmrk_image = image.settings[:watermarks][$1.to_i][:geometry]

@@ -9,8 +9,10 @@ module BobRoss::BackendHelpers
     'sm' => 'Smart'
   }
   
-  def parse_geometry(string)
+  def parse_geometry(string, require_dimension: true)
     string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?([^a-z]*)([neswcm]+)?(?:p(.*))?$/
+    
+    raise BobRoss::InvalidTransformationError.new("Invalid geometry \"#{string}\"") if require_dimension && $1.nil? && $2.nil?
     
     {
       width: $1 ? $1.to_i : nil,
