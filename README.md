@@ -411,3 +411,8 @@ BobRoss can process any image format that ImageMagick or LibVips accepts.
 To process other types of files and turn them into images that BobRoss can create a plugin.
 
 For an example see `lib/bob_ross/plugins/pdf`.
+
+## Similar projects
+
+- [imgproxy](https://imgproxy.net)
+- [thumbor](https://thumbor.org)
