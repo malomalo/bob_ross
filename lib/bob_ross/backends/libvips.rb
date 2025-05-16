@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Ensure ruby-vips > 2.1 is required
 gem 'ruby-vips', '>= 2.1'
 require 'ruby-vips'

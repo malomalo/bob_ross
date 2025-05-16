@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'terrapin'
 require 'mini_mime'
 require 'bob_ross/image'
@@ -159,7 +161,7 @@ class BobRoss::Server
 
       response_headers = {}
     
-      transformation_string = match[1] || ''
+      transformation_string = match[1] || String.new
       hash = match[2]
       requested_format = match[3]
       
@@ -360,7 +362,7 @@ class BobRoss::Server
     options = {}
     return [options, ''] unless string
     
-    options_string = ''
+    options_string = String.new
     string.gsub!(/([ILOTD]|Q\d+)+\z/) do |match|
       options_string = match if match
       match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|

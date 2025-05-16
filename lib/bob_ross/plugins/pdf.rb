@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BobRoss
   class PDFPlugin < BobRoss::Plugin
 
@@ -41,7 +43,7 @@ class BobRoss
       screenshot = Tempfile.create(['preview', '.png'], binmode: true)
       interpolations = { input: original_file.path, output: screenshot.path }
       
-      args = 'draw'
+      args = String.new('draw')
       
       if size = ross_transformations.find { |t| t[0] == :resize }&.[](1)
         size = parse_geometry(size)

@@ -9,15 +9,17 @@ on:
 jobs:
   sunstone:
     name: BobRoss Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         vips-version:
-          - 8.15.0
+          - 8.16.1
         im-version:
-          - 7.1.1-21
+          - 7.1.1-47
         ruby-version:
-          - 3.4.0-preview1
+          - 3.5.0-preview1
+          - 3.4
           - 3.3
           - 3.2
           - 3.1
@@ -38,6 +40,7 @@ jobs:
                                   libopenjp2-7-dev libopenjp2-tools \
                                   libheif-dev \
                                   libexif-dev \
+                                  librsvg2-dev \
                                   libfreetype6-dev \
                                   libgsf-1-dev libltdl-dev libraw-dev \
                                   meson ninja-build libgirepository1.0-dev
