@@ -232,6 +232,8 @@ should always comes first.
     interperted like the CSS padding statement, optionally followed by a `w` and the RGB(a)
     color to use for the padding.
   
+  - `R{degrees}` Rotate the image to the by specified degrees.
+
   - `S{geometry}{gravity}[p{rrggbb[aa]}]` Resize the image to the specified geometry where the geometry is:
 
     - `width` - `resize_to_height`, resize the image to given width, height

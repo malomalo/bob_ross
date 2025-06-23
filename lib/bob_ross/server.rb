@@ -399,6 +399,8 @@ class BobRoss::Server
         transformations << { grayscale: true }
       when 'P'
         transformations << { padding: value }
+      when 'R'.freeze
+        transformations << { rotate: value.index('.') ? value.to_f : value.to_i }
       when 'S'
         transformations << { resize: value }
       when 'W'

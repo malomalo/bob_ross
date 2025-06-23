@@ -145,6 +145,7 @@ class BobRoss
       optimize: 'O',
       padding: 'P',
       resize: 'S',
+      rotate: 'R',
       watermark: 'W'
     }
     @plugins.values.find do |plugin|
@@ -183,6 +184,8 @@ class BobRoss
         end
       when :resize
         transform_options << 'S' + value.downcase
+      when :rotate
+        transform_options << 'R' + value.to_s.downcase
       when :transparent
         post_transform_options << 'T'
       when :watermark
