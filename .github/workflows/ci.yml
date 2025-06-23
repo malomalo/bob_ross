@@ -30,6 +30,7 @@ jobs:
     steps:
       - name: Install Deps
         run: |
+          sudo apt-get -y update
           sudo apt-get -y install \
                                   ffmpeg mupdf-tools \
                                   libtiff-dev \
