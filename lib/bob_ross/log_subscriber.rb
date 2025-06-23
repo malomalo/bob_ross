@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'active_support/version'
 require 'active_support/deprecation' if ActiveSupport::VERSION::MAJOR >= 7 && ActiveSupport::VERSION::MINOR >= 1
 require 'active_support/deprecator' if ActiveSupport::VERSION::MAJOR >= 7 && ActiveSupport::VERSION::MINOR >= 1

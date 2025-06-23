@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module BobRoss::ImageMagickBackend
   extend BobRoss::BackendHelpers
   
