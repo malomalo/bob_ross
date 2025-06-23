@@ -203,8 +203,10 @@ should always comes first.
         required for both. Offsets are not affected by % or other size
         operators.
       - `gravity` Gravity, options listed below
-	  - `sm` Smart crop, looks for features likely to draw human attention
+      - `sm` Smart crop, looks for features likely to draw human attention
 
+  - `D` Remove any metadata from the image
+  
   - `E5772bd72` Sets the expiration of the link. The value is the current time in
     seconds, hex encoded. Once the specified time has passed the server will
     return a `410 Gone` HTTP status code.
@@ -232,7 +234,7 @@ should always comes first.
     interperted like the CSS padding statement, optionally followed by a `w` and the RGB(a)
     color to use for the padding.
   
-  - `R{degrees}` Rotate the image to the by specified degrees.
+  - `Ro{degrees}` Rotate the image to the by specified degrees.
 
   - `S{geometry}{gravity}[p{rrggbb[aa]}]` Resize the image to the specified geometry where the geometry is:
 
@@ -299,8 +301,6 @@ should always comes first.
         operators. Default is `+0+0`
 
   - `Q{quality}` Set the Q-factor for saving the image (1-100; 100 being best quality)
-
-  - `R{quality}` Remove any metadata from the image
 
 ### The Disk Cache
 

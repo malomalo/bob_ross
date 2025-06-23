@@ -138,14 +138,17 @@ class BobRoss
     trfms = {
       background: 'B',
       crop: 'C',
+      strip: 'D',
       expires: 'E',
       grayscale: 'G',
       interlace: 'I',
       lossless: 'L',
       optimize: 'O',
       padding: 'P',
+      quality: 'Q',
+      rotate: 'Ro',
       resize: 'S',
-      rotate: 'R',
+      transparent: 'T',
       watermark: 'W'
     }
     @plugins.values.find do |plugin|
@@ -185,7 +188,7 @@ class BobRoss
       when :resize
         transform_options << 'S' + value.downcase
       when :rotate
-        transform_options << 'R' + value.to_s.downcase
+        transform_options << 'Ro' + value.to_s.downcase
       when :transparent
         post_transform_options << 'T'
       when :watermark

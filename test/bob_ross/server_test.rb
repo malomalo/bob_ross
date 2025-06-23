@@ -166,6 +166,18 @@ class BobRossServerTest < Minitest::Test
     end
   end
 
+  test 'Responds with a rotated image' do
+    server = create_server
+    
+    Dir.mktmpdir do |tmpdir|
+      response = server.get("/Ro90/opaque")
+      assert_equal 200, response.status
+      
+      File.write(File.join(tmpdir, 'image.jpg'), response.body)
+      assert_geometry('480x720', File.open(File.join(tmpdir, 'image.jpg')))
+    end
+  end
+  
   test 'Responds with transformed image that is auto oriented' do
     server = create_server({
       store: StandardStorage::Filesystem.new({
