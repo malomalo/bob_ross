@@ -367,17 +367,17 @@ class BobRoss::Server
       options_string = match if match
       match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
         case key
-        when 'I'.freeze
+        when 'I'
           options[:interlace] = true
-        when 'L'.freeze
+        when 'L'
           options[:lossless] = true
-        when 'O'.freeze
+        when 'O'
           options[:optimize] = true
-        when 'T'.freeze
+        when 'T'
           options[:transparent] = true
-        when 'D'.freeze
+        when 'D'
           options[:strip] = true
-        when 'Q'.freeze
+        when 'Q'
           options[:quality] = value.to_i
         end
       end
