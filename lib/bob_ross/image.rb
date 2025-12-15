@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BobRoss::Image
   include BobRoss::BackendHelpers
   

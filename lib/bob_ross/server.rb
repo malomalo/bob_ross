@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'terrapin'
 require 'mini_mime'
 require 'bob_ross/image'
@@ -159,7 +161,7 @@ class BobRoss::Server
 
       response_headers = {}
     
-      transformation_string = match[1] || ''
+      transformation_string = match[1] || String.new('')
       hash = match[2]
       requested_format = match[3]
       

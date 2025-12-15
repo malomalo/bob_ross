@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json'
 
 class BobRoss
@@ -72,7 +74,7 @@ class BobRoss
       
       transformations << [:seek, '5%'] if transformations.empty?
       
-      args = '-i :input'
+      args = String.new('-i :input')
       transformations.each do |transform|
         case transform[0]
         when :seek

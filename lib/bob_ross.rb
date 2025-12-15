@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'logger'
 require 'singleton'
 require 'openssl'
@@ -105,7 +107,7 @@ class BobRoss
     end
 
     if hmac_options
-      hmac_data = ''
+      hmac_data = String.new('')
 
       hmac_options[:attributes].each do |attr|
         case attr
