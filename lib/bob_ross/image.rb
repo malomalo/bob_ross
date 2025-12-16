@@ -6,10 +6,11 @@ class BobRoss::Image
   attr_reader :source, :settings
   attr_accessor :mime_type, :opaque, :geometry, :orientation
   
-  def initialize(file, settings = {})
+  def initialize(file, settings = {}, temp: false)
     file = File.open(file) if file.is_a?(String)
     @source = file
     @settings = settings
+    @source_is_tempfile = temp
     identify
   end
   
@@ -21,9 +22,13 @@ class BobRoss::Image
     self.geometry = ident[:geometry]
   end
   
+  # All files returned from transform are assume to be Tempfiles and will be
+  # removed
   def transform(transformations, options={})
     transformations = [transformations].compact if !transformations.is_a?(Array)
-    return @source if transformations.empty? && @mime_type == options[:format] && [nil, 1].include?(@orientation)
+    if transformations.empty? && @mime_type == options[:format] && [nil, 1].include?(@orientation)
+      return yield(@source)
+    end
     options[:format] ||= mime_type
     
     transformations.unshift({transparent: true}) if options[:transparent]
@@ -50,7 +55,15 @@ class BobRoss::Image
       end
     end
     
-    BobRoss.backend.transform(self, transformations, options)
+    begin
+      transformed_file = BobRoss.backend.transform(self, transformations, options)
+      yield(transformed_file)
+    ensure
+      if transformed_file
+        transformed_file.close
+        File.unlink(transformed_file.path)
+      end
+    end
   end
   
   def transparent?
@@ -65,4 +78,10 @@ class BobRoss::Image
     geometry[:width] * geometry[:height]
   end
   
+  # close the underlying file; and if a temp file unlink it
+  def close
+    @source.close
+    File.unlink(@source.path) if @source_is_tempfile
+  end
+
 end

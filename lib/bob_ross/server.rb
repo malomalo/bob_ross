@@ -148,6 +148,7 @@ class BobRoss::Server
   end
   
   def call(env)
+    image =nil
     ActiveSupport::Notifications.instrument("start_processing.bob_ross")
     
     ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|
@@ -254,8 +255,10 @@ class BobRoss::Server
         end
 
         original_file = if @settings[:store].local?
+          original_is_temp = false
           File.open(@settings[:store].destination(hash))
         else
+          original_is_temp = true
           @settings[:store].copy_to_tempfile(hash)
         end
         
@@ -269,27 +272,30 @@ class BobRoss::Server
         image = if plugin = BobRoss.plugins.find { |k,v| k.is_a?(Regexp) ? k.match(mime_type) : k == mime_type }&.[](1)
           plugin_transformations = plugin.extract_transformations(transformation_string)
           transformations = extract_transformations(transformation_string)
-          BobRoss::Image.new(plugin.transform(original_file, plugin_transformations, transformations), @settings)
+          plugin_file = plugin.transform(original_file, plugin_transformations, transformations)
+          original_file.close
+          File.unlink(original_file.path) if original_is_temp
+          BobRoss::Image.new(plugin_file, @settings, temp: true)
         elsif mime_type.start_with?('image/')
           transformations = extract_transformations(transformation_string)
-          BobRoss::Image.new(original_file, @settings)
+          BobRoss::Image.new(original_file, @settings, temp: original_is_temp)
         end
         
         return not_implemented if image.nil?
     
         format_options[:format] ||= select_format(accepts, image.transparent? || format_options[:transparent])
-        transformed_file = image.transform(transformations, format_options)
-    
-        # Do this at the end to not cache errors
-        payload[:status] = 200
-        response_headers['Content-Type'] = format_options[:format]
-        response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-        if @cache
-          response_headers['From-Cache'] = '0'
-          @cache.set(hash, image.transparent?, transform_key, format_options[:format], transformed_file.path)
+        image.transform(transformations, format_options) do |output|
+          # Do this at the end to not cache errors
+          payload[:status] = 200
+          response_headers['Content-Type'] = format_options[:format]
+          response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+          if @cache
+            response_headers['From-Cache'] = '0'
+            @cache.set(hash, image.transparent?, transform_key, format_options[:format], output.path)
+          end
+
+          serve_file(200, response_headers, output)
         end
-    
-        serve_file(200, response_headers, transformed_file)
       end
     end
   rescue Errno::ENOENT
@@ -303,9 +309,7 @@ class BobRoss::Server
       raise
     end
   ensure
-    if defined?(original_file)
-      original_file.is_a?(Tempfile) ? original_file.close! : original_file.close
-    end
+    image&.close
   end
   
   private

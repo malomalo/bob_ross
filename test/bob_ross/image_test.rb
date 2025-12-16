@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 
 class BobRossImageTest < Minitest::Test
@@ -45,9 +47,9 @@ class BobRossImageTest < Minitest::Test
 
   test 'background on a image with transparency' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/transparent', __FILE__)))
-    output = image.transform(background: '#f5422a')
-
-    assert_color '#f5422a', ::Vips::Image.new_from_file(output.path).getpoint(350, 350)
+    image.transform(background: '#f5422a') do |output|
+      assert_color '#f5422a', ::Vips::Image.new_from_file(output.path).getpoint(350, 350)
+    end
   end
 
   test 'croping and image' do
@@ -290,7 +292,10 @@ class BobRossImageTest < Minitest::Test
       geometry: '720x480',
       signature: {
         im: { '>= 0.0' => '8ad21be1b9563a20343357def4da37222eaf3f8508f160acf8d3413d0dd5d91d' },
-        vips: { '>= 8.14.5' => 'd2a99f9bb452b88fb524c428480ca9bbeb4012e5f7d927b147e9e889276fcaa7' }
+        vips: {
+          '>= 8.17.2' => 'd73357a77191e30392df2669932b3c3476bc34d9db6d966d5ddacbc9f534c6f3',
+          '>= 8.14.5' => 'd2a99f9bb452b88fb524c428480ca9bbeb4012e5f7d927b147e9e889276fcaa7'
+        }
       }
     })
   end
@@ -341,17 +346,18 @@ class BobRossImageTest < Minitest::Test
 
   test 'padding an opaque image with output to a transparent image' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/images_with_orientations/landscape-1', __FILE__)))
-    output = image.transform({transparent: true, padding: '5'}, {format: 'image/png'})
-    # bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
-    # `cp '#{output.path}' ~/test/image_test.253.#{bnd}#{File.extname(output.path)}`
-    assert_signature({
-      im: {
-        '>= 7.1.1-17' => 'd3403b9baf8530b426f2ae1e745c68b8983ccb2459c1789240cbafc44a6f5692'
-      },
-      vips: {
-        '>= 8.14.5' => 'd3403b9baf8530b426f2ae1e745c68b8983ccb2459c1789240cbafc44a6f5692'
-      }
-      }, output)
+    image.transform({transparent: true, padding: '5'}, {format: 'image/png'}) do |output|
+      # bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
+      # `cp '#{output.path}' ~/test/image_test.253.#{bnd}#{File.extname(output.path)}`
+      assert_signature({
+        im: {
+          '>= 7.1.1-17' => 'd3403b9baf8530b426f2ae1e745c68b8983ccb2459c1789240cbafc44a6f5692'
+        },
+        vips: {
+          '>= 8.14.5' => 'd3403b9baf8530b426f2ae1e745c68b8983ccb2459c1789240cbafc44a6f5692'
+        }
+        }, output)
+    end
   end
 
   test 'resize an image' do
@@ -364,8 +370,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1'
         },
         vips: {
+          '>= 8.17.2' => '591ff3a8e116b4c97eff2dbb3ac377ddfa641788f926aa9501185f78785e9367',
+          '>= 8.15.0' => '5c544d8fccbe3edf7d7c1aa4d04f1c53a27a5372e3feff2b082bcd4b97b887b6',
           '~> 8.14.5' => '5c86d9f437c1cbc9827b36d1c08d5bd4d8b31828786f194cd2a7f2fd125868c8',
-          '>= 8.15.0' => '5c544d8fccbe3edf7d7c1aa4d04f1c53a27a5372e3feff2b082bcd4b97b887b6'
         }
       }
     })
@@ -390,6 +397,7 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'b8428b80e19b60f18037e90f35de035b93f83c6f3bfd09ef4e088e2e6b7b8da1'
         },
         vips: {
+          '>= 8.17.2' => '591ff3a8e116b4c97eff2dbb3ac377ddfa641788f926aa9501185f78785e9367',
           '~> 8.14.5' => '5c86d9f437c1cbc9827b36d1c08d5bd4d8b31828786f194cd2a7f2fd125868c8',
           '>= 8.15.0' => '5c544d8fccbe3edf7d7c1aa4d04f1c53a27a5372e3feff2b082bcd4b97b887b6'
         }
@@ -403,6 +411,7 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'b6a9cbf02cf05ba5ea6531daa6084b181ab30f5a0a078b224241297fa19619af'
         },
         vips: {
+          '>= 8.17.2' => 'e9280387950f7e066512cd8d080969b3883b72a1eeed6840be69a772e2b6f2e4',
           '~> 8.14.5' => 'fcd4f1025705227b31d1310fd8c4160c0669c4f31fd840d9b4107165ef55f07a',
           '>= 8.15.0' => '99a9c8f8a5c851f79be5eec3f59440ee450796d0319faf21d00e3cf82b08a366'
         }
@@ -514,8 +523,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => '5a0b0ab61d3b4cbfd32eb7f2a273c3050dbee50504544b66158fca1b7c2a90f4'
         },
         vips: {
-          '~> 8.14.5' => 'd8150ea6d115d3c8efe057dadb29d14cab18632c79b793733c1e783123d3d550',
-          '>= 8.15.0' => '24774ac82420a5654695f7ca146c71733e61e95ce4c0cdedf0d239fb10689a07'
+          '>= 8.17.2' => '524f669f4caf351cd8e36e0a54da55c3c503f96ae9a592c0608e35589963040a',
+          '>= 8.15.0' => '24774ac82420a5654695f7ca146c71733e61e95ce4c0cdedf0d239fb10689a07',
+          '~> 8.14.5' => 'd8150ea6d115d3c8efe057dadb29d14cab18632c79b793733c1e783123d3d550'
         }
       }
     })
@@ -527,8 +537,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => '77830c630bc2b525a6eab6dc21c29867bf8ed94736ad9f286c0b3a14467dc7af'
         },
         vips: {
-          '~> 8.14.5' => '466e0a4bddc703ef20e204f231f527af790125258324a4c30887fd554469ffde',
-          '>= 8.15.0' => '620abf0752a762c5727136d55e7fa2b96da31299290393ab2bb15c7ca38acfc5'
+          '>= 8.17.2' => '37c0be06b3421bea9ab51932e3212406bd2c4462feed0eede7802a8bf46b4de5',
+          '>= 8.15.0' => '620abf0752a762c5727136d55e7fa2b96da31299290393ab2bb15c7ca38acfc5',
+          '~> 8.14.5' => '466e0a4bddc703ef20e204f231f527af790125258324a4c30887fd554469ffde'
         }
       }
     })
@@ -540,8 +551,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'c69a96ee3caf1088bab040d5d90eb77b295c9fdbe8b99838eb124e4b9dcd2393'
         },
         vips: {
-          '~> 8.14.5' => '12b5083c881fa9181b422b0401751b8cd67db8cb5dbd08e0b23b9c04975bf518',
-          '>= 8.15.0' => 'd2a0e072b88dd0cb46537e3b7934bd1bb2d3d035556905bf682f6a0c46df1dfd'
+          '>= 8.17.2' => 'edc155f2a2fe2519927cb08fbb4510b4cc58b99187845b74c80ad5d20062d23b',
+          '>= 8.15.0' => 'd2a0e072b88dd0cb46537e3b7934bd1bb2d3d035556905bf682f6a0c46df1dfd',
+          '~> 8.14.5' => '12b5083c881fa9181b422b0401751b8cd67db8cb5dbd08e0b23b9c04975bf518'
         }
       }
     })
@@ -553,8 +565,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => '7dac6b13a596cfaa4649f397c13e2edcf12e9e53e32df86c0a3567efe2ba8f7a'
         },
         vips: {
-          '~> 8.14.5' => 'da1cbac5054ead31a5ae23b8c84bc0f98d6db0902dbbdcd0780ff33d71a2a0ef',
-          '>= 8.15.0' => '82e004da118cb0931a86e750466ec070fa8d9b1f9e5908bc7272f08955cb0ce4'
+          '>= 8.17.2' => 'b40bda1c2328fa5dce1c357f2f5c5eded8a3849b1eca5279bdd6b7c50c516bb0',
+          '>= 8.15.0' => '82e004da118cb0931a86e750466ec070fa8d9b1f9e5908bc7272f08955cb0ce4',
+          '~> 8.14.5' => 'da1cbac5054ead31a5ae23b8c84bc0f98d6db0902dbbdcd0780ff33d71a2a0ef'
         }
       }
     })
@@ -566,8 +579,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => '210c9b8732def89f30b49e14a00ba21f4dcb35e7773605a9b386656fad158521'
         },
         vips: {
-          '~> 8.14.5' => '27615eca788c158171358c68eaa0659c9af36a8b8965d33368871b39e7dc3f12',
-          '>= 8.15.0' => '1eaaf1502d26ee066cc76d4af0cb5563871c831779c2f5fe3af4fad8618baec6'
+          '>= 8.17.2' => 'bc418a3bb3083f4321b2968e96b3de894ee4e1c329b3f37a60bb462bbe5805b5',
+          '>= 8.15.0' => '1eaaf1502d26ee066cc76d4af0cb5563871c831779c2f5fe3af4fad8618baec6',
+          '~> 8.14.5' => '27615eca788c158171358c68eaa0659c9af36a8b8965d33368871b39e7dc3f12'
         }
       }
     })
@@ -579,8 +593,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'd29c63e1a86a5d196c04d86cf47a755f37e659571390695662e3a9f112b4b606'
         },
         vips: {
-          '~> 8.14.5' => '2199b4270d9d090851c7389aaa6d5d805fd0d8df7558a2dd76a00557a380d024',
-          '>= 8.15.0' => 'e4049a5e63313ba6e61c53e83c481abfc223a31eb80571cf6671ee41652584bb'
+          '>= 8.17.2' => '791d60f1f62a6d8115d6885e286dc0f11362889bfe1d9a8585b72583ab2acba3',
+          '>= 8.15.0' => 'e4049a5e63313ba6e61c53e83c481abfc223a31eb80571cf6671ee41652584bb',
+          '~> 8.14.5' => '2199b4270d9d090851c7389aaa6d5d805fd0d8df7558a2dd76a00557a380d024'
         }
       }
     })
@@ -592,8 +607,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'd818279a67ab1a67f8adc107e53f4e826b46ffb9a92cdfc50a77c6978d049bb2'
         },
         vips: {
-          '~> 8.14.5' => '6016482bcc48e09ae0dc59d26c3cc8b5a03867f5a23abfcdb51027077e8866ec',
-          '>= 8.15.0' => '035c0a3e51ebd66299b1aba2f5a64570b13b8782ceacf20697121903bccb46e9'
+          '>= 8.17.2' => '34ce093cdf99e36b1841207b58b5e41e0af5652c92fcee26a753889999fb69fe',
+          '>= 8.15.0' => '035c0a3e51ebd66299b1aba2f5a64570b13b8782ceacf20697121903bccb46e9',
+          '~> 8.14.5' => '6016482bcc48e09ae0dc59d26c3cc8b5a03867f5a23abfcdb51027077e8866ec'
         }
       }
     })
@@ -605,8 +621,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'bf30cbdb4a28347aab4e8e58bf8289392c7d7527e263ed6b6232674e40dc071b'
         },
         vips: {
-          '~> 8.14.5' => '76164d3a1db2e3fe22fdae6c434526bf98361679c480c16d75f83d1a80e0622e',
-          '>= 8.15.0' => '812660e345c8169c021cb1b4d0321acd7fc1215c440ef26cf8ff4a0674255125'
+          '>= 8.17.2' => 'a00746719cd3fff744727796ad9c390ca85a75a4992b450a74d52cb0ffd9e18e',
+          '>= 8.15.0' => '812660e345c8169c021cb1b4d0321acd7fc1215c440ef26cf8ff4a0674255125',
+          '~> 8.14.5' => '76164d3a1db2e3fe22fdae6c434526bf98361679c480c16d75f83d1a80e0622e'
         }
       }
     })
@@ -618,8 +635,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => 'b203550e214d3035e97202b57b72bbc4525b7bafbb71b1130f4ce0c411268dfd'
         },
         vips: {
-          '~> 8.14.5' => 'b4d2817d7cbefedb2c55662319f9e85a9409f98509f7e738cb3a25e2446bc4a1',
-          '>= 8.15.0' => 'ef7ad0a25671a25fb4351a3ccbd5cd10ff852c66922cdfce3c55653a05693c90'
+          '>= 8.17.2' => 'a5ae0038f4232ce0dc0e3174c2a0239dc41abce8ca5a6acc6a738925f43eee5c',
+          '>= 8.15.0' => 'ef7ad0a25671a25fb4351a3ccbd5cd10ff852c66922cdfce3c55653a05693c90',
+          '~> 8.14.5' => 'b4d2817d7cbefedb2c55662319f9e85a9409f98509f7e738cb3a25e2446bc4a1'
         }
       }
     })
@@ -631,8 +649,9 @@ class BobRossImageTest < Minitest::Test
           '>= 0.0' => '3bc8daf0df761fc42eea4806aef4dea429569e0d739d2c30c57de387744455e0'
         },
         vips: {
-          '~> 8.14.5' => 'c5702ec9cb41d1202c502c55fb16abfcb85a9a165bc0b356040c21c64ccff6ca',
-          '>= 8.15.0' => '98168b0acda24fdd4f560fa61282e5ad652ac22b39d4e834e5eaaee092edf6fd'
+          '>= 8.17.2' => '98168b0acda24fdd4f560fa61282e5ad652ac22b39d4e834e5eaaee092edf6fd',
+          '>= 8.15.0' => '98168b0acda24fdd4f560fa61282e5ad652ac22b39d4e834e5eaaee092edf6fd',
+          '~> 8.14.5' => 'c5702ec9cb41d1202c502c55fb16abfcb85a9a165bc0b356040c21c64ccff6ca'
         }
       }
     })
