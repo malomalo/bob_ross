@@ -36,8 +36,6 @@ class BobRoss::Server
       while part = @file.read(16_384)
         yield part
       end
-    ensure
-      @file.is_a?(Tempfile) ? @file.close! : @file.close
     end
   end
   
