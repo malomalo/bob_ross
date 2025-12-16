@@ -107,7 +107,7 @@ class BobRoss
     end
 
     if hmac_options
-      hmac_data = String.new('')
+      hmac_data = String.new
 
       hmac_options[:attributes].each do |attr|
         case attr

@@ -160,7 +160,7 @@ class BobRoss::Server
 
       response_headers = {}
     
-      transformation_string = match[1] || String.new('')
+      transformation_string = match[1] || String.new
       hash = match[2]
       requested_format = match[3]
       
