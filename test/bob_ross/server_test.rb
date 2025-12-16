@@ -239,7 +239,6 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/flyer")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    puts [BobRoss.backend.version, mupdf_version].inspect
     assert_equal value_for_versions(key_for_backend({
       im: {
         ['>= 7.1.2-3', ['>= 1.26.11']] => 'c2837f108f70971fd1c9055df3b51c15',
@@ -300,7 +299,6 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    puts [ BobRoss.backend.version, ffmpeg_version].inspect
     assert_equal value_for_versions(key_for_backend({
       im: {
         ['>= 7.1.2-3', ['>= 1.26.11']] => '4ce0c958a2d1bea0f1ead587b6c3edc7',
