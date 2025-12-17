@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-v${{ matrix.vips-version }}
+          key: compile-vips-x${{ matrix.vips-version }}
 
       - name: Compile Libvips
         if: steps.vips-cache.outputs.cache-hit != 'true'
