@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-${{ matrix.vips-version }}
+          key: compile-vips-v${{ matrix.vips-version }}
 
       - name: Compile Libvips
         if: steps.vips-cache.outputs.cache-hit != 'true'
@@ -69,7 +69,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-${{ matrix.vips-version }}
+          key: compile-vips-v${{ matrix.vips-version }}
 
       - name: Install Libvips
         run: |
