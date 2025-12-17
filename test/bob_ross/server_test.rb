@@ -260,8 +260,9 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 1.22.2']] => '592a7aed4be6c66f3deac77762153823'
       }, vips: {
         ['>= 8.17.2', ['>= 1.26.11']] => 'b102eab8ef5f3d366e90c18c280b55a6',
-        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'fb65fd6089b9b01aa71a95f053cc09bb',
-        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae'
+        ['>= 8.17.2', ['>= 1.19.0']] => 'fdba60dac4323f089c214f172a39708a',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae',
+        ['>= 8.15.0', ['>= 1.19.0']] => 'fb65fd6089b9b01aa71a95f053cc09bb'
       }}), BobRoss.backend.version, mupdf_version
     ), Digest::MD5.hexdigest(response.body)
     
@@ -274,6 +275,7 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'f6df84e2708d0add72f1e3d3e28098cb'
       }, vips: {
         ['>= 8.17.2', ['>= 1.26.11']] => '2b1cdcf0b55436c761905cda43eb3300',
+        ['>= 8.17.2', ['>= 1.19.0']] => 'f1e1ac4e5fd11331e1f42067bc480584',
         ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'e42bb91cf34a3cce419ffec9fbefec0e',
         ['>= 8.15.0', ['>= 1.22.2']] => '9863144037ac5cccca31b0d22304bf7b'
       }}), BobRoss.backend.version, mupdf_version
@@ -288,6 +290,7 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 1.22.2']] => 'c7bb8896007fdc48fcb683a5533e5712'
       }, vips: {
         ['>= 8.17.2', ['>= 1.26.11']] => 'fbe009cb77e0967662b9802e09714634',
+        ['>= 8.17.2', ['>= 1.19.0']] => '59ee323a8575e6653a9ef32451040691',
         ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => '86b2fbe3f875ca59b77d9d1abaff0e2e',
         ['>= 8.15.0', ['>= 1.22.2']] => 'ff8552e8b6990d9b293c2c2c88bfa116'
       }}), BobRoss.backend.version, mupdf_version
@@ -319,6 +322,7 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 6.0']] => '549a9a3fff71f7ae5c135142a2885166'
       }, vips: {
         ['>= 8.17.2', ['>= 8.0']] => '6fdde7938ad403f353d18cdf29e2da4e',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => 'cc07ac8685c7e66cc48b91423c12e786',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => 'df8501dba59a7f5d34f26cf932b857e7',
         ['>= 8.15.0', ['>= 6.0']] => '351a240af0ec0db5758d5120abc73984'
       }}), BobRoss.backend.version, ffmpeg_version
@@ -333,6 +337,7 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 6.0']] => 'f103fb67f500511bd29ec10c5205b40f'
       }, vips: {
         ['>= 8.17.2', ['>= 6.0']] => 'f9571de8ed5579e8a8902009b0a75c97',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => '5a2c31cef7d74047c648102187c4118b',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '8db0afaf7f747d2d6884e115e3f018a5',
         ['>= 8.15.0', ['>= 6.0']] => '87c98e63d160c2d15ff5aeec1ed866b7'
       }}), BobRoss.backend.version, ffmpeg_version
@@ -346,6 +351,7 @@ class BobRossServerTest < Minitest::Test
         ['>= 7.1.1-21', ['>= 6.0']] => 'd462eac44ca95715b288c4e501dc1f7d'
       }, vips: {
         ['>= 8.17.2', ['>= 6.0']] => '30e71287b83967b5bfb7935b28178e66',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => 'c5bb7f7961a585bba9ea8f0a8b44b9ec',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '448cb17829d0adf6e0326239cb3c32d5',
         ['>= 8.15.0', ['>= 6.0']] => '2b00b06f58ede4e365e3f7e33e65df99'
       }}), BobRoss.backend.version, ffmpeg_version

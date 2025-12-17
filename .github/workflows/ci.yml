@@ -11,6 +11,7 @@ jobs:
     name: BobRoss Test
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         vips-version:
           - 8.17.2
