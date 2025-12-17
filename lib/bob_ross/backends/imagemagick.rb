@@ -74,6 +74,8 @@ module BobRoss::ImageMagickBackend
           background(value, interpolations)
         when :resize
           resize(value, interpolations)
+        when :rotate
+          "-rotate #{value}"
         when :crop
           crop(value, interpolations)
         when :grayscale

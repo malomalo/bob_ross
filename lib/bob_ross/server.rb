@@ -367,6 +367,8 @@ class BobRoss::Server
       options_string = match if match
       match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
         case key
+        when 'D'
+          options[:strip] = true
         when 'I'
           options[:interlace] = true
         when 'L'
@@ -401,6 +403,11 @@ class BobRoss::Server
         transformations << { grayscale: true }
       when 'P'
         transformations << { padding: value }
+      when 'R'
+        if value.start_with?('o')
+          value = value.delete_prefix('o')
+          transformations << { rotate: value.index('.') ? value.to_f : value.to_i }
+        end
       when 'S'
         transformations << { resize: value }
       when 'W'

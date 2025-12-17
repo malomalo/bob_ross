@@ -127,6 +127,18 @@ module BobRoss::LibVipsBackend
     vips
   end
   
+  def rotate(image, vips, degrees)
+    if degrees == 0 || degrees == 360
+      vips
+    elsif degrees % 90 == 0
+      vips.rot(:"d#{degrees}")
+    elsif degrees % 45 == 0 && vips.height == vips.width
+      vips.rot45(angle: :"d#{degrees}")
+    else
+      vips.rotate(degrees)
+    end
+  end
+  
   def rgba_to_values(string, bands: 3)
     values = string.delete_prefix('#').scan(/\w{2}/).map { |w| w.to_i(16) }
     values.push(255) if values.size < 4
@@ -314,6 +326,8 @@ module BobRoss::LibVipsBackend
           background(image, vips, value)
         when :resize
           resize(image, vips, value)
+        when :rotate
+          rotate(image, vips, value)
         when :crop
           crop(vips, value)
         when :grayscale
