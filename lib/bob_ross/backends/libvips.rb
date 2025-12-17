@@ -344,7 +344,7 @@ module BobRoss::LibVipsBackend
       end
     end
     
-    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
+    output = Tempfile.create(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
 
     saver_options = case options[:format]
     when 'image/avif'
@@ -385,6 +385,12 @@ module BobRoss::LibVipsBackend
     
     vips.write_to_file(output.path, **select_valid_saver_options(output.path, saver_options))
     output
+  rescue
+    if output
+      output.close
+      File.unlink(output.path)
+    end
+    raise
   end
   
   # libvips uses various loaders depending on the input format.

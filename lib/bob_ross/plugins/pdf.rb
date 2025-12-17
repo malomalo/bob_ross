@@ -39,8 +39,9 @@ class BobRoss
       transformations
     end
   
+    # A Tempfile must be returned
     def self.transform(original_file, transformations=[], ross_transformations=[])
-      screenshot = Tempfile.create(['preview', '.png'], binmode: true)
+      screenshot = Tempfile.create(['bob_ross-pdf_plugin', '.png'], binmode: true)
       interpolations = { input: original_file.path, output: screenshot.path }
       
       args = String.new('draw')
@@ -67,7 +68,23 @@ class BobRoss
       end
       
       Terrapin::CommandLine.new('mutool', args).run(interpolations)
-      screenshot
+      
+      if block_given?
+        begin
+          yield screenshot
+        ensure
+          screenshot.close
+          File.unlink(screenshot.path)
+        end
+      else
+        screenshot
+      end
+    rescue
+      if screenshot
+        screenshot.close
+        File.unlink(screenshot.path)
+      end
+      raise
     end
 
   end

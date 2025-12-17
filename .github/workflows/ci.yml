@@ -14,15 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         vips-version:
-          - 8.16.1
+          - 8.17.2
         im-version:
-          - 7.1.1-47
+          - 7.1.2-3
         ruby-version:
-          - 3.5.0-preview1
+          - 4.0.0-preview2
           - 3.4
           - 3.3
-          - 3.2
-          - 3.1
         backend:
           - libvips
           - imagemagick
