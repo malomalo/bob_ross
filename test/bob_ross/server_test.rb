@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test_helper'
 require 'rack/mock'
 
@@ -239,9 +241,11 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
-        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'c0e5d6b674ed162bfdd212cffad42585',
-        ['>= 7.1.1-21', ['>= 1.22.2']] => '7d5daa0941b10cb47277e954a77413b2'
+        ['>= 7.1.2-3', ['>= 1.26.11']] => 'c2837f108f70971fd1c9055df3b51c15',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '7d5daa0941b10cb47277e954a77413b2',
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'c0e5d6b674ed162bfdd212cffad42585'
       }, vips: {
+        ['>= 8.17.2', ['>= 1.26.11']] => 'af1644db519d3d0691afc6e3da9b9cd6',
         ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'c0bd56a48d4c81423ae926988d21c55f',
         ['>= 8.15.0', ['>= 1.22.2']] => '2f4645b128d93f5d9304b79baabb9fdd'
       }}), BobRoss.backend.version, mupdf_version
@@ -251,11 +255,14 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
+        ['>= 7.1.2-3', ['>= 1.26.11']] => '1377f82c2e6f5afc69b4f0b358fa53d4',
         ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'bab2943711de8adcf01a711983c52b15',
         ['>= 7.1.1-21', ['>= 1.22.2']] => '592a7aed4be6c66f3deac77762153823'
       }, vips: {
-        ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'fb65fd6089b9b01aa71a95f053cc09bb',
-        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae'
+        ['>= 8.17.2', ['>= 1.26.11']] => 'b102eab8ef5f3d366e90c18c280b55a6',
+        ['>= 8.17.2', ['>= 1.19.0']] => 'fdba60dac4323f089c214f172a39708a',
+        ['>= 8.15.0', ['>= 1.22.2']] => '2d0c2c8966dc484c540141f57ae73cae',
+        ['>= 8.15.0', ['>= 1.19.0']] => 'fb65fd6089b9b01aa71a95f053cc09bb'
       }}), BobRoss.backend.version, mupdf_version
     ), Digest::MD5.hexdigest(response.body)
     
@@ -263,9 +270,12 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
-        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'f6df84e2708d0add72f1e3d3e28098cb',
-        ['>= 7.1.1-21', ['>= 1.22.2']] => '4bd78a3a3f7be88b2272b2697e10183b'
+        ['>= 7.1.2-3', ['>= 1.26.11']] => '78209f88bf3cd6f313c569c376e43d16',
+        ['>= 7.1.1-21', ['>= 1.22.2']] => '4bd78a3a3f7be88b2272b2697e10183b',
+        ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'f6df84e2708d0add72f1e3d3e28098cb'
       }, vips: {
+        ['>= 8.17.2', ['>= 1.26.11']] => '2b1cdcf0b55436c761905cda43eb3300',
+        ['>= 8.17.2', ['>= 1.19.0']] => 'f1e1ac4e5fd11331e1f42067bc480584',
         ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => 'e42bb91cf34a3cce419ffec9fbefec0e',
         ['>= 8.15.0', ['>= 1.22.2']] => '9863144037ac5cccca31b0d22304bf7b'
       }}), BobRoss.backend.version, mupdf_version
@@ -275,9 +285,12 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
+        ['>= 7.1.2-3', ['>= 1.26.11']] => '4659007b87084d7780d86c5171393b69',
         ['>= 7.1.1-21', ['>= 1.19.0', '< 1.22.2']] => 'deafd01854b9ed9aaacb6b486d30f290',
         ['>= 7.1.1-21', ['>= 1.22.2']] => 'c7bb8896007fdc48fcb683a5533e5712'
       }, vips: {
+        ['>= 8.17.2', ['>= 1.26.11']] => 'fbe009cb77e0967662b9802e09714634',
+        ['>= 8.17.2', ['>= 1.19.0']] => '59ee323a8575e6653a9ef32451040691',
         ['>= 8.15.0', ['>= 1.19.0', '< 1.22.2']] => '86b2fbe3f875ca59b77d9d1abaff0e2e',
         ['>= 8.15.0', ['>= 1.22.2']] => 'ff8552e8b6990d9b293c2c2c88bfa116'
       }}), BobRoss.backend.version, mupdf_version
@@ -291,6 +304,8 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
+        ['>= 7.1.2-3', ['>= 8.0']] => '4ce0c958a2d1bea0f1ead587b6c3edc7',
+        ['>= 7.1.2-3', ['>= 4.4.2-0']] => 'ea7924646dc09cb659f24391768339f4',
         ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => 'f0b9194eafb984d4d4273c33570eb91b',
         ['>= 7.1.1-21', ['>= 6.0']] => 'dd0af2d65277b93f7c3de4007be21081'
       }, vips: {
@@ -303,9 +318,13 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
+        ['>= 7.1.2-3', ['>= 8.0']] => 'ed9954a298ff88e137c755d56034bf21',
+        ['>= 7.1.2-3', ['>= 4.4.2-0']] => '572ebd6d7b4e30bfdb577b8c873b780d',
         ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '69f8bd89d373f45f6ee92cd8db8fa096',
         ['>= 7.1.1-21', ['>= 6.0']] => '549a9a3fff71f7ae5c135142a2885166'
       }, vips: {
+        ['>= 8.17.2', ['>= 8.0']] => '6fdde7938ad403f353d18cdf29e2da4e',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => 'cc07ac8685c7e66cc48b91423c12e786',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => 'df8501dba59a7f5d34f26cf932b857e7',
         ['>= 8.15.0', ['>= 6.0']] => '351a240af0ec0db5758d5120abc73984'
       }}), BobRoss.backend.version, ffmpeg_version
@@ -315,9 +334,13 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
+        ['>= 7.1.2-3', ['>= 8.0']] => '7898ad40bbb21d9f4d95b0f0da044a10',
+        ['>= 7.1.2-3', ['>= 4.4.2-0']] => '0a81c7f9abd054d8ad8dc354bb102fc2',
         ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '9418f242fbbca265063ccef0b8313d71',
         ['>= 7.1.1-21', ['>= 6.0']] => 'f103fb67f500511bd29ec10c5205b40f'
       }, vips: {
+        ['>= 8.17.2', ['>= 6.0']] => 'f9571de8ed5579e8a8902009b0a75c97',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => '5a2c31cef7d74047c648102187c4118b',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '8db0afaf7f747d2d6884e115e3f018a5',
         ['>= 8.15.0', ['>= 6.0']] => '87c98e63d160c2d15ff5aeec1ed866b7'
       }}), BobRoss.backend.version, ffmpeg_version
@@ -327,9 +350,12 @@ class BobRossServerTest < Minitest::Test
     assert_equal 'image/jpeg', response.headers['Content-Type']
     assert_equal value_for_versions(key_for_backend({
       im: {
-        ['>= 7.1.1-21', ['>= 4.4.2-0', '< 6.0']] => '700f7a0e8cfb73345a0e60d66255f4c2',
+        ['>= 7.1.2-3', ['>= 8.0']] => '4f988de580b2d2076c4dd7744c07de5a',
+        ['>= 7.1.2-3', ['>= 4.4.2-0']] => 'b35c1c1692486fcaaeca6b7c335c79c9',
         ['>= 7.1.1-21', ['>= 6.0']] => 'd462eac44ca95715b288c4e501dc1f7d'
       }, vips: {
+        ['>= 8.17.2', ['>= 6.0']] => '30e71287b83967b5bfb7935b28178e66',
+        ['>= 8.17.2', ['>= 4.4.2-0']] => 'c5bb7f7961a585bba9ea8f0a8b44b9ec',
         ['>= 8.15.0', ['>= 4.4.2-0', '< 6.0']] => '448cb17829d0adf6e0326239cb3c32d5',
         ['>= 8.15.0', ['>= 6.0']] => '2b00b06f58ede4e365e3f7e33e65df99'
       }}), BobRoss.backend.version, ffmpeg_version

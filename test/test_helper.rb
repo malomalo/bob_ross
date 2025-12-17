@@ -131,14 +131,14 @@ class Minitest::Test
   end
   
   def assert_transform(input, transform, tests)
-    output = input.transform(transform)
-
-    bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
-    line = caller.find { |l| l.start_with?(File.dirname(__FILE__)) }.delete_prefix(File.dirname(__FILE__)).split(':')
-    # `cp '#{output.path}' ~/test/#{File.basename(line.first).split('.').first}.#{line[1]}.#{bnd}#{File.extname(output.path)}`
-
-    tests.each do |k, v|
-      send("assert_#{k}", v, output)
+    input.transform(transform) do |output|
+      bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
+      line = caller.find { |l| l =~ /_test.rb:\d+/ }.delete_prefix(File.dirname(__FILE__)).split(':')
+      # `cp '#{output.path}' ~/test/#{File.basename(line.first).split('.').first}.#{line[1]}.#{bnd}#{File.extname(output.path)}`
+  
+      tests.each do |k, v|
+        send("assert_#{k}", v, output)
+      end
     end
   end
   

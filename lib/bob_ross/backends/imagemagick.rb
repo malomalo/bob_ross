@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module BobRoss::ImageMagickBackend
   extend BobRoss::BackendHelpers
   
@@ -124,7 +126,7 @@ module BobRoss::ImageMagickBackend
     end
     
     params << ":output"
-    output = Tempfile.new(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
+    output = Tempfile.create(['blob', ".#{MiniMime.lookup_by_content_type(options[:format]).extension}"], binmode: true)
     begin
       command = Terrapin::CommandLine.new("convert", params.join(' '))
       Dir.mktmpdir do |tmpdir|
@@ -142,6 +144,12 @@ module BobRoss::ImageMagickBackend
     end
     
     output
+  rescue
+    if output
+      output.close
+      File.unlink(output.path)
+    end
+    raise
   end
   
   def background(transform, interpolations)

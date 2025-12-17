@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'sqlite3'
 require 'fileutils'
 
@@ -11,7 +13,7 @@ class BobRoss
       @cachefile = cachefile
       
       if size.is_a?(String) && size.end_with?('%')
-        size.delete_suffix!('%')
+        size = size.delete_suffix('%')
         dev_size = if File.exist?('/proc/mounts')
           mount_points = File.read('/proc/mounts').each_line.map{ |l| l.split(/\s+/)[0..1] }
           dev = mount_points.select{ |a| path.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json'
 
 class BobRoss
@@ -66,13 +68,13 @@ class BobRoss
     end
   
     def self.transform(original_file, transformations=[], ross_transformations=[])
-      screenshot = Tempfile.create(['preview', '.png'], binmode: true)
+      screenshot = Tempfile.create(['bob_ross-video_plugin', '.png'], binmode: true)
       interpolations = { input: original_file.path, output: screenshot.path }
       movie = Movie.new(original_file.path)
       
       transformations << [:seek, '5%'] if transformations.empty?
       
-      args = '-i :input'
+      args = String.new('-i :input')
       transformations.each do |transform|
         case transform[0]
         when :seek
@@ -94,8 +96,23 @@ class BobRoss
       
       args << ' -vframes 1 -y :output'
       Terrapin::CommandLine.new('ffmpeg', args).run(interpolations)
-
-      screenshot
+      
+      if block_given?
+        begin
+          yield screenshot
+        ensure
+          screenshot.close
+          File.unlink(screenshot.path)
+        end
+      else
+        screenshot
+      end
+    rescue
+      if screenshot
+        screenshot.close
+        File.unlink(screenshot.path)
+      end
+      raise
     end
 
   end
