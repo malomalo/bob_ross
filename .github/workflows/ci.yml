@@ -33,6 +33,7 @@ jobs:
                                   ffmpeg mupdf-tools \
                                   libtiff-dev \
                                   liblqr-1-0-dev \
+                                  libxt-dev \
                                   libpng-dev libpng16-16 \
                                   libjpeg-dev libjpeg-turbo8-dev libjpeg-turbo-progs \
                                   libwebp-dev \
