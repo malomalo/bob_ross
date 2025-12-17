@@ -312,7 +312,6 @@ class BobRossServerTest < Minitest::Test
     
     response = server.get("/S100/video")
     assert_equal 'image/jpeg', response.headers['Content-Type']
-    File.write("/Users/malomalo/test/video.png", response.body)
     assert_equal value_for_versions(key_for_backend({
       im: {
         ['>= 7.1.2-3', ['>= 8.0']] => 'ed9954a298ff88e137c755d56034bf21',
