@@ -57,12 +57,16 @@ class Minitest::Test
     version_cmd = Terrapin::CommandLine.new("mutool", '-v')
     version_cmd.run
     @mupdf_version = version_cmd.output.error_output.match(/version\s+([\d\.\-]+)/)[1]
+    puts "mupdf_version: #{@mupdf_version}"
+    @mupdf_version
   end
 
   def ffmpeg_version
     return @ffmpeg_version if @ffmpeg_version
     version_cmd = Terrapin::CommandLine.new("ffmpeg", '-version')
     @ffmpeg_version = version_cmd.run.match(/version\s+([\d\.\-]+)/)[1]
+    puts "ffmpeg_version: #{@ffmpeg_version}"
+    @ffmpeg_version
   end
 
   def wait_until
