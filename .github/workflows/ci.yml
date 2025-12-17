@@ -18,6 +18,7 @@ jobs:
         im-version:
           - 7.1.2-3
         ruby-version:
+          - 4.0.0-preview2
           - 3.4
           - 3.3
         backend:
@@ -27,9 +28,13 @@ jobs:
     steps:
       - name: Install Deps
         run: |
+          sudo apt-get -y update
           sudo apt-get -y install \
                                   ffmpeg mupdf-tools \
                                   libtiff-dev \
+                                  liblqr-1-0-dev \
+                                  libxt-dev \
+                                  libdjvulibre-dev \
                                   libpng-dev libpng16-16 \
                                   libjpeg-dev libjpeg-turbo8-dev libjpeg-turbo-progs \
                                   libwebp-dev \
@@ -37,6 +42,7 @@ jobs:
                                   libopenjp2-7-dev libopenjp2-tools \
                                   libheif-dev \
                                   libexif-dev \
+                                  librsvg2-dev \
                                   libfreetype6-dev \
                                   libgsf-1-dev libltdl-dev libraw-dev \
                                   meson ninja-build libgirepository1.0-dev
@@ -46,7 +52,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-${{ matrix.vips-version }}
+          key: compile-vips-x${{ matrix.vips-version }}
 
       - name: Compile Libvips
         if: steps.vips-cache.outputs.cache-hit != 'true'
@@ -66,7 +72,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-${{ matrix.vips-version }}
+          key: compile-vips-v${{ matrix.vips-version }}
 
       - name: Install Libvips
         run: |

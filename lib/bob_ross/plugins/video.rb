@@ -74,7 +74,7 @@ class BobRoss
       
       transformations << [:seek, '5%'] if transformations.empty?
       
-      args = String.new('-i :input')
+      args = String.new("-i :input")
       transformations.each do |transform|
         case transform[0]
         when :seek

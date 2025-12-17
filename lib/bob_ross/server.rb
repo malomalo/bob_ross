@@ -159,7 +159,7 @@ class BobRoss::Server
       end
 
       response_headers = {}
-    
+      
       transformation_string = match[1] || String.new
       hash = match[2]
       requested_format = match[3]
@@ -369,17 +369,19 @@ class BobRoss::Server
       options_string = match if match
       match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
         case key
-        when 'D'.freeze
+        when 'D'
           options[:strip] = true
-        when 'I'.freeze
+        when 'I'
           options[:interlace] = true
-        when 'L'.freeze
+        when 'L'
           options[:lossless] = true
-        when 'O'.freeze
+        when 'O'
           options[:optimize] = true
-        when 'T'.freeze
+        when 'T'
           options[:transparent] = true
-        when 'Q'.freeze
+        when 'D'
+          options[:strip] = true
+        when 'Q'
           options[:quality] = value.to_i
         end
       end
@@ -403,7 +405,7 @@ class BobRoss::Server
         transformations << { grayscale: true }
       when 'P'
         transformations << { padding: value }
-      when 'R'.freeze
+      when 'R'
         if value.start_with?('o')
           value = value.delete_prefix('o')
           transformations << { rotate: value.index('.') ? value.to_f : value.to_i }
