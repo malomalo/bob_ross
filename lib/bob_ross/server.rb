@@ -364,7 +364,7 @@ class BobRoss::Server
     options = {}
     return [options, ''] unless string
     
-    options_string = String.new
+    options_string = ''
     string.gsub!(/([ILOTD]|Q\d+)+\z/) do |match|
       options_string = match if match
       match&.scan(/([A-Z])([^A-Z]*)/) do |key, value|
