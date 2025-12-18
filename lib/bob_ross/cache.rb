@@ -12,6 +12,8 @@ class BobRoss
       @path = File.realpath(path)
       @cachefile = File.realpath(cachefile)
 
+      FileUtils.mkdir_p(@path)
+      FileUtils.mkdir_p(File.dirname(@cachefile))
       if size.is_a?(String) && size.end_with?('%')
         size = size.delete_suffix('%')
         dev_size = if File.exist?('/proc/mounts')
