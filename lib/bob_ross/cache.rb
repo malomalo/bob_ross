@@ -9,8 +9,8 @@ class BobRoss
     attr_reader :path, :max_size, :purge_to
     
     def initialize(path, cachefile, size: nil)
-      @path = File.realpath(path)
-      @cachefile = File.realpath(cachefile)
+      @path = File.realpath(File.expand_path(path))
+      @cachefile = File.realpath(File.expand_path(cachefile))
 
       FileUtils.mkdir_p(@path)
       FileUtils.mkdir_p(File.dirname(@cachefile))
