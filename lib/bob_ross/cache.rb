@@ -9,18 +9,18 @@ class BobRoss
     attr_reader :path, :max_size, :purge_to
     
     def initialize(path, cachefile, size: nil)
-      @path = path
-      @cachefile = cachefile
-      
+      @path = File.realpath(path)
+      @cachefile = File.realpath(cachefile)
+
       if size.is_a?(String) && size.end_with?('%')
         size = size.delete_suffix('%')
         dev_size = if File.exist?('/proc/mounts')
           mount_points = File.read('/proc/mounts').each_line.map{ |l| l.split(/\s+/)[0..1] }
-          dev = mount_points.select{ |a| path.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]
+          dev = mount_points.select{ |a| @path.start_with?(a[1]) }.sort_by {|a| a[1].length }.last[0]
           Terrapin::CommandLine.new("lsblk", "-rbno SIZE :dev").run(dev: dev).to_i
         else
           mounts = Terrapin::CommandLine.new("df", "-lk").run.split("\n")[1..-1].map{ |l| l.split(/\s+/) }.map{|l| [l[0], l[1], l[8]] }
-          dev = mounts.select{ |a| path.start_with?(a[2]) }.sort_by {|a| a[2].length }.last
+          dev = mounts.select{ |a| @path.start_with?(a[2]) }.sort_by {|a| a[2].length }.last
           dev[1].to_i * 1024
         end
         size = (dev_size * (size.to_i / 100.0)).round
