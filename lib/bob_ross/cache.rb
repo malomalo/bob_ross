@@ -9,11 +9,13 @@ class BobRoss
     attr_reader :path, :max_size, :purge_to
     
     def initialize(path, cachefile, size: nil)
-      @path = File.realpath(File.expand_path(path))
-      @cachefile = File.realpath(File.expand_path(cachefile))
-
-      FileUtils.mkdir_p(@path)
-      FileUtils.mkdir_p(File.dirname(@cachefile))
+      path = File.expand_path(path)
+      cachefile = File.expand_path(cachefile)
+      FileUtils.mkdir_p(path)
+      FileUtils.mkdir_p(File.dirname(cachefile))
+      
+      @path = File.realpath(path)
+      @cachefile = File.realpath(File.dirname(cachefile))
       if size.is_a?(String) && size.end_with?('%')
         size = size.delete_suffix('%')
         dev_size = if File.exist?('/proc/mounts')
