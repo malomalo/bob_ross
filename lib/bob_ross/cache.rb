@@ -15,7 +15,7 @@ class BobRoss
       FileUtils.mkdir_p(File.dirname(cachefile))
       
       @path = File.realpath(path)
-      @cachefile = File.realpath(File.dirname(cachefile))
+      @cachefile = File.join(File.realpath(File.dirname(cachefile)), File.basename(cachefile))
       if size.is_a?(String) && size.end_with?('%')
         size = size.delete_suffix('%')
         dev_size = if File.exist?('/proc/mounts')
@@ -33,7 +33,7 @@ class BobRoss
     end
     
     def db
-      return @db if instance_variable_defined?(:@db)
+      return @db if instance_variable_defined?(:@db) && !@db.closed?
       
       sqlite_db = SQLite3::Database.new(@cachefile)
       sqlite_db.busy_timeout = 300
