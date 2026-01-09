@@ -40,8 +40,11 @@ class BobRoss
       migrate(sqlite_db)
       @db = sqlite_db
     end
+
     
     def migrate(sqlite)
+      sqlite.execute("BEGIN IMMEDIATE TRANSACTION")
+
       tables = sqlite.execute(<<-SQL).flatten
         SELECT name FROM sqlite_master
         WHERE type='table'
@@ -95,6 +98,10 @@ class BobRoss
           END
         SQL
       end
+      
+      sqlite.execute("COMMIT TRANSACTION")
+    rescue
+      sqlite.execute("ROLLBACK TRANSACTION")
     end
     
     def get(hash, transform)
