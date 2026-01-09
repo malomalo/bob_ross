@@ -9,7 +9,6 @@ require 'bob_ross/cache'
 require 'bob_ross/plugins/pdf'
 require 'bob_ross/plugins/video'
 require "minitest/autorun"
-require 'minitest/unit'
 require 'minitest/reporters'
 require 'mocha'
 require 'mocha/minitest'
