@@ -23,7 +23,8 @@ Optionally:
   - `giflib` for GIF support in LibVips.
   - `libjpeg-turbo` for faster JPEG encoding/decoding.
   - The `sqlite3` gem to use a local disk cache.
-  - `mupdf-tools` for PDF support
+  - `mupdf-tools` for PDF support via `BobRoss::PDFPlugin`
+  - `ffmpeg` for PDF support via `BobRoss::VideoPlugin`
 
 ## Client (Generating URLs)
 
@@ -96,17 +97,54 @@ BobRoss.configure({
 
 ## Server
 
-BobRoss::Server is Rack Middleware that can be served on it's own or mounted on
-any Rack compatiable server.
+BobRoss::Server is a Rack App that can be served on it's own or mounted on any
+Rack compatiable server.
+
+> [!WARNING]
+> **Memory Usage / Fragmentation Risk**
+> 
+> Long-running processes (web servers, background workers, daemons) can experience
+> gradual memory growth due to heap fragmentation in Ruby's default allocator (malloc).
+> This can result in errors and processes being killed via SIGKILL by the OOM killer.
+> Using jemalloc with the options below is strongly recommended to keep memory usage
+> stable over time.
+> 
+> Set the following variables to enable jemalloc for Ruby:
+> 
+> ```sh
+> export MALLOC_CONF="dirty_decay_ms:1000,muzzy_decay_ms:1000,narenas:2,background_thread:true"
+> export LD_PRELOAD=libjemalloc.so.2
+> ```
+> 
+> Verify jemalloc is active. The command below will show stats if jemalloc is active.
+> 
+> ```sh
+> MALLOC_CONF="$MALLOC_CONF,stats_print:true" ruby -e "exit"
+> ```
+> 
+> **If jemalloc is not available**, limiting the number of arenas in glibc's allocator
+> can also help reduce fragmentation:
+> 
+> ```sh
+> export MALLOC_ARENA_MAX=2
+> ```
 
 ### Running the Server
 
-Rails example:
+In Rails (note: BobRoss will automatically be mounted, see the Rails section below):
 
 ```ruby
 Rails.application.routes.draw do
   mount BobRoss::Server.new(bob_ross_configs), at: "/images"
 end
+```
+
+Or via [`rackup`](https://github.com/rack/rackup)
+
+```ruby
+# config.rb
+require "bob_ross"
+run BobRoss::Server.new(bob_ross_configs)
 ```
 
 ### Configuration Options
@@ -323,7 +361,7 @@ BobRoss::Cache.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 
 
 ## Rails
 
-If BobRoss is used with a Rails application it automatically sets up defatuls for
+If BobRoss is used with a Rails application it automatically sets up defaults for
 the client and attaches a server at `/images` by default.
 
 ### Initializer options
@@ -412,7 +450,7 @@ BobRoss can process any image format that ImageMagick or LibVips accepts.
 
 To process other types of files and turn them into images that BobRoss can create a plugin.
 
-For an example see `lib/bob_ross/plugins/pdf`.
+For an example see `lib/bob_ross/plugins/pdf` or `lib/bob_ross/plugins/video`.
 
 ## Similar projects
 
