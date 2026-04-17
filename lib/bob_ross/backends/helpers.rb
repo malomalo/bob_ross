@@ -11,6 +11,10 @@ module BobRoss::BackendHelpers
     'sm' => 'Smart'
   }
   
+  def self.extended(base)
+    base.instance_variable_set(:@load_cache, {})
+  end
+
   def parse_geometry(string, require_dimension: true)
     string =~ /^(\d+)?(?:x(\d+))?([+-]\d+)?([+-]\d+)?([^a-z]*)([neswcm]+)?(?:p(.*))?$/
     
@@ -27,4 +31,11 @@ module BobRoss::BackendHelpers
     }
   end
   
+  def vips_load(path, cache=false)
+    if cache
+      @load_cache[path] ||= ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))
+    else
+      ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))
+    end
+  end
 end

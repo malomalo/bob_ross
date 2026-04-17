@@ -213,7 +213,7 @@ module BobRoss::LibVipsBackend
           geometry[:height] = geometry[:width]
         end
       end
-      wtrmrk = ::Vips::Image.new_from_file(watermark_file[:path], **select_valid_loader_options(watermark_file[:path], {}))
+      wtrmrk = vips_load(watermark_file[:path], true)
       wtrmrk = wtrmrk.thumbnail_image(geometry[:width], height: geometry[:height])
       geometry[:height] = wtrmrk.height
       geometry[:width] = wtrmrk.width
@@ -301,8 +301,7 @@ module BobRoss::LibVipsBackend
   end
 
   def transform(image, transformations, options)
-    vips = ::Vips::Image.new_from_file(image.source.path, **select_valid_loader_options(image.source.path, {}))
-    
+    vips = vips_load(image.source.path)
     
     if image.orientation
       vips = case image.orientation

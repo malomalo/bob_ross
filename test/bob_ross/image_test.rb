@@ -2,7 +2,27 @@
 
 require 'test_helper'
 
+$vips_loads = {}
+
+if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
+  module CallCounter
+    def new_from_file(path, **options)
+      key = path.delete_prefix(File.expand_path('../../fixtures', __FILE__))
+      $vips_loads[key] ||= 0
+      $vips_loads[key] += 1
+      super
+    end
+  end
+  
+  ::Vips::Image.singleton_class.prepend(CallCounter)
+end
+
 class BobRossImageTest < Minitest::Test
+  
+  def setup
+    $vips_loads = {}
+    BobRoss::LibVipsBackend.instance_variable_set(:@load_cache, {})
+  end
   
   test 'detects when an image is opaque' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
@@ -515,7 +535,8 @@ class BobRossImageTest < Minitest::Test
     image.settings[:watermarks] = [File.expand_path('../../fixtures/watermark', __FILE__)].map do |path|
       { path: path, geometry: BobRoss.backend.identify(path)[:geometry] }
     end
-
+    
+    $vips_loads = {}
     assert_transform(image, {watermark: '0n'}, {
       geometry: '720x480',
       signature: {
@@ -655,6 +676,10 @@ class BobRossImageTest < Minitest::Test
         }
       }
     })
+    
+    if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
+      assert_equal($vips_loads["/watermark"], 1)
+    end
   end
 
 end
