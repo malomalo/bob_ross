@@ -270,6 +270,7 @@ class BobRoss::Server
           command = Terrapin::CommandLine.new("file", '-b --mime-type :file')
           mime_type = command.run({ file: original_file.path }).strip
         end
+        payload[:original_content_type] = mime_type
 
         transformations = []
         image = if plugin = BobRoss.plugins.find { |k,v| k.is_a?(Regexp) ? k.match(mime_type) : k == mime_type }&.[](1)
