@@ -146,7 +146,7 @@ class BobRoss::Server
   end
   
   def call(env)
-    image =nil
+    image = nil
     ActiveSupport::Notifications.instrument("start_processing.bob_ross")
     
     ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|
@@ -200,8 +200,10 @@ class BobRoss::Server
         last_modified = @settings[:store].last_modified(hash)
         if env['HTTP_IF_MODIFIED_SINCE']
           modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
-          payload[:status] = 304
-          return not_modified if last_modified <= modified_since_time
+          if last_modified <= modified_since_time
+            payload[:status] = 304
+            return not_modified 
+          end
         end
         response_headers['Last-Modified'] = last_modified.httpdate
       end
@@ -242,11 +244,14 @@ class BobRoss::Server
           format_options[:format] ||= select_format(accepts, (cache_hits.first[1] == 1) || format_options[:transparent])
 
           if hit = cache_hits.find { |h| h[4] == format_options[:format] }
-            render_payload[:cache] = true
-            response_headers['Content-Type']  = hit[4]
-            response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-            response_headers['From-Cache']  = '1';
             if cached_file = @cache.use(hash, transform_key, hit[4])
+              payload[:status] = 200
+              payload[:cache] = render_payload[:cache] = true
+              payload[:bytesize] = cached_file.size
+              payload[:content_type] = response_headers['Content-Type']  = hit[4]
+              response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+              response_headers['From-Cache']    = '1';
+
               return serve_file(200, response_headers, cached_file)
             end
           end
@@ -279,13 +284,19 @@ class BobRoss::Server
           BobRoss::Image.new(original_file, @settings, temp: original_is_temp)
         end
         
-        return not_implemented if image.nil?
+        if image.nil?
+          payload[:status] = 501
+          return not_implemented
+        end
     
         format_options[:format] ||= select_format(accepts, image.transparent? || format_options[:transparent])
         image.transform(transformations, format_options) do |output|
           # Do this at the end to not cache errors
           payload[:status] = 200
-          response_headers['Content-Type'] = format_options[:format]
+          payload[:cache] = render_payload[:cache] = false
+          payload[:bytesize] = output.size
+          payload[:content_type] = response_headers['Content-Type'] = format_options[:format]
+          
           response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
           if @cache
             response_headers['From-Cache'] = '0'
