@@ -16,6 +16,12 @@ require 'bob_ross/log_subscriber'
 
 
 class BobRoss::Server
+
+  class InvalidRangeHeader < StandardError; end
+  
+  ALLOWED_VERBS = %w[GET HEAD OPTIONS]
+  ALLOW_HEADER = ALLOWED_VERBS.join(', ')
+  MULTIPART_BOUNDARY = 'AaB03x'
   
   SUPPORTED_FORMATS = {
     'image/avif' => {transparency: true,  lossless: true},
@@ -27,15 +33,61 @@ class BobRoss::Server
   }
 
   class StreamFile
-    def initialize(file)
+    def initialize(file, ranges, mime_type:)
       @file = File.open(file.path)
+      @filesize = @file.size
+      @ranges = ranges
+      @mime_type = mime_type
     end
     
     def each
-      @file.seek(0)
-      while part = @file.read(16_384)
-        yield part
+      @ranges.each do |range|
+        yield multipart_heading(range) if multipart?
+
+        @file.seek(range.begin)
+        remaining_len = range.end - range.begin + 1
+        while remaining_len > 0
+          part = @file.read([8192, remaining_len].min)
+          break unless part
+          remaining_len -= part.length
+
+          yield part
+        end
       end
+      yield multipart_boundry if multipart?
+    end
+    
+    def close
+      @file.close
+    end
+    
+    def bytesize
+      size = @ranges.inject(0) do |sum, range|
+        sum += multipart_heading(range).bytesize if multipart?
+        sum += range.size
+      end
+      size += "\r\n--#{MULTIPART_BOUNDARY}--\r\n".bytesize if multipart?
+      size
+    end
+    
+    private
+    
+    def multipart?
+      @ranges.size > 1
+    end
+
+    def multipart_heading(range)
+<<-EOF
+\r
+--#{MULTIPART_BOUNDARY}\r
+content-type: #{@mime_type}\r
+content-range: bytes #{range.begin}-#{range.end}/#{@filesize}\r
+\r
+EOF
+    end
+
+    def multipart_boundry
+      "\r\n--#{MULTIPART_BOUNDARY}--\r\n"
     end
   end
   
@@ -50,11 +102,45 @@ class BobRoss::Server
     @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.supports?(k) }
   end
   
-  def serve_file(status, headers, file)
-    headers['Content-Length'] = file.size
-    [status, headers, StreamFile.new(file)]
+  def serve_file(headers, file, type: , range: nil, mime_type: nil)
+    status    = 200
+    filesize  = file.size
+    ranges    = get_byte_ranges(range, filesize)
+
+    # Advertise support for Ranges header
+    headers["Accept-Ranges"] = "bytes"
+    
+    if ranges.nil?
+      headers["Content-Type"] = mime_type
+      ranges = [0..filesize - 1]
+    else
+      partial_content = true
+
+      if ranges.size == 1
+        range = ranges[0]
+        headers["Content-Type"] = mime_type
+        headers["Content-Range"] = "bytes #{range.begin}-#{range.end}/#{filesize}"
+      else
+        headers["Content-Type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
+      end
+      
+      status = 206
+      body = StreamFile.new(file, ranges, mime_type: mime_type)
+      filesize = body.bytesize
+    end
+
+    headers['Content-Length'] = filesize.to_s
+    if type == 'HEAD'
+      body = ''
+    elsif !partial_content
+      body = StreamFile.new(file, ranges, mime_type: mime_type)
+    end
+
+    [status, headers, body]
+  rescue InvalidRangeHeader => e
+    return byte_range_unsatisfiable(filesize, e.message)
   end
-  
+
   def normalize_options(options)
     result = options.dup
     result.delete(:hmac)
@@ -147,9 +233,15 @@ class BobRoss::Server
   
   def call(env)
     image = nil
-    ActiveSupport::Notifications.instrument("start_processing.bob_ross")
-    
+
     ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|
+      ActiveSupport::Notifications.instrument("start_processing.bob_ross")
+      
+      if env["REQUEST_METHOD"] == "OPTIONS"
+        payload[:status] = 200
+        return [200, { 'Allow' => ALLOW_HEADER, 'Content-Length' => '0', 'Accept-Ranges' => 'bytes' }, []]
+      end
+      
       path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO']).force_encoding('UTF-8')
       match = path.match(/\A\/(?:([A-Z][^\/]*)\/?)?([0-9a-z\-]+)(?:\/[^\/]+?)?(\.\w+)?\Z/)
     
@@ -198,9 +290,8 @@ class BobRoss::Server
       
       if @settings[:last_modified_header]
         last_modified = @settings[:store].last_modified(hash)
-        if env['HTTP_IF_MODIFIED_SINCE']
-          modified_since_time = Time.httpdate(env['HTTP_IF_MODIFIED_SINCE'])
-          if last_modified <= modified_since_time
+        if modified_since = env['HTTP_IF_MODIFIED_SINCE']
+          if last_modified <= Time.httpdate(modified_since)
             payload[:status] = 304
             return not_modified 
           end
@@ -245,14 +336,16 @@ class BobRoss::Server
 
           if hit = cache_hits.find { |h| h[4] == format_options[:format] }
             if cached_file = @cache.use(hash, transform_key, hit[4])
-              payload[:status] = 200
-              payload[:cache] = render_payload[:cache] = true
-              payload[:bytesize] = cached_file.size
-              payload[:content_type] = response_headers['Content-Type']  = hit[4]
               response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
               response_headers['From-Cache']    = '1';
+              payload[:cache] = render_payload[:cache] = true
+              response = serve_file(response_headers, cached_file, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: hit[4])
+              
+              payload[:status] = response[0]
+              payload[:content_type] = response[1]['Content-Type']
+              payload[:bytesize] = response[2].respond_to?(:bytesize) ? response[2].bytesize : response[2].size
 
-              return serve_file(200, response_headers, cached_file)
+              return response
             end
           end
         end
@@ -293,18 +386,20 @@ class BobRoss::Server
         format_options[:format] ||= select_format(accepts, image.transparent? || format_options[:transparent])
         image.transform(transformations, format_options) do |output|
           # Do this at the end to not cache errors
-          payload[:status] = 200
           payload[:cache] = render_payload[:cache] = false
-          payload[:bytesize] = output.size
-          payload[:content_type] = response_headers['Content-Type'] = format_options[:format]
           
           response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
           if @cache
             response_headers['From-Cache'] = '0'
             @cache.set(hash, image.transparent?, transform_key, format_options[:format], output.path)
           end
+          response = serve_file(response_headers, output, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: format_options[:format])
+          
+          payload[:status] = response[0]
+          payload[:content_type] = response[1]['Content-Type']
+          payload[:bytesize] = response[2].respond_to?(:bytesize) ? response[2].bytesize : response[2].size
 
-          serve_file(200, response_headers, output)
+          return response
         end
       end
     end
@@ -352,24 +447,35 @@ class BobRoss::Server
     [404, {"Content-Type" => "text/plain"}, ["404 Not Found"]]
   end
   
-  def unprocessable_entity(message)
-    [422, {"Content-Type" => "text/plain"}, [message || "422 Unprocessable Entity"]]
+  def unprocessable_entity(message =  "422 Unprocessable Entity")
+    [422, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
   end
   
-  def gateway_timeout
-    [504, {"Content-Type" => "text/plain"}, ["504 Gateway Timeout"]]
+  def gateway_timeout(message = "504 Gateway Timeout")
+    [504, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
   end
   
-  def gone
-    [410, {"Content-Type" => "text/plain"}, ["410 Resource Gone Or No Longer Available"]]
+  def gone(message = "410 Resource Gone Or No Longer Available")
+    [410, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
   end
   
-  def unsupported_media_type
-    [415, {"Content-Type" => "text/plain"}, ["Accept is requesting an Unsupported Media Type"]]
+  def unsupported_media_type(message="Accept is requesting an Unsupported Media Type")
+    [415, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
   end
   
-  def not_implemented
-    [501, {"Content-Type" => "text/plain"}, ["Underlying Media Type is not supported"]]
+  def not_implemented(message="Underlying Media Type is not supported")
+    [501, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+  end
+  
+  def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable")
+    [
+      416, {
+        "Content-Type" => "text/plain",
+        "Content-Range"  => "bytes */#{filesize}",
+        "Content-Length" => message.bytesize.to_s
+      }, [
+        message
+    ]]
   end
   
   def extract_format_options(string)
@@ -466,6 +572,53 @@ class BobRoss::Server
   
   def accept?(env, mime)
     env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
+  end
+
+  private
+
+  # See <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35>
+  def get_byte_ranges(http_range, size, max_ranges: 100)
+    return nil if !http_range
+
+    header = http_range.match(/\A([^=]+)=([^;]+)\z/)
+
+    raise InvalidRangeHeader.new("Invalid Range Header \"#{http_range}\"") if !header
+    raise InvalidRangeHeader.new("Invalid Range Units: \"#{header[1]}\"") if header[1].strip != 'bytes'
+    raise InvalidRangeHeader.new("Excessive number of Byte Ranges; must be <= #{max_ranges}") if header[2].count(',') >= max_ranges
+
+    ranges = []
+    header[2].strip.split(/[ \t]*,[ \t]*/).each do |range_spec|
+      range = range_spec.match(/\A(\d+)?-(\d+)?\z/)
+      
+      if range.nil?
+        raise InvalidRangeHeader.new("Invalid Range: \"#{range_spec}\"")
+      elsif range[1].nil?
+        raise InvalidRangeHeader.new("Invalid Range: \"#{range_spec}\"") if range[2].nil?
+
+        # suffix-byte-range-spec, represents trailing suffix of file
+        r0 = size - range[2].to_i
+        r0 = 0  if r0 < 0
+        r1 = size - 1
+      else
+        r0 = range[1].to_i
+        raise InvalidRangeHeader.new("Invalid Range: \"#{range_spec}\"") if r0 >= size
+        if range[2].nil?
+          r1 = size - 1
+        else
+          r1 = range[2].to_i
+          raise InvalidRangeHeader.new("Invalid Range: \"#{range_spec}\"") if r1 < r0  # backwards range is syntactically invalid
+          raise InvalidRangeHeader.new("Invalid Range: \"#{range_spec}\"") if r1 >= size
+        end
+      end
+
+      ranges << (r0..r1)  if r0 <= r1
+    end
+
+    ranges.sort_by!(&:begin)
+
+    raise InvalidRangeHeader.new("Ranges Overlap") if ranges.each_cons(2).any? { |a,b| a.overlap?(b) }
+
+    ranges
   end
 
 end
