@@ -12,7 +12,7 @@ class BobRoss
       end
   
       def metadata
-        @metadata if @metadata
+        return @metadata if @metadata
     
         output = Terrapin::CommandLine.new('ffprobe', '-i :input -print_format json -show_format -show_streams -show_error').run({
             input: @source
