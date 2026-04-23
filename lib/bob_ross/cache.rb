@@ -120,12 +120,12 @@ class BobRoss
         WHERE hash = ? AND transform = ? AND transformed_mime = ?;
       SQL
       
+      yield file
     rescue SQLite3::BusyException
     rescue Errno::ENOENT
       del(hash)
-      return nil
     ensure
-      return file
+      file.close
     end
     
     def set(hash, transparent, transform, mime, path)

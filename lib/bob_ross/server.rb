@@ -335,7 +335,7 @@ EOF
           format_options[:format] ||= select_format(accepts, (cache_hits.first[1] == 1) || format_options[:transparent])
 
           if hit = cache_hits.find { |h| h[4] == format_options[:format] }
-            if cached_file = @cache.use(hash, transform_key, hit[4])
+            @cache.use(hash, transform_key, hit[4]) do |cached_file|
               response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
               response_headers['From-Cache']    = '1';
               payload[:cache] = render_payload[:cache] = true
