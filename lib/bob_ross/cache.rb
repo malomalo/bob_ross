@@ -125,7 +125,7 @@ class BobRoss
     rescue Errno::ENOENT
       del(hash)
     ensure
-      file.close
+      file&.close
     end
     
     def set(hash, transparent, transform, mime, path)

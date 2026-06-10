@@ -31,7 +31,7 @@ class BobRoss
     
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
-    @logger = options.delete(:logger)
+    @logger = options.delete(:logger) if options[:logger]
     @transformations = options
     @backend = options.delete(:backend)
   end
@@ -153,7 +153,7 @@ class BobRoss
       transparent: 'T',
       watermark: 'W'
     }
-    @plugins.values.find do |plugin|
+    @plugins.values.each do |plugin|
       trfms = trfms.merge(plugin.transformations)
     end
     trfms
