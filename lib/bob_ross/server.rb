@@ -113,9 +113,9 @@ EOF
     if ranges.nil?
       headers["Content-Type"] = mime_type
       ranges = [0..filesize - 1]
+    elsif ranges.empty?
+      raise InvalidRangeHeader.new("None of the ranges are satisfiable")
     else
-      partial_content = true
-
       if ranges.size == 1
         range = ranges[0]
         headers["Content-Type"] = mime_type
@@ -123,17 +123,17 @@ EOF
       else
         headers["Content-Type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
       end
-      
+
       status = 206
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
-      filesize = body.bytesize
     end
+
+    body = StreamFile.new(file, ranges, mime_type: mime_type)
+    filesize = body.bytesize if status == 206
 
     headers['Content-Length'] = filesize.to_s
     if type == 'HEAD'
-      body = ''
-    elsif !partial_content
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
+      body.close
+      body = []
     end
 
     [status, headers, body]
@@ -499,8 +499,6 @@ EOF
           options[:optimize] = true
         when 'T'
           options[:transparent] = true
-        when 'D'
-          options[:strip] = true
         when 'Q'
           options[:quality] = value.to_i
         end
@@ -545,7 +543,7 @@ EOF
     matching_hmac = @settings[:hmac][:attributes].find do |mtds|
       valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data[k] }.join(''))
       valid_hmacs.push(valid_hmac)
-      valid_hmac == hmac
+      secure_compare(valid_hmac, hmac)
     end
 
     if !matching_hmac && @settings[:hmac][:transformations][:optional]
@@ -557,26 +555,28 @@ EOF
           end
           valid_hmac = OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @settings[:hmac][:key], mtds.map{ |k| data_copy[k] }.join(''))
           valid_hmacs.push(valid_hmac)
-          valid_hmac == hmac
+          secure_compare(valid_hmac, hmac)
         end
       end
     end
-    
+
     if !matching_hmac
       ActiveSupport::Notifications.instrument("invalid_hmac.bob_ross", {
         hmac: hmac,
         valid_hmacs: valid_hmacs
       })
     end
-    
+
     matching_hmac
+  end
+
+  def secure_compare(expected, actual)
+    expected.bytesize == actual.bytesize && OpenSSL.fixed_length_secure_compare(expected, actual)
   end
   
   def accept?(env, mime)
     env['HTTP_ACCEPT'] && env['HTTP_ACCEPT'].include?(mime)
   end
-
-  private
 
   # See <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35>
   def get_byte_ranges(http_range, size, max_ranges: 100)

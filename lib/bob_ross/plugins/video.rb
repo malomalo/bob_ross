@@ -13,15 +13,15 @@ class BobRoss
   
       def metadata
         return @metadata if @metadata
-    
+
         output = Terrapin::CommandLine.new('ffprobe', '-i :input -print_format json -show_format -show_streams -show_error').run({
             input: @source
         })
-        @metadata = JSON.parse(output, symbolize_names: true)[:streams][0]
+        @metadata = JSON.parse(output, symbolize_names: true)
       end
-  
+
       def duration
-        metadata[:duration].to_f
+        metadata[:format][:duration].to_f
       end
       
     end

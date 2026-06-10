@@ -101,7 +101,11 @@ class BobRoss
       
       sqlite.execute("COMMIT TRANSACTION")
     rescue
-      sqlite.execute("ROLLBACK TRANSACTION")
+      begin
+        sqlite.execute("ROLLBACK TRANSACTION")
+      rescue SQLite3::Exception
+      end
+      raise
     end
     
     def get(hash, transform)
@@ -176,7 +180,7 @@ class BobRoss
       new_size = total_size + buffer
       
       if new_size > @max_size
-        puts "Cache filled (#{total_size} / #{@max_size})"
+        BobRoss.logger.info { "Cache filled (#{total_size} / #{@max_size})" }
         purged = 0
         need_to_purge = new_size - @max_size
         while purged < need_to_purge
@@ -192,7 +196,7 @@ class BobRoss
             remove(r[0], r[1], r[2])
 
             purged += r[3]
-            puts " purged #{r[3]} (#{purged} / #{need_to_purge} purged)"
+            BobRoss.logger.info { " purged #{r[3]} (#{purged} / #{need_to_purge} purged)" }
           end
         end
       end
