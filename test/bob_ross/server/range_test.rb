@@ -17,6 +17,8 @@ class BobRossServerTest < Minitest::Test
   end
 
   def setup
+    super
+
     @server = create_server
     response = @server.get("/opaque")
     assert_equal 'bytes', response['Accept-Ranges']

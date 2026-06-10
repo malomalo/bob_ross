@@ -6,10 +6,12 @@ require 'test_helper'
 class BobRoss::CacheTest < Minitest::Test
 
   def setup
+    super
     @cache_dir = Dir.mktmpdir
   end
   
   def teardown
+    super
     FileUtils.remove_entry @cache_dir
   end
   

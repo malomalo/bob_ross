@@ -77,6 +77,22 @@ class Minitest::Test
     $debug = false
   end
 
+  def open_ios
+    ios_open = 0
+    ObjectSpace.each_object(IO) do |io|
+      ios_open += 1 unless io.closed?
+    end
+    ios_open
+  end
+
+  def setup
+    @ios_open = open_ios
+  end
+
+  def teardown
+    puts "#{@ios_open}/#{open_ios}"
+  end
+
   def color_to_rgba(value)
     "##{value.map {|i| i.to_i.to_s(16) }.join('')}"
   end

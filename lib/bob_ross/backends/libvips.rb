@@ -44,7 +44,7 @@ module BobRoss::LibVipsBackend
     mime_command = Terrapin::CommandLine.new("file", '--mime -b :file')
     ident[:mime_type] = mime_command.run({ file: path }).split(';')[0]
     
-    i = ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))#, access: :sequential
+    i = vips_load(path)
     ident[:opaque]    = i.has_alpha? ? i.extract_band(i.bands-1, n: 1).min == 255.0 : true
     ident[:geometry]  = { width: i.width, height: i.height, x_offset: nil, y_offset: nil, modifier: nil, gravity: nil, color: nil }
     ident[:orientation] = begin
@@ -411,7 +411,7 @@ module BobRoss::LibVipsBackend
   # loaders/savers, we do a little bit of introspection and filter out
   # options that don't exist for a particular loader or saver.
   def select_valid_options(operation_name, options)
-    operation = ::Vips::Operation.new(operation_name)
+    # operation = ::Vips::Operation.new(operation_name)
     introspect = ::Vips::Introspect.get(operation_name)
     operation_options = introspect.args.map{ |arg| arg[:arg_name] }.map(&:to_sym)
     options.select { |name, value| operation_options.include?(name) }

@@ -5,12 +5,14 @@ class BobRossTest < Minitest::Test
   CONFIG_VARS = [:@host, :@hmac, :@logger, :@transformations, :@backend, :@plugins]
   
   def setup
+    super
     @old_config = CONFIG_VARS.map do |var|
       [var, BobRoss.instance.instance_variable_get(var)]
     end.to_h
   end
   
   def teardown
+    super
     @old_config.each do |var, value|
       BobRoss.instance.instance_variable_set(var, value)
     end

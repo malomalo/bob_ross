@@ -221,11 +221,13 @@ EOF
       read.close
       result = yield
       Marshal.dump(result, write)
+      write.close
       exit!(0) # skips exit handlers.
     end
     
     write.close
     result = read.read
+    read.close
     Process.wait(pid)
     raise "Issue with identifing watermark" if result.empty?
     Marshal.load(result)

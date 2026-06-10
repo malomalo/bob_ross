@@ -20,6 +20,7 @@ end
 class BobRossImageTest < Minitest::Test
   
   def setup
+    super
     $vips_loads = {}
     BobRoss::LibVipsBackend.instance_variable_set(:@load_cache, {})
   end

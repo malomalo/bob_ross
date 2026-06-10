@@ -42,8 +42,8 @@ class BobRoss::Railtie < Rails::Railtie
   
   def initialize_configs(app)
     config = app.config.bob_ross
-    
-    if seekrets = app.credentials[:bob_ross] || app.secrets[:bob_ross]
+
+    if seekrets = app.credentials[:bob_ross]
       config.host = seekrets[:host] if seekrets[:host]
       config.backend = seekrets[:backend] if seekrets[:backend]
       
