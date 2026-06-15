@@ -193,7 +193,7 @@ module BobRoss::LibVipsBackend
     if transform =~ /^(\d+)(\w+)(.*)$/i
       watermark_file = image.settings[:watermarks][$1.to_i]
       watermark_geometry = $3
-      watermark_postion = $2.downcase#.gsub(/\w/) { |s| GRAVITIES[s] } 
+      watermark_postion = $2.downcase
       
       geometry = parse_geometry(watermark_geometry, require_dimension: false)
       if !geometry[:width] && !geometry[:height]

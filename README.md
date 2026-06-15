@@ -9,7 +9,7 @@ The BobRoss client does not have any dependencies.
 
 The BobRoss server depends on the following:
 
-  - `imagemagick` or `libvips`
+  - `libvips`
 
 Optionally:
 
@@ -88,9 +88,6 @@ BobRoss.configure({
 
   hmac: 'secret',
 
-  # Default is 'libvips', you can also pass the class of another backend to use
-  backend: 'imagemagick',
-
   # Any other options you wish to apply by default
 })
 ```
@@ -153,9 +150,6 @@ run BobRoss::Server.new(bob_ross_configs)
            `last_modified` (if `last_modified_header` is set to true),
            `destination` (if local?), and `copy_to_tempfile` (if !local?)
 
-- `backend:` (Optional, default `libvips`) `imagemagick` or `libvips`
-- `memory_limit:` (Optional, ie. `"1GB"`) Limit for max memory that imagemagick will use.
-- `disk_limit:` (Optional, ie. `"4GB"`) Limit for max disk that image magick will use
 - `hmac:` (Optional)
   - `key:` (ie. `"secret"`) The secret key used for signing paths/urls
   - `required:` (true || false) If true the server will respond with a 404 not
@@ -418,14 +412,6 @@ Set this to the value of the `Cache-Control` header if you want one.
 
 If you want BobRoss to send the `Last-Modified-Header` set this to false.
 
-**`config.bob_ross.server.disk_limit`**
-
-Limit the disk map used by imagemagick to transform an image. Default `"4GB"`
-
-**`config.bob_ross.server.memory_limit`**
-
-Limit the memory used by imagemagick to transform an image. Default `"1GB"`
-
 **`config.bob_ross.server.cache`**
 
 If set to false the cache will be disabled. Default in **`production`** is
@@ -446,7 +432,7 @@ Amount of disk size in bytes to use for the cache. Default is `1.gigabyte`
 
 ## Plugins
 
-BobRoss can process any image format that ImageMagick or LibVips accepts.
+BobRoss can process any image format that LibVips accepts.
 
 To process other types of files and turn them into images that BobRoss can create a plugin.
 

@@ -10,12 +10,12 @@ class BobRoss
   
   autoload :Plugin, File.expand_path('../bob_ross/plugin', __FILE__)
   autoload :BackendHelpers, File.expand_path('../bob_ross/backends/helpers', __FILE__)
-  autoload :ImageMagickBackend, File.expand_path('../bob_ross/backends/imagemagick', __FILE__)
   autoload :LibVipsBackend, File.expand_path('../bob_ross/backends/libvips', __FILE__)
   autoload :PDFPlugin, File.expand_path('../bob_ross/plugins/pdf', __FILE__)
   autoload :VideoPlugin, File.expand_path('../bob_ross/plugins/video', __FILE__)
   
   class InvalidTransformationError < StandardError; end
+  class UnknownBackendError < StandardError; end
   
   attr_reader :host, :plugins
   attr_accessor :logger
@@ -64,13 +64,14 @@ class BobRoss
     end
 
     result[:backend] = case options[:backend]
-    when 'libvips'
+    when nil, 'libvips'
       BobRoss::LibVipsBackend
-    when 'imagemagick'
-      BobRoss::ImageMagickBackend
+    when Module # Backends are modules (eg. BobRoss::LibVipsBackend)
+      options[:backend]
     else
-      BobRoss::LibVipsBackend
+      raise UnknownBackendError.new("Unknown backend #{options[:backend].inspect}")
     end
+
 
     result
   end

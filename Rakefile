@@ -5,7 +5,7 @@ Bundler.require(:development)
 require 'fileutils'
 require "rake/testtask"
 
-BACKENDS = %w(libvips imagemagick)
+BACKENDS = %w(libvips)
 
 namespace :test do
   BACKENDS.each do |backend|

@@ -147,7 +147,6 @@ class Minitest::Test
   
   def assert_transform(input, transform, tests)
     input.transform(transform) do |output|
-      bnd = BobRoss.backend.name == 'BobRoss::ImageMagickBackend' ? 'imagemagick' : 'libvips'
       line = caller.find { |l| l =~ /_test.rb:\d+/ }.delete_prefix(File.dirname(__FILE__)).split(':')
       # `cp '#{output.path}' ~/test/#{File.basename(line.first).split('.').first}.#{line[1]}.#{bnd}#{File.extname(output.path)}`
   

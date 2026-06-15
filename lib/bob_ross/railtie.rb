@@ -22,14 +22,12 @@ class BobRoss::Railtie < Rails::Railtie
   # config.bob_ross.hmac.transforms.optional = [:resize]
   
   config.bob_ross.server = ActiveSupport::OrderedOptions.new
-  config.bob_ross.backend = 'imagemagick'
+  config.bob_ross.backend = 'libvips'
   # config.bob_ross.server.store = -> {} || Value
   config.bob_ross.server.prefix = "/images"
   # config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
   config.bob_ross.server.last_modified_header = false
   config.bob_ross.server.watermarks = Dir.exist?('public/watermarks') ? 'public/watermarks' : nil # || [file, file]
-  config.bob_ross.server.disk_limit = '4GB'
-  config.bob_ross.server.memory_limit = '1GB'
 
   config.bob_ross.server.cache = ActiveSupport::OrderedOptions.new
     
@@ -61,8 +59,6 @@ class BobRoss::Railtie < Rails::Railtie
         config.server.cache_control = seekrets[:server][:cache_control] if seekrets[:server][:cache_control]
         config.server.last_modified_header = seekrets[:server][:last_modified_header] if seekrets[:server][:last_modified_header]
         config.server.watermarks = seekrets[:server][:watermarks] if seekrets[:server][:watermarks]
-        config.server.disk_limit = seekrets[:server][:disk_limit] if seekrets[:server][:disk_limit]
-        config.server.memory_limit = seekrets[:server][:memory_limit] if seekrets[:server][:memory_limit]
         
         if seekrets[:server][:cache] == false
           config.server.cache = nil

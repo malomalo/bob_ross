@@ -190,24 +190,15 @@ EOF
     end
     
     if options[:watermarks]
-      if BobRoss.backend.key == :vips
-        # Because of https://github.com/libvips/ruby-vips/issues/396
-        # and https://github.com/libvips/ruby-vips/issues/155 we'll identify
-        # in a fork to allow for forking of the server process in production 
-        # and/or parrallel testing
-        options[:watermarks].map! do |watermark_path|
-          {
-            path: watermark_path,
-            geometry: result_from_fork { BobRoss.backend.identify(watermark_path)[:geometry] }
-          }
-        end
-      else
-        options[:watermarks].map! do |watermark_path|
-          {
-            path: watermark_path,
-            geometry: BobRoss.backend.identify(watermark_path)[:geometry]
-          }
-        end
+      # Because of https://github.com/libvips/ruby-vips/issues/396
+      # and https://github.com/libvips/ruby-vips/issues/155 we'll identify
+      # in a fork to allow for forking of the server process in production
+      # and/or parrallel testing
+      options[:watermarks].map! do |watermark_path|
+        {
+          path: watermark_path,
+          geometry: result_from_fork { BobRoss.backend.identify(watermark_path)[:geometry] }
+        }
       end
     end
 

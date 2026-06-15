@@ -22,14 +22,12 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'minitest-reporters'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'standardstorage'
-  s.add_development_dependency 'ruby-vips'
   s.add_development_dependency 'byebug'
-  
+
   # Runtime
   s.add_runtime_dependency 'activesupport'
   s.add_runtime_dependency 'sqlite3', '>= 1.3.0'
   s.add_runtime_dependency 'terrapin'
   s.add_runtime_dependency 'mini_mime'
-  # ruby-vips (libvips backend, the default) is intentionally not declared:
-  # it's optional since the imagemagick backend can be used instead
+  s.add_runtime_dependency 'ruby-vips', '>= 2.1'
 end

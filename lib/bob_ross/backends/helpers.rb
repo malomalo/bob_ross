@@ -2,15 +2,6 @@
 
 module BobRoss::BackendHelpers
 
-  GRAVITIES = {
-    'n' => 'North',
-    'e' => 'East',
-    's' => 'South',
-    'w' => 'West',
-    'c' => 'Center',
-    'sm' => 'Smart'
-  }
-  
   def self.extended(base)
     base.instance_variable_set(:@load_cache, {})
   end
