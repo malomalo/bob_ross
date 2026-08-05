@@ -94,8 +94,8 @@ EOF
   attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
-    if BobRoss.backend.key == :vips && settings.fetch(:block_untrusted, true)
-      BobRoss::LibVipsBackend.block_untrusted!(unblock: settings[:unblock_loaders] || [])
+    if BobRoss.backend.key == :vips && settings.fetch(:safe, true)
+      BobRoss::LibVipsBackend.safe!(allowed: settings[:allow] || [])
     end
 
     @settings = normalize_options(settings)

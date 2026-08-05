@@ -20,7 +20,7 @@ class BobRossLibVipsBackendTest < Minitest::Test
   end
 
   test 'configured loader exemptions are honored' do
-    # test_helper configures unblock_loaders: ['VipsForeignLoadSvg'] because
+    # test_helper configures allow: ['VipsForeignLoadSvg'] because
     # the watermark fixture is an SVG
     Tempfile.create(['test', '.svg']) do |file|
       file.write(%{<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="rgb(0,128,0)"/></svg>})

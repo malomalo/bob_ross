@@ -27,7 +27,7 @@ if ENV["BOBROSS_BACKEND"]
   # first-class output format, so its loader must stay enabled to round-trip.
   BobRoss.configure(
     backend: ENV["BOBROSS_BACKEND"],
-    unblock_loaders: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
+    allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
   )
 end
 

@@ -41,15 +41,15 @@ watermark or existing JPEG2000 images:
 ```ruby
 BobRoss.configure(
   backend: 'libvips',
-  unblock_loaders: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
+  allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
 )
-# or in Rails: config.bob_ross.unblock_loaders = [...]
-# or set config.bob_ross.block_untrusted = false to opt out entirely
+# or in Rails: config.bob_ross.allow = [...]
+# or set config.bob_ross.safe = false to opt out entirely
 ```
 
 Exemptions are applied atomically with the block (`Vips.block_untrusted(true)`
-revokes exemptions set before it), so always use `unblock_loaders` rather than
-calling `Vips.block` yourself beforehand.
+revokes exemptions set before it), so always use `allow` rather than calling
+`Vips.block` yourself beforehand.
 
 SVGs are additionally staged in their own empty directory before loading,
 because librsvg resolves resources referenced by an SVG from the SVG's own

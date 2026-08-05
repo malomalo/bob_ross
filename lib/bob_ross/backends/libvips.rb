@@ -43,27 +43,27 @@ module BobRoss::LibVipsBackend
   # unfuzzed loaders — e.g. MATLAB via libmatio/HDF5, which can be tricked
   # into reading arbitrary files into the rendered output — must never run.
   #
-  # +unblock+ names loader classes to exempt (e.g. "VipsForeignLoadSvg" for
+  # +allowed+ names loader classes to exempt (e.g. "VipsForeignLoadSvg" for
   # SVG watermarks); see Vips.block. Exemptions must be applied in the same
   # call as the block: Vips.block_untrusted(true) revokes exemptions set
   # before it. Idempotent — later calls are no-ops so previously configured
   # exemptions are never revoked.
-  def block_untrusted!(unblock: [])
-    return if @untrusted_blocked
+  def safe!(allowed: [])
+    return if @safe
 
     if !Vips.respond_to?(:block_untrusted)
       raise "BobRoss requires libvips >= 8.13 and ruby-vips >= 2.2.1 to block " \
         "unsafe libvips operations (CVE-2026-66066). Upgrade, or configure " \
-        "BobRoss with `block_untrusted: false` to run unprotected."
+        "BobRoss with `safe: false` to run unprotected."
     end
 
     Vips.block_untrusted(true)
-    Array(unblock).each { |loader| Vips.block(loader, false) }
-    @untrusted_blocked = true
+    Array(allowed).each { |loader| Vips.block(loader, false) }
+    @safe = true
   end
 
-  def untrusted_blocked?
-    !!@untrusted_blocked
+  def safe?
+    !!@safe
   end
 
   def identify(path)

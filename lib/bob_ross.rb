@@ -32,13 +32,13 @@ class BobRoss
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
-    block_untrusted = options.delete(:block_untrusted) { true }
-    unblock_loaders = options.delete(:unblock_loaders) { [] }
+    safe = options.delete(:safe) { true }
+    allowed_loaders = options.delete(:allow) { [] }
     @transformations = options
     @backend = options.delete(:backend)
 
-    if @backend == BobRoss::LibVipsBackend && block_untrusted
-      BobRoss::LibVipsBackend.block_untrusted!(unblock: unblock_loaders)
+    if @backend == BobRoss::LibVipsBackend && safe
+      BobRoss::LibVipsBackend.safe!(allowed: allowed_loaders)
     end
   end
   
