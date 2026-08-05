@@ -6,6 +6,11 @@ class BobRossLibVipsBackendTest < Minitest::Test
 
   def setup
     skip "libvips backend only" unless BobRoss.backend.key == :vips
+    Vips.block("VipsForeignLoadSvg", false)
+  end
+
+  def teardown
+    Vips.block("VipsForeignLoadSvg", true)
   end
 
   test 'untrusted loaders are blocked by default' do
@@ -19,16 +24,12 @@ class BobRossLibVipsBackendTest < Minitest::Test
     end
   end
 
-  test 'configured loader exemptions are honored' do
-    # test_helper configures allow: ['VipsForeignLoadSvg'] because
-    # the watermark fixture is an SVG
-    Tempfile.create(['test', '.svg']) do |file|
-      file.write(%{<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="rgb(0,128,0)"/></svg>})
-      file.flush
-
-      image = BobRoss.backend.vips_load(file.path)
-      assert_equal [4, 4], [image.width, image.height]
-    end
+  test 'configure applies allow as loader exemptions through the backend' do
+    BobRoss::LibVipsBackend.expects(:safe!).with(allowed: ['VipsForeignLoadJp2k']).once
+    BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadJp2k'], logger: BobRoss.logger)
+  ensure
+    BobRoss::LibVipsBackend.unstub(:safe!)
+    BobRoss.configure(backend: 'libvips', logger: BobRoss.logger)
   end
 
   test 'safe: false does not enable the block on configure' do

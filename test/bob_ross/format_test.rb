@@ -3,7 +3,17 @@
 require 'test_helper'
 
 class BobRossFormatTest < Minitest::Test
-  
+
+  # The jp2 round-trip tests load JPEG2000 back through libvips; its loader
+  # is blocked by default (see BobRoss::LibVipsBackend.safe!)
+  def setup
+    Vips.block("VipsForeignLoadJp2k", false)
+  end
+
+  def teardown
+    Vips.block("VipsForeignLoadJp2k", true)
+  end
+
   ALLOWED_FIELDS_IN_STRIPPED_IMAGE = %w(
     bands
     coding

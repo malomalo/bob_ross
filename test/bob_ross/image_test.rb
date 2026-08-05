@@ -531,6 +531,10 @@ class BobRossImageTest < Minitest::Test
   end
 
   test 'watermarking' do
+    # The watermark fixture is an SVG, and the SVG loader is blocked by
+    # default (see BobRoss::LibVipsBackend.safe!)
+    Vips.block("VipsForeignLoadSvg", false)
+
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     image.settings[:watermarks] = [File.expand_path('../../fixtures/watermark', __FILE__)].map do |path|
       { path: path, geometry: BobRoss.backend.identify(path)[:geometry] }
@@ -680,6 +684,8 @@ class BobRossImageTest < Minitest::Test
     if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
       assert_equal($vips_loads["/watermark"], 1)
     end
+  ensure
+    Vips.block("VipsForeignLoadSvg", true)
   end
 
 end

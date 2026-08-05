@@ -21,15 +21,11 @@ require 'ruby-vips'
 
 
 
-if ENV["BOBROSS_BACKEND"]
-  # Exemptions the suite needs, configured the same way an application would:
-  # the watermark fixture is an SVG, and BobRoss supports JPEG2000 as a
-  # first-class output format, so its loader must stay enabled to round-trip.
-  BobRoss.configure(
-    backend: ENV["BOBROSS_BACKEND"],
-    allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
-  )
-end
+# Configured with no loader exemptions on purpose: tests that need a blocked
+# loader (SVG watermark fixture, JPEG2000 round-trips) enable it themselves
+# with Vips.block(loader, false) — and re-block it in teardown, since the
+# block state is process-global.
+BobRoss.configure(backend: ENV["BOBROSS_BACKEND"]) if ENV["BOBROSS_BACKEND"]
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 BobRoss.logger = Logger.new(IO::NULL, level: :fatal)
