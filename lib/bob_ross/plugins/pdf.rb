@@ -45,7 +45,15 @@ class BobRoss
       interpolations = { input: original_file.path, output: screenshot.path }
       
       args = String.new('draw')
-      
+
+      # Render at a specific resolution (DPI) instead of sizing to fit. Useful
+      # for callers that need a page rasterized at a known density and then
+      # cropped (e.g. figure extraction).
+      if resolution = ross_transformations.find { |t| t[0] == :resolution }&.[](1)
+        args << ' -r :resolution'
+        interpolations[:resolution] = resolution.to_i
+      end
+
       if size = ross_transformations.find { |t| t[0] == :resize }&.[](1)
         size = parse_geometry(size)
         if size[:height]
@@ -57,7 +65,7 @@ class BobRoss
           interpolations[:width] = size[:width]
         end
       end
-      
+
       transformations << [:page, 1] if transformations.empty?
       transformations.each do |transform|
         case transform[0]

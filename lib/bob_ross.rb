@@ -20,20 +20,29 @@ class BobRoss
   attr_reader :host, :plugins
   attr_accessor :logger
 
+  # When true (the default) the libvips backend loads untrusted formats
+  # defensively — currently: SVGs are staged in a private directory so librsvg
+  # cannot read sibling files referenced by the SVG (see
+  # BackendHelpers#vips_load_safely). Set to false to restore the plain
+  # new_from_file behaviour.
+  attr_accessor :safe_loading
+
   def initialize
     @plugins = {}
     @logger = Logger.new(STDOUT)
     @transformations = {}
+    @safe_loading = true
   end
-  
+
   def configure(options)
     options = normalize_options(options)
-    
+
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
-    @transformations = options
     @backend = options.delete(:backend)
+    @safe_loading = options.delete(:safe_loading) if options.key?(:safe_loading)
+    @transformations = options
   end
   
   def backend

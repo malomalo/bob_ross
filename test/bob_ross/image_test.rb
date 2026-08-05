@@ -12,6 +12,13 @@ if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
       $vips_loads[key] += 1
       super
     end
+
+    # safe_loading loads SVGs from a buffer rather than a file
+    def new_from_buffer(data, option_string, **options)
+      $vips_loads[:buffer] ||= 0
+      $vips_loads[:buffer] += 1
+      super
+    end
   end
   
   ::Vips::Image.singleton_class.prepend(CallCounter)
@@ -678,7 +685,9 @@ class BobRossImageTest < Minitest::Test
     })
     
     if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
-      assert_equal($vips_loads["/watermark"], 1)
+      # the watermark is an SVG, so safe_loading loads it from a buffer (the
+      # only buffer load in this test); assert it was still loaded once (cached)
+      assert_equal(1, $vips_loads[:buffer])
     end
   end
 
