@@ -81,6 +81,16 @@ class Minitest::Test
     $debug = false
   end
 
+  # Enables blocked libvips loaders for the duration of the block, then
+  # re-blocks them (the block state is process-global; see
+  # BobRoss::LibVipsBackend.safe!)
+  def with_loader(*loaders)
+    loaders.each { |loader| Vips.block(loader, false) }
+    yield
+  ensure
+    loaders.each { |loader| Vips.block(loader, true) }
+  end
+
   def color_to_rgba(value)
     "##{value.map {|i| i.to_i.to_s(16) }.join('')}"
   end
