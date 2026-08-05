@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require 'tmpdir'
-require 'fileutils'
-
 module BobRoss::BackendHelpers
 
   GRAVITIES = {
@@ -34,19 +31,16 @@ module BobRoss::BackendHelpers
     }
   end
   
-  # Loads +path+ with libvips, staging SVGs in their own empty directory
-  # first. librsvg resolves resources referenced by an SVG from the SVG's
-  # own directory (absolute paths, "..", and network URIs are refused), so
-  # an SVG rendered from a shared tempdir could bake sibling tempfiles —
-  # other uploads or exports in flight — into its output. copy_memory forces
-  # the pixels into RAM so the staged copy can be deleted immediately.
+  # Loads +path+ with libvips. SVGs are read into memory and loaded from the
+  # buffer: an SVG loaded from data has no base URI, so librsvg cannot
+  # resolve ANY referenced resource — relative or absolute — while
+  # self-contained data: URIs keep working. An SVG rendered from its file
+  # path could instead read sibling files (e.g. other uploads in a shared
+  # tempdir) into its output.
   def vips_load_safely(path, **options)
     if ::Vips.vips_foreign_find_load(path)&.start_with?("VipsForeignLoadSvg")
-      Dir.mktmpdir do |dir|
-        staged = File.join(dir, File.basename(path))
-        FileUtils.cp(path, staged)
-        return ::Vips::Image.new_from_file(staged, access: :sequential, **options).copy_memory
-      end
+      ::Vips::Image.new_from_buffer(File.binread(path), "",
+        **select_valid_options("VipsForeignLoadSvgBuffer", options))
     else
       ::Vips::Image.new_from_file(path, **options)
     end

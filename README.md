@@ -75,10 +75,12 @@ The class names in the left column (e.g. `VipsForeignLoadSvg`) are what
 `allow` expects; the parenthesized nicknames (e.g. `svgload`) are the
 operation names that appear in error messages when a load is blocked.
 
-SVGs are additionally staged in their own empty directory before loading,
-because librsvg resolves resources referenced by an SVG from the SVG's own
-directory — rendered from a shared tempdir, a crafted SVG could bake sibling
-tempfiles into its output.
+SVGs are additionally read into memory and loaded from the buffer rather
+than from their file path. An SVG loaded from data has no base URI, so
+librsvg cannot resolve any referenced resource — relative or absolute —
+while self-contained `data:` URIs keep working. An SVG rendered from its
+path could instead read sibling files (e.g. other uploads in a shared
+tempdir) into its output.
 
 ## Client (Generating URLs)
 

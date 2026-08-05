@@ -58,21 +58,37 @@ class BobRossLibVipsBackendTest < Minitest::Test
     BobRoss::Server.new(safe: false)
   end
 
-  test 'vips_load stages SVGs in a private directory so they cannot read sibling files' do
+  test 'vips_load loads SVGs from a buffer so they cannot reference any resource' do
     Dir.mktmpdir do |dir|
       secret = Vips::Image.black(4, 4).new_from_image([255, 0, 0])
       secret.write_to_file(File.join(dir, 'secret.png'))
 
-      svg = %{<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="4"><image xlink:href="secret.png" x="0" y="0" width="4" height="4"/></svg>}
-      File.write(File.join(dir, 'evil.svg'), svg)
+      relative = %{<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="4"><image xlink:href="secret.png" x="0" y="0" width="4" height="4"/></svg>}
+      absolute = %{<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="4"><image xlink:href="file://#{File.join(dir, 'secret.png')}" x="0" y="0" width="4" height="4"/></svg>}
 
       # Sanity check: librsvg resolves the sibling when rendered in place…
+      File.write(File.join(dir, 'evil.svg'), relative)
       raw = Vips::Image.new_from_file(File.join(dir, 'evil.svg'))
       assert raw.getpoint(0, 0)[0] > 200, "expected the sibling file to render in place"
 
-      # …but staged in its own empty directory there is nothing to reference
-      staged = BobRoss.backend.vips_load(File.join(dir, 'evil.svg'))
-      assert staged.getpoint(0, 0)[3] == 0.0, "expected a blank render, got #{staged.getpoint(0, 0).inspect}"
+      # …but loaded from a buffer there is no base URI, so neither relative
+      # nor absolute references resolve
+      [relative, absolute].each do |svg|
+        File.write(File.join(dir, 'evil.svg'), svg)
+        image = BobRoss.backend.vips_load(File.join(dir, 'evil.svg'))
+        assert image.getpoint(0, 0)[3] == 0.0, "expected a blank render, got #{image.getpoint(0, 0).inspect}"
+      end
+    end
+  end
+
+  test 'SVGs with embedded data: URIs still render when loaded from a buffer' do
+    Tempfile.create(['test', '.svg']) do |file|
+      red = Vips::Image.black(4, 4).new_from_image([255, 0, 0]).write_to_buffer('.png')
+      file.write(%{<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="4" height="4"><image xlink:href="data:image/png;base64,#{[red].pack('m0')}" x="0" y="0" width="4" height="4"/></svg>})
+      file.flush
+
+      image = BobRoss.backend.vips_load(file.path)
+      assert image.getpoint(0, 0)[0] > 200, "expected the embedded image to render"
     end
   end
 
