@@ -3,7 +3,7 @@
 require 'test_helper'
 
 class BobRossFormatTest < Minitest::Test
-
+  
   ALLOWED_FIELDS_IN_STRIPPED_IMAGE = %w(
     bands
     coding
@@ -71,37 +71,31 @@ class BobRossFormatTest < Minitest::Test
   
   # ------- JPEG 2000 test -----------------------------------------------------
   test 'saves a jp2', requires: 'image/jp2' do
-    with_loader('VipsForeignLoadJp2k') do
-      image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
-      output = image.transform({}, {format: 'image/jp2'}) do |transformed|
-        ::Vips::Image.new_from_file(transformed.path)
-      end
-
-      assert_equal 'jp2kload', output.get("vips-loader")
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+    output = image.transform({}, {format: 'image/jp2'}) do |transformed|
+      ::Vips::Image.new_from_file(transformed.path)
     end
+    
+    assert_equal 'jp2kload', output.get("vips-loader")
   end
-
+  
   test 'saves a jp2 with Quality', requires: 'image/jp2' do
-    with_loader('VipsForeignLoadJp2k') do
-      image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
 
-      image.transform({}, {quality: 0, format: 'image/jp2'}) do |low_q_output|
-        image.transform({}, {quality: 100, format: 'image/jp2'}) do |high_q_output|
-          assert low_q_output.size < high_q_output.size
-        end
+    image.transform({}, {quality: 0, format: 'image/jp2'}) do |low_q_output|
+      image.transform({}, {quality: 100, format: 'image/jp2'}) do |high_q_output|
+        assert low_q_output.size < high_q_output.size
       end
     end
   end
 
   test 'saves a jp2 stripping the exif/metadata', requires: 'image/jp2' do
-    with_loader('VipsForeignLoadJp2k') do
-      image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
-      output = image.transform({}, {strip: true, format: 'image/jp2'}) do |transformed|
-        ::Vips::Image.new_from_file(transformed.path)
-      end
-
-      assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
+    image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/image_with_exif_data.jpg', __FILE__)))
+    output = image.transform({}, {strip: true, format: 'image/jp2'}) do |transformed|
+      ::Vips::Image.new_from_file(transformed.path)
     end
+    
+    assert (output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).empty?, "Unexpected field(s) in image: #{(output.get_fields - ALLOWED_FIELDS_IN_STRIPPED_IMAGE).inspect}"
   end
 
   # I think JP2 is always progressive?
