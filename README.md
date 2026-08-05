@@ -51,6 +51,17 @@ Exemptions are applied atomically with the block (`Vips.block_untrusted(true)`
 revokes exemptions set before it), so always use `allow` rather than calling
 `Vips.block` yourself beforehand.
 
+To see which operations are untrusted on your libvips build — the set varies
+by version and by which libraries are compiled in — run:
+
+```sh
+vips -l | grep untrusted
+```
+
+The class names in the left column (e.g. `VipsForeignLoadSvg`) are what
+`allow` expects; the parenthesized nicknames (e.g. `svgload`) are the
+operation names that appear in error messages when a load is blocked.
+
 SVGs are additionally staged in their own empty directory before loading,
 because librsvg resolves resources referenced by an SVG from the SVG's own
 directory — rendered from a shared tempdir, a crafted SVG could bake sibling
