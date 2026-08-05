@@ -23,8 +23,8 @@ class BobRoss::Railtie < Rails::Railtie
   
   config.bob_ross.server = ActiveSupport::OrderedOptions.new
   config.bob_ross.backend = 'imagemagick'
-  # config.bob_ross.safe = true # block unsafe libvips loaders (CVE-2026-66066)
-  # config.bob_ross.allow = []  # e.g. ['VipsForeignLoadSvg'] for SVG watermarks
+  config.bob_ross.safe = true # block unsafe libvips loaders (CVE-2026-66066); set false to opt out
+  config.bob_ross.allow = []  # e.g. ['VipsForeignLoadSvg'] for SVG watermarks
   # config.bob_ross.server.store = -> {} || Value
   config.bob_ross.server.prefix = "/images"
   # config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
