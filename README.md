@@ -35,6 +35,10 @@ Unfuzzed loaders such as MATLAB (`matload`), ImageMagick, camera RAW, FITS
 and OpenEXR can otherwise be abused to read files off the server or attack
 unhardened parsers (see CVE-2026-66066).
 
+The block is applied by `BobRoss.configure` — which Rails always calls during
+boot — or, for standalone servers where `configure` never ran (e.g. a bare
+`config.ru`), by `BobRoss::Server.new` itself.
+
 Exempt specific loaders when you have a legitimate need — for example an SVG
 watermark or existing JPEG2000 images:
 

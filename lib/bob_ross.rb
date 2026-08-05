@@ -45,6 +45,10 @@ class BobRoss
   def backend
     @backend || BobRoss::LibVipsBackend
   end
+
+  def configured?
+    !@backend.nil?
+  end
   
   def register_plugin(plugin)
     plugin.mime_types.each do |mime_type|

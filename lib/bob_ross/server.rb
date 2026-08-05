@@ -94,7 +94,10 @@ EOF
   attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
-    if BobRoss.backend.key == :vips && settings.fetch(:safe, true)
+    # BobRoss.configure is what secures the libvips backend (Rails always
+    # calls it). When it never ran — standalone use, e.g. config.ru — apply
+    # the block here instead.
+    if !BobRoss.configured? && BobRoss.backend.key == :vips && settings.fetch(:safe, true)
       BobRoss::LibVipsBackend.safe!(allowed: settings[:allow] || [])
     end
 

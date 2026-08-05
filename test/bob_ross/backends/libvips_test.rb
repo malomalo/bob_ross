@@ -41,7 +41,19 @@ class BobRossLibVipsBackendTest < Minitest::Test
     BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k'], logger: BobRoss.logger)
   end
 
-  test 'safe: false does not enable the block on server initialization' do
+  test 'server does not secure the backend when BobRoss is already configured' do
+    BobRoss::LibVipsBackend.expects(:safe!).never
+    BobRoss::Server.new
+  end
+
+  test 'server secures the backend when BobRoss was never configured (standalone)' do
+    BobRoss.stubs(:configured?).returns(false)
+    BobRoss::LibVipsBackend.expects(:safe!).with(allowed: ['VipsForeignLoadSvg']).once
+    BobRoss::Server.new(allow: ['VipsForeignLoadSvg'])
+  end
+
+  test 'server safe: false skips securing when BobRoss was never configured' do
+    BobRoss.stubs(:configured?).returns(false)
     BobRoss::LibVipsBackend.expects(:safe!).never
     BobRoss::Server.new(safe: false)
   end
