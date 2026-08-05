@@ -94,11 +94,13 @@ EOF
   attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
-    # BobRoss.configure is what secures the libvips backend (Rails always
-    # calls it). When it never ran — standalone use, e.g. config.ru — apply
-    # the block here instead.
-    if !BobRoss.configured? && BobRoss.backend.key == :vips && settings.fetch(:safe, true)
-      BobRoss::LibVipsBackend.safe!(allowed: settings[:allow] || [])
+    # Standalone servers (e.g. config.ru) may run without BobRoss.configure
+    # ever being called; run it here so the libvips backend is secured
+    # (safe/allow) and host/hmac are set. Rails always configures at boot.
+    # Only configure's own keys are passed — leftover keys become default
+    # URL transformations, so server settings like :store must be kept out.
+    unless BobRoss.configured?
+      BobRoss.configure(settings.slice(:host, :hmac, :logger, :backend, :safe, :allow))
     end
 
     @settings = normalize_options(settings)
