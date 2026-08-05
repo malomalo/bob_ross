@@ -98,4 +98,19 @@ class BobRoss::CacheTest < Minitest::Test
     assert_equal size * 5, cache.size
   end
 
+  test 'use when the cached file is missing on disk does not raise' do
+    cache = BobRoss::Cache.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
+    key = '912ec803b2ce49e4a541068d495ab570'
+    transform = 'S100x100'
+
+    cache.set(key, true, transform, 'image/png', fixture('opaque'))
+    # Simulate the on-disk file disappearing out from under the cache
+    FileUtils.rm(File.join(@cache_dir, '912e/c803/b2ce/49e4a541068d495ab570/S100x100/png'))
+
+    yielded = false
+    cache.use(key, transform, 'image/png') { |f| yielded = true }
+    refute yielded, 'block should not be yielded when the file is missing'
+    assert cache.get(key, transform).to_a.empty?, 'entry should be purged from the db'
+  end
+
 end
