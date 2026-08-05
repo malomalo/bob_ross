@@ -79,6 +79,13 @@ class BobRoss::Railtie < Rails::Railtie
     end
     
     if config.server
+      # The server applies the libvips block itself when BobRoss.configure
+      # never ran (standalone use), so hand it the app's setting — otherwise
+      # `safe = false` here would be honored by configure but overridden by
+      # the server's own default.
+      config.server.safe = config.safe unless config.safe.nil?
+      config.server.allow = config.allow if config.allow
+
       config.server.hmac = config.hmac.dup
       config.server.hmac.attributes = config.server.hmac.attributes.dup
       if config.hmac.attributes.is_a?(Array) && config.hmac.attributes.first.is_a?(Array)

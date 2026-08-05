@@ -51,6 +51,15 @@ Exemptions are applied atomically with the block (`Vips.block_untrusted(true)`
 revokes exemptions set before it), so always use `allow` rather than calling
 `Vips.block` yourself beforehand.
 
+To run without the block entirely — for example while migrating an existing
+deployment — opt out explicitly. This must be set before BobRoss is
+configured; it cannot be undone once `safe!` has run:
+
+```ruby
+BobRoss.configure(backend: 'libvips', safe: false)
+# or in Rails: config.bob_ross.safe = false
+```
+
 To see which operations are untrusted on your libvips build — the set varies
 by version and by which libraries are compiled in — run:
 

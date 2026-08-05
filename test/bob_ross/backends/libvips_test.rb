@@ -31,6 +31,21 @@ class BobRossLibVipsBackendTest < Minitest::Test
     end
   end
 
+  test 'safe: false does not enable the block on configure' do
+    BobRoss::LibVipsBackend.expects(:safe!).never
+    BobRoss.configure(backend: 'libvips', safe: false, logger: BobRoss.logger)
+  ensure
+    # Restore the suite's configuration (safe! is idempotent, so the block
+    # and its exemptions are unaffected)
+    BobRoss::LibVipsBackend.unstub(:safe!)
+    BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k'], logger: BobRoss.logger)
+  end
+
+  test 'safe: false does not enable the block on server initialization' do
+    BobRoss::LibVipsBackend.expects(:safe!).never
+    BobRoss::Server.new(safe: false)
+  end
+
   test 'vips_load stages SVGs in a private directory so they cannot read sibling files' do
     Dir.mktmpdir do |dir|
       secret = Vips::Image.black(4, 4).new_from_image([255, 0, 0])
