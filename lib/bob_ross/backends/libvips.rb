@@ -27,9 +27,9 @@ module BobRoss::LibVipsBackend
 
   def supported_formats
     return @supported_formats if @supported_formats
-  
+
     formats_cmd = Terrapin::CommandLine.new("magick", 'identify -list format')
-  
+
     @supported_formats = Vips::get_suffixes.reduce([]) do |memo, suffix|
       if mime = MiniMime.lookup_by_extension(suffix.delete_prefix('.'))
         memo << mime.content_type
@@ -37,14 +37,42 @@ module BobRoss::LibVipsBackend
       memo
     end
   end
-  
+
+  # Blocks libvips operations that are unsafe for untrusted content
+  # (CVE-2026-66066). BobRoss exists to transform untrusted uploads, so
+  # unfuzzed loaders — e.g. MATLAB via libmatio/HDF5, which can be tricked
+  # into reading arbitrary files into the rendered output — must never run.
+  #
+  # +unblock+ names loader classes to exempt (e.g. "VipsForeignLoadSvg" for
+  # SVG watermarks); see Vips.block. Exemptions must be applied in the same
+  # call as the block: Vips.block_untrusted(true) revokes exemptions set
+  # before it. Idempotent — later calls are no-ops so previously configured
+  # exemptions are never revoked.
+  def block_untrusted!(unblock: [])
+    return if @untrusted_blocked
+
+    if !Vips.respond_to?(:block_untrusted)
+      raise "BobRoss requires libvips >= 8.13 and ruby-vips >= 2.2.1 to block " \
+        "unsafe libvips operations (CVE-2026-66066). Upgrade, or configure " \
+        "BobRoss with `block_untrusted: false` to run unprotected."
+    end
+
+    Vips.block_untrusted(true)
+    Array(unblock).each { |loader| Vips.block(loader, false) }
+    @untrusted_blocked = true
+  end
+
+  def untrusted_blocked?
+    !!@untrusted_blocked
+  end
+
   def identify(path)
     ident = {}
 
     mime_command = Terrapin::CommandLine.new("file", '--mime -b :file')
     ident[:mime_type] = mime_command.run({ file: path }).split(';')[0]
-    
-    i = ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))#, access: :sequential
+
+    i = vips_load_safely(path, **select_valid_loader_options(path, {}))
     ident[:opaque]    = i.has_alpha? ? i.extract_band(i.bands-1, n: 1).min == 255.0 : true
     ident[:geometry]  = { width: i.width, height: i.height, x_offset: nil, y_offset: nil, modifier: nil, gravity: nil, color: nil }
     ident[:orientation] = begin

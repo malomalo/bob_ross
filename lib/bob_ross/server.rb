@@ -94,6 +94,10 @@ EOF
   attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
+    if BobRoss.backend.key == :vips && settings.fetch(:block_untrusted, true)
+      BobRoss::LibVipsBackend.block_untrusted!(unblock: settings[:unblock_loaders] || [])
+    end
+
     @settings = normalize_options(settings)
     @cache = @settings[:cache]
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)

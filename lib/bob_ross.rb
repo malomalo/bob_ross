@@ -28,12 +28,18 @@ class BobRoss
   
   def configure(options)
     options = normalize_options(options)
-    
+
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
+    block_untrusted = options.delete(:block_untrusted) { true }
+    unblock_loaders = options.delete(:unblock_loaders) { [] }
     @transformations = options
     @backend = options.delete(:backend)
+
+    if @backend == BobRoss::LibVipsBackend && block_untrusted
+      BobRoss::LibVipsBackend.block_untrusted!(unblock: unblock_loaders)
+    end
   end
   
   def backend

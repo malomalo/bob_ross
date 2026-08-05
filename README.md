@@ -26,6 +26,36 @@ Optionally:
   - `mupdf-tools` for PDF support via `BobRoss::PDFPlugin`
   - `ffmpeg` for PDF support via `BobRoss::VideoPlugin`
 
+## Security (libvips backend)
+
+BobRoss transforms untrusted uploads, so when the libvips backend is in use
+BobRoss blocks libvips operations that are unsafe for untrusted content
+(`Vips.block_untrusted`, requiring libvips >= 8.13 and ruby-vips >= 2.2.1).
+Unfuzzed loaders such as MATLAB (`matload`), ImageMagick, camera RAW, FITS
+and OpenEXR can otherwise be abused to read files off the server or attack
+unhardened parsers (see CVE-2026-66066).
+
+Exempt specific loaders when you have a legitimate need — for example an SVG
+watermark or existing JPEG2000 images:
+
+```ruby
+BobRoss.configure(
+  backend: 'libvips',
+  unblock_loaders: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
+)
+# or in Rails: config.bob_ross.unblock_loaders = [...]
+# or set config.bob_ross.block_untrusted = false to opt out entirely
+```
+
+Exemptions are applied atomically with the block (`Vips.block_untrusted(true)`
+revokes exemptions set before it), so always use `unblock_loaders` rather than
+calling `Vips.block` yourself beforehand.
+
+SVGs are additionally staged in their own empty directory before loading,
+because librsvg resolves resources referenced by an SVG from the SVG's own
+directory — rendered from a shared tempdir, a crafted SVG could bake sibling
+tempfiles into its output.
+
 ## Client (Generating URLs)
 
 The BobRoss client makes it easy to generate urls for requesting the server.
