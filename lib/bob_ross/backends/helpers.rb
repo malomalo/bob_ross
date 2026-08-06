@@ -31,11 +31,26 @@ module BobRoss::BackendHelpers
     }
   end
   
+  # Loads +path+ with libvips. SVGs are read into memory and loaded from the
+  # buffer: an SVG loaded from data has no base URI, so librsvg cannot
+  # resolve ANY referenced resource — relative or absolute — while
+  # self-contained data: URIs keep working. An SVG rendered from its file
+  # path could instead read sibling files (e.g. other uploads in a shared
+  # tempdir) into its output.
+  def vips_load_safely(path, **options)
+    if ::Vips.vips_foreign_find_load(path)&.start_with?("VipsForeignLoadSvg")
+      ::Vips::Image.new_from_buffer(File.binread(path), "",
+        **select_valid_options("VipsForeignLoadSvgBuffer", options))
+    else
+      ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, options))
+    end
+  end
+
   def vips_load(path, cache=false)
     if cache
-      @load_cache[path] ||= ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))
+      @load_cache[path] ||= vips_load_safely(path)
     else
-      ::Vips::Image.new_from_file(path, **select_valid_loader_options(path, {}))
+      vips_load_safely(path)
     end
   end
 end

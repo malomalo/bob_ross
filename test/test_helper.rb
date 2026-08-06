@@ -19,8 +19,6 @@ require 'standard_storage/filesystem'
 require "concurrent"
 require 'ruby-vips'
 
-
-
 BobRoss.configure(backend: ENV["BOBROSS_BACKEND"]) if ENV["BOBROSS_BACKEND"]
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
@@ -31,6 +29,16 @@ class Minitest::Test
   
  include ActiveSupport::Testing::TimeHelpers
   
+  # A test's `requires:` formats that map to a blocked libvips loader; the
+  # loader is enabled for the duration of the test. On the libvips backend a
+  # mapped format also counts as supported even when it is missing from
+  # supported_formats (e.g. libvips loads SVGs, but SVG is not a BobRoss
+  # output format).
+  REQUIRES_VIPS_LOADER = {
+    'image/jp2' => 'VipsForeignLoadJp2k',
+    'image/svg+xml' => 'VipsForeignLoadSvg'
+  }
+
   # File 'lib/active_support/testing/declarative.rb'
   def self.test(name, requires: nil, &block)
     test_name = "test_#{name.gsub(/\s+/, '_')}".to_sym
@@ -38,10 +46,15 @@ class Minitest::Test
     raise "#{test_name} is already defined in #{self}" if defined
     if block_given?
       define_method(test_name) do
-        if requires && !BobRoss.backend.supports?(*requires)
+        unsupported = Array(requires).reject do |mime|
+          BobRoss.backend.supports?(mime) ||
+            (BobRoss.backend.key == :vips && REQUIRES_VIPS_LOADER.key?(mime))
+        end
+        if requires && !unsupported.empty?
           skip "Format #{requires.inspect} not supported"
         else
-          instance_eval(&block)
+          loaders = Array(requires).filter_map { |mime| REQUIRES_VIPS_LOADER[mime] }
+          enable_loader(*loaders) { instance_eval(&block) }
         end
       end
     else
@@ -75,6 +88,23 @@ class Minitest::Test
     yield
   ensure
     $debug = false
+  end
+
+  # Enables blocked libvips loaders for the duration of the block, then
+  # re-blocks them (the block state is process-global; see
+  # BobRoss::LibVipsBackend.safe!)
+  def enable_loader(*loaders)
+    loaders.each { |loader| Vips.block(loader, false) }
+    yield
+  ensure
+    loaders.each { |loader| Vips.block(loader, true) }
+  end
+
+  # Restores BobRoss to the suite's default configuration after a test that
+  # reconfigured it (or opted out with safe: false). configure re-applies
+  # safe!, which re-blocks the unsafe loaders, so this is enough to re-secure.
+  def reset_bobross_config!
+    BobRoss.configure(backend: ENV["BOBROSS_BACKEND"] || 'libvips', logger: BobRoss.logger)
   end
 
   def color_to_rgba(value)

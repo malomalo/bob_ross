@@ -28,16 +28,26 @@ class BobRoss
   
   def configure(options)
     options = normalize_options(options)
-    
+
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
     @transformations = options
     @backend = options.delete(:backend)
+
+    allowed = options.delete(:allow) { [] }
+    safe    = options.delete(:safe) { true }
+    if @backend == BobRoss::LibVipsBackend
+      safe ? BobRoss::LibVipsBackend.safe!(allowed: allowed) : BobRoss::LibVipsBackend.unsafe!
+    end
   end
   
   def backend
     @backend || BobRoss::LibVipsBackend
+  end
+
+  def configured?
+    !@backend.nil?
   end
   
   def register_plugin(plugin)

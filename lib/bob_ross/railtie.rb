@@ -23,6 +23,8 @@ class BobRoss::Railtie < Rails::Railtie
   
   config.bob_ross.server = ActiveSupport::OrderedOptions.new
   config.bob_ross.backend = 'imagemagick'
+  config.bob_ross.safe = true # block unsafe libvips loaders (CVE-2026-66066); set false to opt out
+  config.bob_ross.allow = []  # e.g. ['VipsForeignLoadSvg'] for SVG watermarks
   # config.bob_ross.server.store = -> {} || Value
   config.bob_ross.server.prefix = "/images"
   # config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
@@ -46,6 +48,8 @@ class BobRoss::Railtie < Rails::Railtie
     if seekrets = app.credentials[:bob_ross] || app.secrets[:bob_ross]
       config.host = seekrets[:host] if seekrets[:host]
       config.backend = seekrets[:backend] if seekrets[:backend]
+      config.safe = seekrets[:safe] if seekrets.has_key?(:safe)
+      config.allow = seekrets[:allow] if seekrets[:allow]
       
       if seekrets[:hmac].is_a?(String)
         config.hmac.key = seekrets[:hmac]

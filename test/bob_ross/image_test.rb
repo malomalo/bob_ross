@@ -12,6 +12,13 @@ if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
       $vips_loads[key] += 1
       super
     end
+
+    # safe loading reads SVGs into memory and loads them from a buffer
+    def new_from_buffer(data, option_string, **options)
+      $vips_loads[:buffer] ||= 0
+      $vips_loads[:buffer] += 1
+      super
+    end
   end
   
   ::Vips::Image.singleton_class.prepend(CallCounter)
@@ -530,7 +537,7 @@ class BobRossImageTest < Minitest::Test
     })
   end
 
-  test 'watermarking' do
+  test 'watermarking', requires: 'image/svg+xml' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     image.settings[:watermarks] = [File.expand_path('../../fixtures/watermark', __FILE__)].map do |path|
       { path: path, geometry: BobRoss.backend.identify(path)[:geometry] }
@@ -678,7 +685,9 @@ class BobRossImageTest < Minitest::Test
     })
     
     if BobRoss.backend.name == 'BobRoss::LibVipsBackend'
-      assert_equal($vips_loads["/watermark"], 1)
+      # the watermark is an SVG, so safe loading reads it from a buffer (the
+      # only buffer load here); assert it was loaded once and then cached
+      assert_equal(1, $vips_loads[:buffer])
     end
   end
 

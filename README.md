@@ -26,6 +26,64 @@ Optionally:
   - `mupdf-tools` for PDF support via `BobRoss::PDFPlugin`
   - `ffmpeg` for PDF support via `BobRoss::VideoPlugin`
 
+## Security (libvips backend)
+
+BobRoss transforms untrusted uploads, so when the libvips backend is in use
+BobRoss blocks libvips operations that are unsafe for untrusted content
+(`Vips.block_untrusted`, requiring libvips >= 8.13 and ruby-vips >= 2.2.1).
+Unfuzzed loaders such as MATLAB (`matload`), ImageMagick, camera RAW, FITS
+and OpenEXR can otherwise be abused to read files off the server or attack
+unhardened parsers (see CVE-2026-66066).
+
+The block is applied the moment the libvips backend is loaded, so the backend
+is never used with unsafe loaders enabled — even if you never call
+`BobRoss.configure`. `configure` then re-applies it together with any `allow:`
+exemptions.
+
+Exempt specific loaders when you have a legitimate need — for example an SVG
+watermark or existing JPEG2000 images:
+
+```ruby
+BobRoss.configure(
+  backend: 'libvips',
+  allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k']
+)
+# or in Rails: config.bob_ross.allow = [...]
+# or set config.bob_ross.safe = false to opt out entirely
+```
+
+Exemptions are applied atomically with the block (`Vips.block_untrusted(true)`
+revokes exemptions set before it), so always use `allow` rather than calling
+`Vips.block` yourself beforehand.
+
+To run without the block entirely — for example while migrating an existing
+deployment — opt out explicitly. This re-enables the unsafe loaders
+(`Vips.block_untrusted(false)`) and can be set any time; a later `safe!`
+re-blocks them:
+
+```ruby
+BobRoss.configure(backend: 'libvips', safe: false)
+# or in Rails: config.bob_ross.safe = false
+```
+
+To see which operations are untrusted on your libvips build — the set varies
+by version and by which libraries are compiled in — run:
+
+```sh
+vips -l | grep untrusted
+```
+
+The class names in the left column (e.g. `VipsForeignLoadSvg`) are what
+`allow` expects; the parenthesized nicknames (e.g. `svgload`) are the
+operation names that appear in error messages when a load is blocked.
+
+SVGs are additionally read into memory and loaded from the buffer rather
+than from their file path. An SVG loaded from data has no base URI, so
+librsvg cannot resolve any referenced resource — relative or absolute —
+while self-contained `data:` URIs keep working. An SVG rendered from its
+path could instead read sibling files (e.g. other uploads in a shared
+tempdir) into its output.
+
 ## Client (Generating URLs)
 
 The BobRoss client makes it easy to generate urls for requesting the server.

@@ -94,6 +94,17 @@ EOF
   attr_accessor :settings, :cache, :logger
   
   def initialize(settings={})
+    # Standalone servers (e.g. config.ru) may run without BobRoss.configure
+    # ever being called; run it here so host/hmac and any safe/allow settings
+    # take effect. (The libvips block is already applied on backend load; this
+    # lets a standalone server declare `allow:` exemptions or opt out.) Rails
+    # always configures at boot. Only configure's own keys are passed — leftover
+    # keys become default URL transformations, so server settings like :store
+    # must be kept out.
+    unless BobRoss.configured?
+      BobRoss.configure(settings.slice(:host, :hmac, :logger, :backend, :safe, :allow))
+    end
+
     @settings = normalize_options(settings)
     @cache = @settings[:cache]
     @settings[:last_modified_header] = false unless @settings.has_key?(:last_modified_header)
