@@ -36,11 +36,13 @@ class Minitest::Test
  include ActiveSupport::Testing::TimeHelpers
   
   # A test's `requires:` formats that map to a blocked libvips loader; the
-  # loader is enabled for the duration of the test. SVG is intentionally
-  # absent: it is not one of BobRoss's supported formats, so `requires:`
-  # would skip — tests needing the SVG loader wrap with_loader directly.
+  # loader is enabled for the duration of the test. On the libvips backend a
+  # mapped format also counts as supported even when it is missing from
+  # supported_formats (e.g. libvips loads SVGs, but SVG is not a BobRoss
+  # output format).
   REQUIRES_VIPS_LOADER = {
-    'image/jp2' => 'VipsForeignLoadJp2k'
+    'image/jp2' => 'VipsForeignLoadJp2k',
+    'image/svg+xml' => 'VipsForeignLoadSvg'
   }
 
   # File 'lib/active_support/testing/declarative.rb'
@@ -50,7 +52,11 @@ class Minitest::Test
     raise "#{test_name} is already defined in #{self}" if defined
     if block_given?
       define_method(test_name) do
-        if requires && !BobRoss.backend.supports?(*requires)
+        unsupported = Array(requires).reject do |mime|
+          BobRoss.backend.supports?(mime) ||
+            (BobRoss.backend.key == :vips && REQUIRES_VIPS_LOADER.key?(mime))
+        end
+        if requires && !unsupported.empty?
           skip "Format #{requires.inspect} not supported"
         else
           loaders = Array(requires).filter_map { |mime| REQUIRES_VIPS_LOADER[mime] }
