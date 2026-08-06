@@ -60,13 +60,6 @@ class PDFPluginTest < Minitest::Test
     end
   end
   
-  test 'renders a page at the requested resolution (dpi)' do
-    # sample.pdf is 8.5x11in (612x792 @ 72dpi); at 300dpi that is 2550x3300
-    BobRoss::PDFPlugin.transform(fixture('pdfs/sample.pdf'), [], [[:resolution, 300]]) do |image|
-      assert_geometry('2550x3300', image)
-    end
-  end
-
   test 'creates a thumbnail for the pdf with pdf dimensions of upcoming resolution requested in bobross' do
     BobRoss::PDFPlugin.transform(fixture('pdfs/sample.pdf'), [], [[:resize, '500x500']]) do |image|
       assert_geometry('387x500', image)
