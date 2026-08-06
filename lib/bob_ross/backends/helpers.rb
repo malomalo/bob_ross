@@ -38,7 +38,7 @@ module BobRoss::BackendHelpers
   # path could instead read sibling files (e.g. other uploads in a shared
   # tempdir) into its output.
   def vips_load_safely(path, **options)
-    if ::Vips.vips_foreign_find_load(path).start_with?("VipsForeignLoadSvg")
+    if ::Vips.vips_foreign_find_load(path)&.start_with?("VipsForeignLoadSvg")
       ::Vips::Image.new_from_buffer(File.binread(path), "",
         **select_valid_options("VipsForeignLoadSvgBuffer", options))
     else

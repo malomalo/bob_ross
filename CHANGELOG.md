@@ -17,9 +17,3 @@
   (relative or absolute), preventing a crafted SVG from reading sibling files
   (e.g. other uploads in a shared tempdir) into its output. Self-contained
   `data:` URIs continue to render.
-
-### Added
-
-- `BobRoss::PDFPlugin` accepts a `:resolution` transformation to rasterize a PDF
-  page at a given DPI (`mutool draw -r`) instead of sizing to fit — useful when a
-  page needs to be rendered at a known density and then cropped.
