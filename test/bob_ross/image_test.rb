@@ -530,8 +530,6 @@ class BobRossImageTest < Minitest::Test
     })
   end
 
-  # The watermark fixture is an SVG; requires: enables the SVG loader for
-  # the duration of the test (see REQUIRES_VIPS_LOADER in test_helper)
   test 'watermarking', requires: 'image/svg+xml' do
     image = BobRoss::Image.new(File.open(File.expand_path('../../fixtures/opaque', __FILE__)))
     image.settings[:watermarks] = [File.expand_path('../../fixtures/watermark', __FILE__)].map do |path|

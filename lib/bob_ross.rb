@@ -32,13 +32,11 @@ class BobRoss
     @host = options.delete(:host)
     @hmac = options.delete(:hmac)
     @logger = options.delete(:logger)
-    safe = options.delete(:safe) { true }
-    allowed_loaders = options.delete(:allow) { [] }
     @transformations = options
     @backend = options.delete(:backend)
 
-    if @backend == BobRoss::LibVipsBackend && safe
-      BobRoss::LibVipsBackend.safe!(allowed: allowed_loaders)
+    if options.delete(:safe) { true } && @backend == BobRoss::LibVipsBackend
+      BobRoss::LibVipsBackend.safe!(allowed: options.delete(:allow) { [] })
     end
   end
   

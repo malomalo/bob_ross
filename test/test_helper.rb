@@ -19,12 +19,6 @@ require 'standard_storage/filesystem'
 require "concurrent"
 require 'ruby-vips'
 
-
-
-# Configured with no loader exemptions on purpose: tests that need a blocked
-# loader (SVG watermark fixture, JPEG2000 round-trips) enable it themselves
-# with Vips.block(loader, false) — and re-block it in teardown, since the
-# block state is process-global.
 BobRoss.configure(backend: ENV["BOBROSS_BACKEND"]) if ENV["BOBROSS_BACKEND"]
 
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
@@ -60,7 +54,7 @@ class Minitest::Test
           skip "Format #{requires.inspect} not supported"
         else
           loaders = Array(requires).filter_map { |mime| REQUIRES_VIPS_LOADER[mime] }
-          with_loader(*loaders) { instance_eval(&block) }
+          enable_loader(*loaders) { instance_eval(&block) }
         end
       end
     else
@@ -99,7 +93,7 @@ class Minitest::Test
   # Enables blocked libvips loaders for the duration of the block, then
   # re-blocks them (the block state is process-global; see
   # BobRoss::LibVipsBackend.safe!)
-  def with_loader(*loaders)
+  def enable_loader(*loaders)
     loaders.each { |loader| Vips.block(loader, false) }
     yield
   ensure
