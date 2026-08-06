@@ -35,8 +35,10 @@ class BobRoss
     @transformations = options
     @backend = options.delete(:backend)
 
-    if options.delete(:safe) { true } && @backend == BobRoss::LibVipsBackend
-      BobRoss::LibVipsBackend.safe!(allowed: options.delete(:allow) { [] })
+    allowed = options.delete(:allow) { [] }
+    safe    = options.delete(:safe) { true }
+    if @backend == BobRoss::LibVipsBackend
+      safe ? BobRoss::LibVipsBackend.safe!(allowed: allowed) : BobRoss::LibVipsBackend.unsafe!
     end
   end
   

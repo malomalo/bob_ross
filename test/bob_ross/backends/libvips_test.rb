@@ -19,6 +19,28 @@ class BobRossLibVipsBackendTest < Minitest::Test
     end
   end
 
+  test 'the backend is secured by default (on load), before any configure' do
+    # loading the backend applies the block; nothing in this suite opted out
+    assert BobRoss::LibVipsBackend.safe?
+  end
+
+  test 'unsafe! re-enables the blocked loaders and safe! blocks them again' do
+    Tempfile.create(['crafted', '.mat'], binmode: true) do |file|
+      file.write("MATLAB 5.0 MAT-file".ljust(116, " ") + " " * 8 + "\x00\x01IM" + "\x00" * 256)
+      file.flush
+
+      BobRoss::LibVipsBackend.unsafe!
+      refute BobRoss::LibVipsBackend.safe?
+      refute_nil Vips.vips_foreign_find_load(file.path), 'expected matload available after unsafe!'
+
+      BobRoss::LibVipsBackend.safe!
+      assert BobRoss::LibVipsBackend.safe?
+      assert_nil Vips.vips_foreign_find_load(file.path), 'expected matload blocked again after safe!'
+    end
+  ensure
+    reset_bobross_config!
+  end
+
   test 'configure applies allow as loader exemptions through the backend' do
     BobRoss::LibVipsBackend.expects(:safe!).with(allowed: ['VipsForeignLoadJp2k']).once
     BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadJp2k'], logger: BobRoss.logger)

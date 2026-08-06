@@ -43,14 +43,17 @@ module BobRoss::LibVipsBackend
   # unfuzzed loaders — e.g. MATLAB via libmatio/HDF5, which can be tricked
   # into reading arbitrary files into the rendered output — must never run.
   #
+  # Applied automatically when this backend is loaded (see the bottom of this
+  # file), so the backend is never used with unsafe loaders enabled — even
+  # without BobRoss.configure. BobRoss.configure re-applies it with any `allow:`
+  # exemptions; `configure(safe: false)` opts out via unsafe!.
+  #
   # +allowed+ names loader classes to exempt (e.g. "VipsForeignLoadSvg" for
   # SVG watermarks); see Vips.block. Exemptions must be applied in the same
   # call as the block: Vips.block_untrusted(true) revokes exemptions set
-  # before it. Idempotent — later calls are no-ops so previously configured
-  # exemptions are never revoked.
+  # before it, so always pass the full +allowed+ set rather than calling
+  # Vips.block yourself afterwards.
   def safe!(allowed: [])
-    return if @safe
-
     if !Vips.respond_to?(:block_untrusted)
       raise "BobRoss requires libvips >= 8.13 and ruby-vips >= 2.2.1 to block " \
         "unsafe libvips operations (CVE-2026-66066). Upgrade, or configure " \
@@ -60,6 +63,13 @@ module BobRoss::LibVipsBackend
     Vips.block_untrusted(true)
     Array(allowed).each { |loader| Vips.block(loader, false) }
     @safe = true
+  end
+
+  # Opts out of the block — re-enables the unsafe loaders (used by
+  # `configure(safe: false)`). Reversible: a later safe! blocks them again.
+  def unsafe!
+    Vips.block_untrusted(false) if Vips.respond_to?(:block_untrusted)
+    @safe = false
   end
 
   def safe?
@@ -446,3 +456,10 @@ module BobRoss::LibVipsBackend
   end
   end
 end
+
+# Secure by default the moment the libvips backend is loaded, so it is never
+# used with unsafe loaders enabled — even without BobRoss.configure
+# (CVE-2026-66066). configure re-applies this with any `allow:` exemptions;
+# `configure(safe: false)` opts out. On libvips too old to support the block,
+# defer the error to safe!/configure so opting out still works.
+BobRoss::LibVipsBackend.safe! if Vips.respond_to?(:block_untrusted)
