@@ -24,17 +24,15 @@ class BobRossLibVipsBackendTest < Minitest::Test
     BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadJp2k'], logger: BobRoss.logger)
   ensure
     BobRoss::LibVipsBackend.unstub(:safe!)
-    BobRoss.configure(backend: 'libvips', logger: BobRoss.logger)
+    reset_bobross_config!
   end
 
   test 'safe: false does not enable the block on configure' do
     BobRoss::LibVipsBackend.expects(:safe!).never
     BobRoss.configure(backend: 'libvips', safe: false, logger: BobRoss.logger)
   ensure
-    # Restore the suite's configuration (safe! is idempotent, so the block
-    # and its exemptions are unaffected)
     BobRoss::LibVipsBackend.unstub(:safe!)
-    BobRoss.configure(backend: 'libvips', allow: ['VipsForeignLoadSvg', 'VipsForeignLoadJp2k'], logger: BobRoss.logger)
+    reset_bobross_config!
   end
 
   test 'server does not secure the backend when BobRoss is already configured' do
@@ -46,12 +44,20 @@ class BobRossLibVipsBackendTest < Minitest::Test
     BobRoss.stubs(:configured?).returns(false)
     BobRoss::LibVipsBackend.expects(:safe!).with(allowed: ['VipsForeignLoadSvg']).once
     BobRoss::Server.new(allow: ['VipsForeignLoadSvg'])
+  ensure
+    BobRoss.unstub(:configured?)
+    BobRoss::LibVipsBackend.unstub(:safe!)
+    reset_bobross_config!
   end
 
   test 'server safe: false skips securing when BobRoss was never configured' do
     BobRoss.stubs(:configured?).returns(false)
     BobRoss::LibVipsBackend.expects(:safe!).never
     BobRoss::Server.new(safe: false)
+  ensure
+    BobRoss.unstub(:configured?)
+    BobRoss::LibVipsBackend.unstub(:safe!)
+    reset_bobross_config!
   end
 
   test 'vips_load loads SVGs from a buffer so they cannot reference any resource', requires: 'image/svg+xml' do

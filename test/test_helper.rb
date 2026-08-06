@@ -100,6 +100,15 @@ class Minitest::Test
     loaders.each { |loader| Vips.block(loader, true) }
   end
 
+  # Restores BobRoss to the suite's default configuration after a test that
+  # reconfigured it. safe! is first-call-wins by design (real apps configure
+  # once at boot), so re-securing the libvips backend requires clearing @safe
+  # before reconfiguring — otherwise the restore silently no-ops.
+  def reset_bobross_config!
+    BobRoss.backend.instance_variable_set(:@safe, false) if BobRoss.backend.respond_to?(:safe?)
+    BobRoss.configure(backend: ENV["BOBROSS_BACKEND"] || 'libvips', logger: BobRoss.logger)
+  end
+
   def color_to_rgba(value)
     "##{value.map {|i| i.to_i.to_s(16) }.join('')}"
   end
