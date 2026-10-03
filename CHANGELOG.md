@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `BobRoss::Server` now uses lowercase response header names, as Rack 3
+  requires. Mixed-case keys (e.g. `Cache-Control`) were invisible to middleware
+  that reads `cache-control`, so when mounted in Rails, `Rack::ETag` added its
+  own `cache-control: no-cache` and the configured `cache_control` never
+  reached the client.
+
 ### Security
 
 - Block libvips loaders that are unsafe for untrusted content by default on the
