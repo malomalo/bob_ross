@@ -98,6 +98,29 @@ class BobRossServerTest < Minitest::Test
     assert !server.get("/opaque").headers.has_key?('Last-Modified')
   end
 
+  test 'HEAD requests get headers and no body' do
+    server = create_server
+
+    response = server.head("/opaque")
+    assert_equal 200, response.status
+    assert_equal 'image/jpeg', response.headers['content-type']
+    assert_equal server.get("/opaque").body.bytesize.to_s, response.headers['content-length']
+    assert_equal '', response.body
+
+    response = server.head("/opaque", "HTTP_RANGE" => "bytes=0-9")
+    assert_equal 206, response.status
+    assert_equal '10', response.headers['content-length']
+    assert_equal '', response.body
+
+    response = server.head("/not/a/valid/path")
+    assert_equal 404, response.status
+    assert_equal '', response.body
+
+    response = server.head("/E#{(Time.now.to_i - 10).to_s(16)}/opaque")
+    assert_equal 410, response.status
+    assert_equal '', response.body
+  end
+
   test 'Response Header: "Vary"' do
     server = create_server
 

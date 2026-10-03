@@ -142,7 +142,8 @@ EOF
 
     headers['content-length'] = filesize.to_s
     if type == 'HEAD'
-      body = ''
+      body&.close
+      body = []
     elsif !partial_content
       body = StreamFile.new(file, ranges, mime_type: mime_type)
     end
@@ -243,6 +244,19 @@ EOF
   end
   
   def call(env)
+    response = render(env)
+
+    # Responses to a HEAD request never have a body, including error
+    # responses; this is what Rack::Head would otherwise do for us.
+    if env['REQUEST_METHOD'] == 'HEAD'
+      response[2].close if response[2].respond_to?(:close)
+      response[2] = []
+    end
+
+    response
+  end
+
+  def render(env)
     image = nil
 
     ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|

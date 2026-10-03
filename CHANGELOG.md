@@ -2,7 +2,24 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** in Rails, BobRoss is now served from the middleware stack
+  (`BobRoss::Middleware`, inserted after `ActionDispatch::Callbacks`) instead of
+  a route. Image requests skip cookies, the session, flash, CSP, `Rack::Head`,
+  `Rack::ConditionalGet` and `Rack::ETag`; with a cookie session store and
+  `expire_after`, every image response previously set a new session cookie,
+  which stops CDNs from caching it. Images no longer go through the router, so
+  route constraints or session checks around the prefix no longer apply.
+- `BobRoss::Middleware` can also be used in any Rack app:
+  `use BobRoss::Middleware, prefix: '/images', server: BobRoss::Server.new(...)`.
+
 ### Fixed
+
+- `BobRoss::Server` returns an empty body for every `HEAD` request, including
+  error responses, and no longer leaves a file open for a `HEAD` with a `Range`.
+- The Railtie no longer calls `app.secrets`, which was removed in Rails 7.2,
+  when the credentials have no `bob_ross` key.
 
 - `BobRoss::Server` now uses lowercase response header names, as Rack 3
   requires. Mixed-case keys (e.g. `Cache-Control`) were invisible to middleware
