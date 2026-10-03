@@ -485,7 +485,7 @@ EOF
   end
   
   # A plain text error response; HEAD requests get the headers but no body.
-  def text_response(status, message, head: head, headers: {})
+  def text_response(status, message, head:, headers: {})
     [status, {
       "content-type" => "text/plain",
       "content-length" => message.bytesize.to_s
