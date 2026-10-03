@@ -18,12 +18,11 @@ class BobRoss::Middleware
 
   def initialize(app, prefix: '/images', server:)
     @app = app
-    @prefix = prefix
-    @server = server
+    @prefix_option = prefix
+    @server_option = server
   end
 
   def call(env)
-    prefix, server = endpoint
     path = env['PATH_INFO']
 
     if server && path.start_with?(prefix) && (path.length == prefix.length || path[prefix.length] == '/')
@@ -36,14 +35,15 @@ class BobRoss::Middleware
     end
   end
 
-  private
-
-  def endpoint
-    @endpoint ||= [
-      resolve(@prefix)&.chomp('/'),
-      resolve(@server)
-    ]
+  def prefix
+    @prefix ||= resolve(@prefix_option)&.chomp('/')
   end
+
+  def server
+    @server ||= resolve(@server_option)
+  end
+
+  private
 
   # A zero-arity Proc is a deferred value; anything else (including a lambda
   # Rack app taking `env`) is used as is.
