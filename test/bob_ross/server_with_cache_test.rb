@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'rack/mock'
+require 'rack/etag'
 
 class BobRossServerWithCacheTest < Minitest::Test
   
@@ -43,6 +44,21 @@ class BobRossServerWithCacheTest < Minitest::Test
     response = server.get("/opaque")
     assert_equal 'public, max-age=172800, immutable', response.headers['Cache-Control']
     assert_equal "1", response.headers['From-Cache']
+  end
+
+  # Rack 3 requires lowercase header names; middleware like Rack::ETag (which
+  # Rails mounts with "no-cache") only checks `cache-control` and would
+  # otherwise add its own, clobbering ours.
+  test 'Response Header: "Cache-Control" survives Rack::ETag' do
+    configs = { store: create_store, cache_control: 'public, max-age=172800, immutable' }
+    configs[:cache] = BobRoss::Cache.new(@cache_dir, File.join(@cache_dir, 'bobross.cache'))
+    server = Rack::MockRequest.new(Rack::ETag.new(BobRoss::Server.new(configs), 'no-cache'))
+
+    cache_test do |from_cache|
+      response = server.get("/opaque")
+      assert_equal from_cache, response.headers['from-cache']
+      assert_equal 'public, max-age=172800, immutable', response.headers['cache-control']
+    end
   end
 
   test 'Response Header: "Content-Type"' do
