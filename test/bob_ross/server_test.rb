@@ -100,11 +100,13 @@ class BobRossServerTest < Minitest::Test
 
   test 'HEAD requests get headers and no body' do
     server = create_server
+    full_size = server.get("/opaque").body.bytesize
 
+    # content-length is the size the GET would send, but no body is sent
     response = server.head("/opaque")
     assert_equal 200, response.status
     assert_equal 'image/jpeg', response.headers['content-type']
-    assert_equal server.get("/opaque").body.bytesize.to_s, response.headers['content-length']
+    assert_equal full_size.to_s, response.headers['content-length']
     assert_equal '', response.body
 
     response = server.head("/opaque", "HTTP_RANGE" => "bytes=0-9")
