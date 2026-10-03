@@ -113,7 +113,7 @@ EOF
     @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.supports?(k) }
   end
   
-  def serve_file(headers, file, type: , range: nil, mime_type: nil)
+  def serve_file(headers, file, head:, range: nil, mime_type: nil)
     status    = 200
     filesize  = file.size
     ranges    = get_byte_ranges(range, filesize)
@@ -125,7 +125,7 @@ EOF
       headers["content-type"] = mime_type
       ranges = [0..filesize - 1]
     else
-      partial_content = true
+      status = 206
 
       if ranges.size == 1
         range = ranges[0]
@@ -134,22 +134,19 @@ EOF
       else
         headers["content-type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
       end
-      
-      status = 206
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
-      filesize = body.bytesize
     end
 
-    headers['content-length'] = filesize.to_s
-    if type == 'HEAD'
-      body = ''
-    elsif !partial_content
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
+    body = StreamFile.new(file, ranges, mime_type: mime_type)
+    headers['content-length'] = body.bytesize.to_s
+
+    if head
+      body.close
+      body = []
     end
 
     [status, headers, body]
   rescue InvalidRangeHeader => e
-    return byte_range_unsatisfiable(filesize, e.message)
+    return byte_range_unsatisfiable(filesize, e.message, head: head)
   end
 
   def normalize_options(options)
@@ -244,6 +241,7 @@ EOF
   
   def call(env)
     image = nil
+    head = env['REQUEST_METHOD'] == 'HEAD'
 
     ActiveSupport::Notifications.instrument("process.bob_ross") do |payload|
       ActiveSupport::Notifications.instrument("start_processing.bob_ross")
@@ -258,7 +256,7 @@ EOF
     
       if !match
         payload[:status] = 404
-        return not_found
+        return not_found(head: head)
       end
 
       response_headers = {}
@@ -278,11 +276,11 @@ EOF
           format: requested_format
         })
           payload[:status] = 404
-          return not_found
+          return not_found(head: head)
         end
       elsif @settings.dig(:hmac, :required)
         payload[:status] = 404
-        return not_found 
+        return not_found(head: head)
       end
       
       if transformation_string.start_with?('E')
@@ -295,7 +293,7 @@ EOF
             expired_at: expiration_time
           })
           payload[:status] = 410
-          return gone
+          return gone(head: head)
         end
       end
       
@@ -333,7 +331,7 @@ EOF
             accept: env['HTTP_ACCEPT']
           })
           payload[:status] = 415
-          return unsupported_media_type
+          return unsupported_media_type(head: head)
         end
       end
 
@@ -350,7 +348,7 @@ EOF
               response_headers['cache-control'] = @settings[:cache_control] if @settings[:cache_control]
               response_headers['from-cache']    = '1';
               payload[:cache] = render_payload[:cache] = true
-              response = serve_file(response_headers, cached_file, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: hit[4])
+              response = serve_file(response_headers, cached_file, head: head, range: env['HTTP_RANGE'], mime_type: hit[4])
               
               payload[:status] = response[0]
               payload[:content_type] = response[1]['content-type']
@@ -391,7 +389,7 @@ EOF
         
         if image.nil?
           payload[:status] = 501
-          return not_implemented
+          return not_implemented(head: head)
         end
     
         format_options[:format] ||= select_format(accepts, image.transparent? || format_options[:transparent])
@@ -404,7 +402,7 @@ EOF
             response_headers['from-cache'] = '0'
             @cache.set(hash, image.transparent?, transform_key, format_options[:format], output.path)
           end
-          response = serve_file(response_headers, output, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: format_options[:format])
+          response = serve_file(response_headers, output, head: head, range: env['HTTP_RANGE'], mime_type: format_options[:format])
           
           payload[:status] = response[0]
           payload[:content_type] = response[1]['content-type']
@@ -415,12 +413,12 @@ EOF
       end
     end
   rescue Errno::ENOENT
-    return not_found
+    return not_found(head: head)
   rescue BobRoss::InvalidTransformationError => e
-    return unprocessable_entity(e.message)
+    return unprocessable_entity(e.message, head: head)
   rescue StandardError => e
     if ['Net::OpenTimeout', 'Net::ReadTimeout'].include?(e.class.name)
-      return gateway_timeout
+      return gateway_timeout(head: head)
     else
       raise
     end
@@ -454,39 +452,40 @@ EOF
     [304, {}, []]
   end
   
-  def not_found
-    [404, {"content-type" => "text/plain"}, ["404 Not Found"]]
+  def not_found(head:)
+    text_response(404, "404 Not Found", head: head)
   end
   
-  def unprocessable_entity(message =  "422 Unprocessable Entity")
-    [422, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
+  def unprocessable_entity(message = "422 Unprocessable Entity", head:)
+    text_response(422, message, head: head)
   end
   
-  def gateway_timeout(message = "504 Gateway Timeout")
-    [504, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
+  def gateway_timeout(message = "504 Gateway Timeout", head:)
+    text_response(504, message, head: head)
   end
   
-  def gone(message = "410 Resource Gone Or No Longer Available")
-    [410, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
+  def gone(message = "410 Resource Gone Or No Longer Available", head:)
+    text_response(410, message, head: head)
   end
   
-  def unsupported_media_type(message="Accept is requesting an Unsupported Media Type")
-    [415, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
+  def unsupported_media_type(message = "Accept is requesting an Unsupported Media Type", head:)
+    text_response(415, message, head: head)
   end
   
-  def not_implemented(message="Underlying Media Type is not supported")
-    [501, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
+  def not_implemented(message = "Underlying Media Type is not supported", head:)
+    text_response(501, message, head: head)
   end
   
-  def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable")
-    [
-      416, {
-        "content-type" => "text/plain",
-        "content-range"  => "bytes */#{filesize}",
-        "content-length" => message.bytesize.to_s
-      }, [
-        message
-    ]]
+  def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable", head:)
+    text_response(416, message, head: head, headers: { "content-range" => "bytes */#{filesize}" })
+  end
+  
+  # A plain text error response; HEAD requests get the headers but no body.
+  def text_response(status, message, head:, headers: {})
+    [status, {
+      "content-type" => "text/plain",
+      "content-length" => message.bytesize.to_s
+    }.merge(headers), head ? [] : [message]]
   end
   
   def extract_format_options(string)

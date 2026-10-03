@@ -45,7 +45,7 @@ class BobRoss::Railtie < Rails::Railtie
   def initialize_configs(app)
     config = app.config.bob_ross
     
-    if seekrets = app.credentials[:bob_ross] || app.secrets[:bob_ross]
+    if seekrets = app.credentials[:bob_ross]
       config.host = seekrets[:host] if seekrets[:host]
       config.backend = seekrets[:backend] if seekrets[:backend]
       config.safe = seekrets[:safe] if seekrets.has_key?(:safe)
@@ -112,10 +112,21 @@ class BobRoss::Railtie < Rails::Railtie
     if config.server
       require 'bob_ross/server'
       app.bob_ross_server = BobRoss::Server.new(config.server.except(:prefix))
-      app.routes.prepend do
-        mount app.bob_ross_server => config.server.prefix
-      end
     end
+  end
+
+  # Serve images from the middleware stack rather than a route so they skip
+  # cookies, the session, CSP, Rack::ETag, etc. (see BobRoss::Middleware). The
+  # stack is built before after_initialize, so the prefix and server are
+  # resolved on the first request. Apps that only generate URLs
+  # (config.bob_ross.server = nil) don't get the middleware.
+  initializer 'bob_ross.middleware' do |app|
+    next unless app.config.bob_ross.server
+
+    require 'bob_ross/middleware'
+    app.middleware.insert_after ActionDispatch::Callbacks, BobRoss::Middleware,
+      prefix: -> { app.config.bob_ross.server.prefix },
+      server: -> { app.bob_ross_server }
   end
 
 end

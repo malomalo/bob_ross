@@ -189,12 +189,15 @@ Rack compatiable server.
 
 ### Running the Server
 
-In Rails (note: BobRoss will automatically be mounted, see the Rails section below):
+In Rails BobRoss is set up automatically, see the Rails section below.
+
+In any other Rack app, add it to the middleware stack with `BobRoss::Middleware`,
+ahead of anything image requests don't need (cookies, sessions, ETags, etc.):
 
 ```ruby
-Rails.application.routes.draw do
-  mount BobRoss::Server.new(bob_ross_configs), at: "/images"
-end
+require 'bob_ross/middleware'
+
+use BobRoss::Middleware, prefix: "/images", server: BobRoss::Server.new(bob_ross_configs)
 ```
 
 Or via [`rackup`](https://github.com/rack/rackup)
@@ -419,8 +422,21 @@ BobRoss::Cache.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 
 
 ## Rails
 
-If BobRoss is used with a Rails application it automatically sets up defaults for
-the client and attaches a server at `/images` by default.
+If BobRoss is used with a Rails application (Rails 8.0 or later) it
+automatically sets up defaults for the client and serves images at `/images` by
+default. Settings can also be given under `bob_ross:` in the app's credentials.
+
+The server is added to the middleware stack, right after
+`ActionDispatch::Callbacks`, rather than as a route. Image requests still go
+through host authorization, the executor, request IDs, logging and exception
+handling, but skip cookies, the session, flash, CSP, `Rack::Head`,
+`Rack::ConditionalGet` and `Rack::ETag`. None of those apply to images, and
+some break caching: the session store rewrites the session cookie on every
+response when `expire_after` is set, and `Rack::ETag` adds
+`cache-control: no-cache` to any response without one.
+
+Because images never reach the router, they can't be protected with route
+constraints or a session check.
 
 ### Initializer options
 
