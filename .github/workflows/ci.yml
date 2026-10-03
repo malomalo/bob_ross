@@ -45,6 +45,7 @@ jobs:
                                   librsvg2-dev \
                                   libfreetype6-dev \
                                   libgsf-1-dev libltdl-dev libraw-dev \
+                                  libmatio-dev \
                                   meson ninja-build libgirepository1.0-dev
 
       - name: libvips Build Cache
@@ -52,7 +53,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-x${{ matrix.vips-version }}
+          key: compile-vips-${{ matrix.vips-version }}-matio
 
       - name: Compile Libvips
         if: steps.vips-cache.outputs.cache-hit != 'true'
@@ -72,7 +73,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /home/runner/vips
-          key: compile-vips-v${{ matrix.vips-version }}
+          key: compile-vips-${{ matrix.vips-version }}-matio
 
       - name: Install Libvips
         run: |
