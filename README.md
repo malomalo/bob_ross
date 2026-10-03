@@ -422,8 +422,9 @@ BobRoss::Cache.new('/mnt/cache_dir', '/srv/images/bobross_cache.sqlite3', size: 
 
 ## Rails
 
-If BobRoss is used with a Rails application it automatically sets up defaults for
-the client and serves images at `/images` by default.
+If BobRoss is used with a Rails application (Rails 8.0 or later) it
+automatically sets up defaults for the client and serves images at `/images` by
+default. Settings can also be given under `bob_ross:` in the app's credentials.
 
 The server is added to the middleware stack, right after
 `ActionDispatch::Callbacks`, rather than as a route. Image requests still go
