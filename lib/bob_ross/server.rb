@@ -460,27 +460,27 @@ EOF
     text_response(404, "404 Not Found", head: head)
   end
   
-  def unprocessable_entity(message = "422 Unprocessable Entity", head: head)
+  def unprocessable_entity(message = "422 Unprocessable Entity", head:)
     text_response(422, message, head: head)
   end
   
-  def gateway_timeout(message = "504 Gateway Timeout", head: head)
+  def gateway_timeout(message = "504 Gateway Timeout", head:)
     text_response(504, message, head: head)
   end
   
-  def gone(message = "410 Resource Gone Or No Longer Available", head: head)
+  def gone(message = "410 Resource Gone Or No Longer Available", head:)
     text_response(410, message, head: head)
   end
   
-  def unsupported_media_type(message = "Accept is requesting an Unsupported Media Type", head: head)
+  def unsupported_media_type(message = "Accept is requesting an Unsupported Media Type", head:)
     text_response(415, message, head: head)
   end
   
-  def not_implemented(message = "Underlying Media Type is not supported", head: head)
+  def not_implemented(message = "Underlying Media Type is not supported", head:)
     text_response(501, message, head: head)
   end
   
-  def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable", head: head)
+  def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable", head:)
     text_response(416, message, head: head, headers: { "content-range" => "bytes */#{filesize}" })
   end
   
