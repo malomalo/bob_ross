@@ -119,20 +119,20 @@ EOF
     ranges    = get_byte_ranges(range, filesize)
 
     # Advertise support for Ranges header
-    headers["Accept-Ranges"] = "bytes"
+    headers["accept-ranges"] = "bytes"
     
     if ranges.nil?
-      headers["Content-Type"] = mime_type
+      headers["content-type"] = mime_type
       ranges = [0..filesize - 1]
     else
       partial_content = true
 
       if ranges.size == 1
         range = ranges[0]
-        headers["Content-Type"] = mime_type
-        headers["Content-Range"] = "bytes #{range.begin}-#{range.end}/#{filesize}"
+        headers["content-type"] = mime_type
+        headers["content-range"] = "bytes #{range.begin}-#{range.end}/#{filesize}"
       else
-        headers["Content-Type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
+        headers["content-type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
       end
       
       status = 206
@@ -140,7 +140,7 @@ EOF
       filesize = body.bytesize
     end
 
-    headers['Content-Length'] = filesize.to_s
+    headers['content-length'] = filesize.to_s
     if type == 'HEAD'
       body = ''
     elsif !partial_content
@@ -250,7 +250,7 @@ EOF
       
       if env["REQUEST_METHOD"] == "OPTIONS"
         payload[:status] = 200
-        return [200, { 'Allow' => ALLOW_HEADER, 'Content-Length' => '0', 'Accept-Ranges' => 'bytes' }, []]
+        return [200, { 'allow' => ALLOW_HEADER, 'content-length' => '0', 'accept-ranges' => 'bytes' }, []]
       end
       
       path = ::URI::DEFAULT_PARSER.unescape(env['PATH_INFO']).force_encoding('UTF-8')
@@ -307,7 +307,7 @@ EOF
             return not_modified 
           end
         end
-        response_headers['Last-Modified'] = last_modified.httpdate
+        response_headers['last-modified'] = last_modified.httpdate
       end
 
       format_options, format_options_string = extract_format_options(transformation_string)
@@ -315,7 +315,7 @@ EOF
       if requested_format
         format_options[:format] = MiniMime.lookup_by_extension(requested_format.delete_prefix('.')).content_type
       else
-        response_headers['Vary'] = 'Accept'
+        response_headers['vary'] = 'Accept'
       end
 
       if accepts = env['HTTP_ACCEPT']
@@ -347,13 +347,13 @@ EOF
 
           if hit = cache_hits.find { |h| h[4] == format_options[:format] }
             @cache.use(hash, transform_key, hit[4]) do |cached_file|
-              response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
-              response_headers['From-Cache']    = '1';
+              response_headers['cache-control'] = @settings[:cache_control] if @settings[:cache_control]
+              response_headers['from-cache']    = '1';
               payload[:cache] = render_payload[:cache] = true
               response = serve_file(response_headers, cached_file, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: hit[4])
               
               payload[:status] = response[0]
-              payload[:content_type] = response[1]['Content-Type']
+              payload[:content_type] = response[1]['content-type']
               payload[:bytesize] = response[2].respond_to?(:bytesize) ? response[2].bytesize : response[2].size
 
               return response
@@ -399,15 +399,15 @@ EOF
           # Do this at the end to not cache errors
           payload[:cache] = render_payload[:cache] = false
           
-          response_headers['Cache-Control'] = @settings[:cache_control] if @settings[:cache_control]
+          response_headers['cache-control'] = @settings[:cache_control] if @settings[:cache_control]
           if @cache
-            response_headers['From-Cache'] = '0'
+            response_headers['from-cache'] = '0'
             @cache.set(hash, image.transparent?, transform_key, format_options[:format], output.path)
           end
           response = serve_file(response_headers, output, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: format_options[:format])
           
           payload[:status] = response[0]
-          payload[:content_type] = response[1]['Content-Type']
+          payload[:content_type] = response[1]['content-type']
           payload[:bytesize] = response[2].respond_to?(:bytesize) ? response[2].bytesize : response[2].size
 
           return response
@@ -455,35 +455,35 @@ EOF
   end
   
   def not_found
-    [404, {"Content-Type" => "text/plain"}, ["404 Not Found"]]
+    [404, {"content-type" => "text/plain"}, ["404 Not Found"]]
   end
   
   def unprocessable_entity(message =  "422 Unprocessable Entity")
-    [422, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+    [422, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
   end
   
   def gateway_timeout(message = "504 Gateway Timeout")
-    [504, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+    [504, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
   end
   
   def gone(message = "410 Resource Gone Or No Longer Available")
-    [410, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+    [410, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
   end
   
   def unsupported_media_type(message="Accept is requesting an Unsupported Media Type")
-    [415, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+    [415, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
   end
   
   def not_implemented(message="Underlying Media Type is not supported")
-    [501, {"Content-Type" => "text/plain", "Content-Length" => message.bytesize.to_s}, [message]]
+    [501, {"content-type" => "text/plain", "content-length" => message.bytesize.to_s}, [message]]
   end
   
   def byte_range_unsatisfiable(filesize, message = "Range Not Satisfiable")
     [
       416, {
-        "Content-Type" => "text/plain",
-        "Content-Range"  => "bytes */#{filesize}",
-        "Content-Length" => message.bytesize.to_s
+        "content-type" => "text/plain",
+        "content-range"  => "bytes */#{filesize}",
+        "content-length" => message.bytesize.to_s
       }, [
         message
     ]]
