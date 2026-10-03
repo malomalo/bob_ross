@@ -10,8 +10,8 @@
 # session one rewrote the session cookie on every image response (when
 # `expire_after` is set), which stops a CDN from caching it.
 #
-# `prefix` and `server` may be given as Procs that take no arguments; they are
-# resolved on the first request. Rails builds its middleware stack before
+# `prefix` and `server` may be given as Procs; they are resolved on the first
+# request. Rails builds its middleware stack before
 # `after_initialize`, which is when the server can be built (the store is often
 # an app constant).
 class BobRoss::Middleware
@@ -45,10 +45,9 @@ class BobRoss::Middleware
 
   private
 
-  # A zero-arity Proc is a deferred value; anything else (including a lambda
-  # Rack app taking `env`) is used as is.
+  # A Proc is a deferred value; anything else is used as is.
   def resolve(value)
-    value.is_a?(Proc) && value.arity == 0 ? value.call : value
+    value.is_a?(Proc) ? value.call : value
   end
 
 end

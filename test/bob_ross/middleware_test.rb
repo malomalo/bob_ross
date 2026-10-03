@@ -63,13 +63,12 @@ class BobRossMiddlewareTest < Minitest::Test
   end
 
   test 'moves the prefix from PATH_INFO to SCRIPT_NAME' do
-    env = nil
-    server = ->(e) { env = e; [200, {}, []] }
-    stack = create_stack(prefix: '/media/', server: server)
+    server = create_server
+    server.expects(:call).with { |env|
+      env['SCRIPT_NAME'] == '/root/media' && env['PATH_INFO'] == '/S10x10/opaque'
+    }.returns([200, {}, []])
 
-    stack.get('/media/S10x10/opaque', 'SCRIPT_NAME' => '/root')
-    assert_equal '/root/media', env['SCRIPT_NAME']
-    assert_equal '/S10x10/opaque', env['PATH_INFO']
+    create_stack(prefix: '/media/', server: server).get('/media/S10x10/opaque', 'SCRIPT_NAME' => '/root')
   end
 
   test 'resolves Proc prefix and server on the first request' do
