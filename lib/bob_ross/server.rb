@@ -113,7 +113,7 @@ EOF
     @useable_formats = SUPPORTED_FORMATS.select { |k,v| BobRoss.backend.supports?(k) }
   end
   
-  def serve_file(headers, file, type: , range: nil, mime_type: nil)
+  def serve_file(headers, file, head:, range: nil, mime_type: nil)
     status    = 200
     filesize  = file.size
     ranges    = get_byte_ranges(range, filesize)
@@ -125,7 +125,7 @@ EOF
       headers["content-type"] = mime_type
       ranges = [0..filesize - 1]
     else
-      partial_content = true
+      status = 206
 
       if ranges.size == 1
         range = ranges[0]
@@ -134,23 +134,19 @@ EOF
       else
         headers["content-type"] = "multipart/byteranges; boundary=#{MULTIPART_BOUNDARY}"
       end
-      
-      status = 206
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
-      filesize = body.bytesize
     end
 
-    headers['content-length'] = filesize.to_s
-    if type == 'HEAD'
-      body&.close
+    body = StreamFile.new(file, ranges, mime_type: mime_type)
+    headers['content-length'] = body.bytesize.to_s
+
+    if head
+      body.close
       body = []
-    elsif !partial_content
-      body = StreamFile.new(file, ranges, mime_type: mime_type)
     end
 
     [status, headers, body]
   rescue InvalidRangeHeader => e
-    return byte_range_unsatisfiable(filesize, e.message, head: type == 'HEAD')
+    return byte_range_unsatisfiable(filesize, e.message, head: head)
   end
 
   def normalize_options(options)
@@ -352,7 +348,7 @@ EOF
               response_headers['cache-control'] = @settings[:cache_control] if @settings[:cache_control]
               response_headers['from-cache']    = '1';
               payload[:cache] = render_payload[:cache] = true
-              response = serve_file(response_headers, cached_file, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: hit[4])
+              response = serve_file(response_headers, cached_file, head: head, range: env['HTTP_RANGE'], mime_type: hit[4])
               
               payload[:status] = response[0]
               payload[:content_type] = response[1]['content-type']
@@ -406,7 +402,7 @@ EOF
             response_headers['from-cache'] = '0'
             @cache.set(hash, image.transparent?, transform_key, format_options[:format], output.path)
           end
-          response = serve_file(response_headers, output, type: env["REQUEST_METHOD"], range: env['HTTP_RANGE'], mime_type: format_options[:format])
+          response = serve_file(response_headers, output, head: head, range: env['HTTP_RANGE'], mime_type: format_options[:format])
           
           payload[:status] = response[0]
           payload[:content_type] = response[1]['content-type']
