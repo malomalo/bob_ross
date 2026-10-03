@@ -80,9 +80,4 @@ class BobRossMiddlewareTest < Minitest::Test
     assert_equal 'image/jpeg', stack.get('/images/opaque').headers['content-type']
   end
 
-  test 'passes everything on to the app when there is no server' do
-    response = create_stack(prefix: -> { nil }, server: -> { nil }).get('/images/opaque')
-    assert_equal 'app /images/opaque', response.body
-  end
-
 end

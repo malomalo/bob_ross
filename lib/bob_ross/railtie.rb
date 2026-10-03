@@ -118,11 +118,14 @@ class BobRoss::Railtie < Rails::Railtie
   # Serve images from the middleware stack rather than a route so they skip
   # cookies, the session, CSP, Rack::ETag, etc. (see BobRoss::Middleware). The
   # stack is built before after_initialize, so the prefix and server are
-  # resolved on the first request.
+  # resolved on the first request. Apps that only generate URLs
+  # (config.bob_ross.server = nil) don't get the middleware.
   initializer 'bob_ross.middleware' do |app|
+    next unless app.config.bob_ross.server
+
     require 'bob_ross/middleware'
     app.middleware.insert_after ActionDispatch::Callbacks, BobRoss::Middleware,
-      prefix: -> { app.config.bob_ross.server&.prefix },
+      prefix: -> { app.config.bob_ross.server.prefix },
       server: -> { app.bob_ross_server }
   end
 

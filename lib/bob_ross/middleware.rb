@@ -25,7 +25,7 @@ class BobRoss::Middleware
   def call(env)
     path = env['PATH_INFO']
 
-    if server && path.start_with?(prefix) && (path.length == prefix.length || path[prefix.length] == '/')
+    if path.start_with?(prefix) && (path.length == prefix.length || path[prefix.length] == '/')
       server.call(env.merge(
         'SCRIPT_NAME' => "#{env['SCRIPT_NAME']}#{prefix}",
         'PATH_INFO' => path.delete_prefix(prefix)
@@ -36,7 +36,7 @@ class BobRoss::Middleware
   end
 
   def prefix
-    @prefix ||= resolve(@prefix_option)&.chomp('/')
+    @prefix ||= resolve(@prefix_option).chomp('/')
   end
 
   def server

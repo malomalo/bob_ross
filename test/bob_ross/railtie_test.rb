@@ -29,6 +29,7 @@ class BobRossRailtieTest < Minitest::Test
       config.bob_ross.server.cache = nil
       config.bob_ross.server.cache_control = 'public, max-age=172800, immutable'
       config.bob_ross.server.store = -> { StandardStorage::Filesystem.new(path: ENV['FIXTURES']) }
+      config.bob_ross.server = nil if ENV['NO_SERVER']
 
       routes.append do
         get '/page', to: ->(env) {
@@ -40,6 +41,11 @@ class BobRossRailtieTest < Minitest::Test
     TestApp.initialize!
 
     stack = TestApp.middleware.map(&:klass)
+    if ENV['NO_SERVER']
+      puts Marshal.dump({ middleware_index: stack.map(&:name).index('BobRoss::Middleware'), server: TestApp.bob_ross_server }).unpack1('H*')
+      exit
+    end
+
     request = Rack::MockRequest.new(TestApp)
     page = request.get('/page')
     image = request.get('/images/opaque', 'HTTP_COOKIE' => page.headers['set-cookie'].split(';').first)
@@ -58,13 +64,17 @@ class BobRossRailtieTest < Minitest::Test
     }).unpack1('H*')
   RUBY
 
-  test 'serves images ahead of the session, CSP and Rack::ETag' do
+  def boot(env = {})
     out, err, status = Open3.capture3(
-      { 'FIXTURES' => File.expand_path('../../fixtures', __FILE__) },
+      { 'FIXTURES' => File.expand_path('../../fixtures', __FILE__) }.merge(env),
       RbConfig.ruby, '-I', File.expand_path('../../../lib', __FILE__), '-e', APP
     )
     assert status.success?, err
-    result = Marshal.load([out.lines.last.strip].pack('H*'))
+    Marshal.load([out.lines.last.strip].pack('H*'))
+  end
+
+  test 'serves images ahead of the session, CSP and Rack::ETag' do
+    result = boot
 
     assert_equal result[:callbacks_index] + 1, result[:middleware_index]
     assert result[:middleware_index] < result[:cookies_index]
@@ -76,6 +86,12 @@ class BobRossRailtieTest < Minitest::Test
     assert_equal 'public, max-age=172800, immutable', result[:cache_control]
     assert_nil result[:set_cookie]
     assert_equal false, result[:content_security_policy]
+  end
+
+  test 'does not add the middleware when the server is off' do
+    result = boot('NO_SERVER' => '1')
+    assert_nil result[:middleware_index]
+    assert_nil result[:server]
   end
 
 end
